@@ -14,7 +14,7 @@
   "author": "Tobias Rosenstock",
   "repository": {
     "type": "git",
-    "url": "https://github.com/BoatHacks/signalk-stowage-mgmt"
+    "url": "git+https://github.com/BoatHacks/signalk-stowage-mgmt.git"
   },
   "homepage": "https://github.com/BoatHacks/signalk-stowage-mgmt#readme",
   "bugs": {
