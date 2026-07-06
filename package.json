@@ -16,6 +16,10 @@
     "type": "git",
     "url": "https://github.com/BoatHacks/signalk-stowage-mgmt"
   },
+  "homepage": "https://github.com/BoatHacks/signalk-stowage-mgmt#readme",
+  "bugs": {
+    "url": "https://github.com/BoatHacks/signalk-stowage-mgmt/issues"
+  },
   "scripts": {
     "postinstall": "echo 'Inventory manager installed. Enable it under Server -> Plugin Config.'"
   },
