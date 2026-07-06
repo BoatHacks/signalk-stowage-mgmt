@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SignalK Stowage Management</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Stowage Management</h1>
+    <div class="search-box">
+      <input id="search-input" type="text" placeholder="Item suchen…" autocomplete="off">
+      <div id="search-results" class="search-results"></div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="tree">Bestand</button>
+    <button class="tab-btn" data-tab="floorplan">Grundriss</button>
+    <button class="tab-btn" data-tab="overview">Übersicht</button>
+    <button class="tab-btn" data-tab="categories">Kategorien</button>
+  </nav>
+
+  <main>
+    <section id="tab-tree" class="tab-panel active">
+      <div class="toolbar">
+        <button id="add-storage-space">+ Stauraum</button>
+      </div>
+      <div id="tree-root" class="tree"></div>
+    </section>
+
+    <section id="tab-floorplan" class="tab-panel">
+      <div class="toolbar">
+        <select id="floorplan-select"><option value="">Grundriss wählen…</option></select>
+        <label class="upload-btn">
+          SVG hochladen
+          <input id="floorplan-upload" type="file" accept=".svg,image/svg+xml" hidden>
+        </label>
+        <span id="assign-hint" class="hint"></span>
+      </div>
+      <div id="floorplan-container" class="floorplan-container"></div>
+    </section>
+
+    <section id="tab-overview" class="tab-panel">
+      <div class="toolbar">
+        <input id="overview-filter" type="text" placeholder="Tabelle filtern…" style="flex:1; max-width:320px; padding:7px 10px; border-radius:6px; border:1px solid #ccc; font-size:13px;">
+        <span class="hint">Klick auf eine Zeile springt zum Grundriss (falls zugeordnet).</span>
+      </div>
+      <table id="overview-table" class="overview-table">
+        <thead>
+          <tr>
+            <th data-sort="name">Item</th>
+            <th data-sort="quantity">Menge</th>
+            <th data-sort="directLocation">Direkter Ort</th>
+            <th data-sort="fullPath">Vollständiger Pfad</th>
+            <th data-sort="categoryNames">Kategorien</th>
+            <th data-sort="onFloorplan">Im Grundriss</th>
+          </tr>
+        </thead>
+        <tbody id="overview-tbody"></tbody>
+      </table>
+    </section>
+
+    <section id="tab-categories" class="tab-panel">
+      <div class="toolbar">
+        <button id="add-category">+ Kategorie</button>
+      </div>
+      <div id="categories-list" class="categories-list"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
