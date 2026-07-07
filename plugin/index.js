@@ -34,7 +34,7 @@ module.exports = function (app) {
     properties: {}
   }
 
-  // The server mounts this router under /plugins/signalk-inventory
+  // The server mounts this router under /plugins/signalk-stowage-mgmt
   plugin.registerWithRouter = function (router) {
     router.use(express.json({ limit: '15mb' })) // floorplan SVGs can be a few MB
 

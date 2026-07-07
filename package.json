@@ -4,6 +4,7 @@
   "description": "SignalK Stowage Management: organize items into containers and storage spaces, and locate them on an SVG floorplan.",
   "keywords": [
     "signalk-node-server-plugin",
+    "signalk-webapp",
     "signalk-category-utility"
   ],
   "signalk-plugin-enabled-by-default": false,
