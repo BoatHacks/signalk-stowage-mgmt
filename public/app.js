@@ -103,16 +103,49 @@ function renderTree () {
   topLevel.filter(l => l.type === 'storage_space').forEach(loc => root.appendChild(renderNode(loc)))
 
   const unassigned = itemsIn(null)
-  if (unassigned.length) {
+  if (unassigned.length || true) {
     const wrap = document.createElement('div')
     wrap.className = 'node'
-    wrap.innerHTML = '<div class="node-header"><span class="node-title">No Location</span><span class="node-type">unassigned</span></div>'
-    const list = document.createElement('div')
-    list.className = 'children'
-    unassigned.forEach(item => list.appendChild(renderItemRow(item)))
-    wrap.appendChild(list)
+    const header = document.createElement('div')
+    header.className = 'node-header'
+    header.innerHTML = '<span class="node-title">No Location</span><span class="node-type">unassigned</span>'
+    addDropTargetHandlers(header, null)
+    wrap.appendChild(header)
+    if (unassigned.length) {
+      const list = document.createElement('div')
+      list.className = 'children'
+      unassigned.forEach(item => list.appendChild(renderItemRow(item)))
+      wrap.appendChild(list)
+    }
     root.appendChild(wrap)
   }
+}
+
+// Wires up a node-header element as a drag-and-drop target for items.
+// `locationId` is the destination (null = unassign / no location).
+function addDropTargetHandlers (el, locationId) {
+  el.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    el.classList.add('drop-target')
+  })
+  el.addEventListener('dragleave', () => {
+    el.classList.remove('drop-target')
+  })
+  el.addEventListener('drop', async (e) => {
+    e.preventDefault()
+    el.classList.remove('drop-target')
+    const itemId = e.dataTransfer.getData('text/plain')
+    if (!itemId) return
+    const item = state.items.find(i => i.id === itemId)
+    if (!item || (item.location_id || null) === (locationId || null)) return
+    try {
+      await api(`/items/${itemId}/move`, { method: 'PATCH', body: JSON.stringify({ location_id: locationId }) })
+      await refresh()
+    } catch (err) {
+      toast(err.message)
+    }
+  })
 }
 
 function renderNode (loc) {
@@ -121,6 +154,9 @@ function renderNode (loc) {
 
   const header = document.createElement('div')
   header.className = 'node-header'
+  header.dataset.locationId = loc.id
+
+  addDropTargetHandlers(header, loc.id)
 
   const mappedBadge = loc.type === 'storage_space' && loc.svg_element_id
     ? '<span class="svg-mapped-badge">im Grundriss</span>'
@@ -143,7 +179,7 @@ function renderNode (loc) {
   actions.appendChild(addItemBtn)
 
   if (loc.type === 'container') {
-    actions.appendChild(mkBtn('Verschieben', () => moveLocation(loc)))
+    actions.appendChild(mkBtn('Move', () => moveLocation(loc)))
   }
   actions.appendChild(mkBtn('Delete', () => deleteLocation(loc)))
 
@@ -166,12 +202,23 @@ function renderNode (loc) {
 function renderItemRow (item) {
   const row = document.createElement('div')
   row.className = 'item-row'
+  row.draggable = true
+  row.dataset.itemId = item.id
+
+  row.addEventListener('dragstart', (e) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', item.id)
+    row.classList.add('dragging')
+  })
+  row.addEventListener('dragend', () => {
+    row.classList.remove('dragging')
+  })
 
   const main = document.createElement('div')
   main.className = 'item-row-main'
   main.innerHTML = `<span>${escapeHtml(item.name)}<span class="qty">×${item.quantity}</span></span>`
   const actions = document.createElement('span')
-  actions.appendChild(mkBtn('Verschieben', () => moveItem(item)))
+  actions.appendChild(mkBtn('Move', () => moveItem(item)))
   actions.appendChild(mkBtn('Delete', () => deleteItem(item)))
   main.appendChild(actions)
   row.appendChild(main)
@@ -184,7 +231,7 @@ function renderItemRow (item) {
     badge.innerHTML = `${escapeHtml(cat.name)} `
     const removeBtn = document.createElement('button')
     removeBtn.textContent = '×'
-    removeBtn.title = `"${cat.name}" von diesem Item entfernen`
+    removeBtn.title = `Remove "${cat.name}" from this item`
     removeBtn.onclick = (e) => { e.stopPropagation(); removeCategoryFromItem(item, cat.id) }
     badge.appendChild(removeBtn)
     catRow.appendChild(badge)
@@ -274,7 +321,7 @@ async function moveLocation (loc) {
   const targets = state.locations.filter(l => !forbidden.has(l.id))
   if (!targets.length) return toast('No valid target available.')
   const listStr = targets.map((t, i) => `${i + 1}: ${pathToRoot(t.id)} [${t.type === 'storage_space' ? 'Storage Space' : 'Container'}]`).join('\n')
-  const answer = prompt(`"${loc.name}" wohin verschieben?\n0 = oberste Ebene\n${listStr}`)
+  const answer = prompt(`Move "${loc.name}" to where?\n0 = top level\n${listStr}`)
   if (answer === null) return
   const idx = parseInt(answer, 10)
   if (idx === 0) {
@@ -289,7 +336,7 @@ async function moveLocation (loc) {
 
 async function moveItem (item) {
   const listStr = state.locations.map((l, i) => `${i + 1}: ${pathToRoot(l.id)} [${l.type === 'storage_space' ? 'Storage Space' : 'Container'}]`).join('\n')
-  const answer = prompt(`"${item.name}" wohin verschieben?\n0 = ohne Ort\n${listStr}`)
+  const answer = prompt(`Move "${item.name}" to where?\n0 = no location\n${listStr}`)
   if (answer === null) return
   const idx = parseInt(answer, 10)
   if (idx === 0) {
