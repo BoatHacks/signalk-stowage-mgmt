@@ -684,6 +684,8 @@ async function loadFloorplan (floorplanId) {
 
   document.getElementById('assign-hint').textContent =
     `${assignable.length} assignable area(s) found. Click an area to assign it to a storage space.`
+
+  fitFloorplanSvg()
 }
 
 let locationModalElementId = null
@@ -929,6 +931,17 @@ async function deleteCategory (cat) {
   await refresh()
 }
 
+const expandedCategoryIds = new Set()
+
+function toggleCategoryFold (categoryId) {
+  if (expandedCategoryIds.has(categoryId)) {
+    expandedCategoryIds.delete(categoryId)
+  } else {
+    expandedCategoryIds.add(categoryId)
+  }
+  renderCategories()
+}
+
 function renderCategories () {
   const list = document.getElementById('categories-list')
   list.innerHTML = ''
@@ -937,15 +950,52 @@ function renderCategories () {
     return
   }
   state.categories.forEach(cat => {
-    const count = state.items.filter(i => (i.categories || []).some(c => c.id === cat.id)).length
+    const items = state.items.filter(i => (i.categories || []).some(c => c.id === cat.id))
+    const isExpanded = expandedCategoryIds.has(cat.id)
+
+    const fold = document.createElement('div')
+    fold.className = 'category-fold'
+
     const row = document.createElement('div')
-    row.className = 'category-row'
-    row.innerHTML = `<span>${escapeHtml(cat.name)}<span class="category-count">${count} Item(s)</span></span>`
+    row.className = 'category-row category-fold-header'
+    row.onclick = () => toggleCategoryFold(cat.id)
+
+    const label = document.createElement('span')
+    label.innerHTML = `<span class="fold-arrow">${isExpanded ? '▾' : '▸'}</span>${escapeHtml(cat.name)}<span class="category-count">${items.length} Item(s)</span>`
+    row.appendChild(label)
+
     const actions = document.createElement('span')
+    actions.className = 'node-actions'
     actions.appendChild(mkBtn('Rename', () => renameCategory(cat)))
     actions.appendChild(mkBtn('Delete', () => deleteCategory(cat)))
+    actions.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', (e) => e.stopPropagation())
+    })
     row.appendChild(actions)
-    list.appendChild(row)
+
+    fold.appendChild(row)
+
+    if (isExpanded) {
+      const body = document.createElement('div')
+      body.className = 'category-fold-body'
+      if (!items.length) {
+        body.innerHTML = '<p class="hint">No items in this category.</p>'
+      } else {
+        items.forEach(item => {
+          const wrap = document.createElement('div')
+          wrap.className = 'category-fold-item'
+          const location = document.createElement('div')
+          location.className = 'category-fold-item-location hint'
+          location.textContent = item.location_id ? pathToRoot(item.location_id) : 'no location'
+          wrap.appendChild(location)
+          wrap.appendChild(renderItemRow(item))
+          body.appendChild(wrap)
+        })
+      }
+      fold.appendChild(body)
+    }
+
+    list.appendChild(fold)
   })
 }
 
@@ -954,7 +1004,26 @@ function renderCategories () {
 function switchTab (name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name))
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`))
+  if (name === 'floorplan') fitFloorplanSvg()
 }
+
+// Dynamically caps the floorplan SVG's height so it fits within the visible
+// viewport (in addition to max-width:100% in CSS, which caps its width).
+// Re-run whenever the SVG changes, the floorplan tab becomes active, or the
+// window is resized.
+function fitFloorplanSvg () {
+  const container = document.getElementById('floorplan-container')
+  const svg = container && container.querySelector('svg')
+  if (!svg) return
+  const top = container.getBoundingClientRect().top
+  const available = Math.max(200, window.innerHeight - top - 24)
+  svg.style.maxHeight = `${available}px`
+}
+
+window.addEventListener('resize', () => {
+  const floorplanTabActive = document.getElementById('tab-floorplan').classList.contains('active')
+  if (floorplanTabActive) fitFloorplanSvg()
+})
 
 // ---------- wiring ----------
 

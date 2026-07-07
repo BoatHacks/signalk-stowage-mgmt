@@ -195,19 +195,46 @@ select {
 
 .categories-list { max-width: 480px; }
 
+.category-fold {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
 .category-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
   padding: 10px 14px;
-  margin-bottom: 8px;
   font-size: 14px;
 }
 
+.category-fold-header {
+  cursor: pointer;
+  user-select: none;
+}
+.category-fold-header:hover { background: #fafaf8; }
+
+.fold-arrow {
+  display: inline-block;
+  width: 14px;
+  color: #888;
+  font-size: 11px;
+}
+
 .category-row .category-count { color: #888; font-size: 12px; margin-left: 8px; }
+
+.category-fold-body {
+  border-top: 1px solid #eee;
+  padding: 8px 14px 12px 14px;
+  background: #fbfbf9;
+}
+
+.category-fold-item { margin-bottom: 6px; }
+.category-fold-item-location { margin: 0 0 2px 2px; font-size: 11px; }
+.category-fold-item .item-row { background: #fff; border: 1px solid #eee; }
 
 .svg-mapped-badge {
   font-size: 11px;
@@ -225,7 +252,13 @@ select {
   overflow: auto;
 }
 
-.floorplan-container svg { max-width: 100%; height: auto; }
+.floorplan-container svg {
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
 
 .floorplan-container svg [data-assignable="true"] {
   cursor: pointer;
