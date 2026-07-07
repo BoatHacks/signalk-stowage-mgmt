@@ -760,16 +760,19 @@ async function deleteItem (item) {
 // ---------- floorplan tab ----------
 
 function populateFloorplanSelect () {
-  const select = document.getElementById('floorplan-select')
-  const current = select.value
-  select.innerHTML = '<option value="">Select floorplan…</option>'
-  state.floorplans.forEach(fp => {
-    const opt = document.createElement('option')
-    opt.value = fp.id
-    opt.textContent = fp.name
-    select.appendChild(opt)
-  })
-  if (current) select.value = current
+  const label = document.getElementById('floorplan-name-label')
+  if (!state.floorplans.length) {
+    label.textContent = 'No floorplan uploaded yet.'
+    if (state.currentFloorplanId) loadFloorplan(null)
+    return
+  }
+  // state.floorplans is ordered by uploaded_at DESC (see GET /floorplans),
+  // so the first entry is always the most recently uploaded one.
+  const latest = state.floorplans[0]
+  label.textContent = `${latest.name} (uploaded ${new Date(latest.uploaded_at).toLocaleString()})`
+  if (state.currentFloorplanId !== latest.id) {
+    loadFloorplan(latest.id)
+  }
 }
 
 async function loadFloorplan (floorplanId) {
@@ -912,12 +915,48 @@ async function toggleAreaAssignment (storageSpace, shouldAssign) {
 async function uploadFloorplan (file) {
   const text = await file.text()
   if (!text.includes('<svg')) return toast('This is not a valid SVG file.')
+
+  // This app shows only the single most-recently-uploaded floorplan, so
+  // uploading a new one replaces whatever's currently shown. Any storage
+  // spaces mapped to areas on the old floorplan(s) need to be unmapped
+  // first — warn the user since this is a destructive, non-reversible step.
+  const existingFloorplans = state.floorplans
+  const affectedSpaces = state.locations.filter(
+    l => l.type === 'storage_space' && l.floorplan_id && existingFloorplans.some(fp => fp.id === l.floorplan_id)
+  )
+
+  if (affectedSpaces.length) {
+    const names = affectedSpaces.map(s => s.name).join(', ')
+    const confirmed = confirm(
+      `Uploading a new floorplan will remove the area assignment for ${affectedSpaces.length} ` +
+      `storage space(s): ${names}. This can't be undone. Continue?`
+    )
+    if (!confirmed) return
+    try {
+      for (const space of affectedSpaces) {
+        await api(`/locations/${space.id}/svg-mapping`, {
+          method: 'PATCH',
+          body: JSON.stringify({ floorplan_id: null, svg_element_id: null })
+        })
+      }
+    } catch (e) {
+      return toast(e.message)
+    }
+  }
+
+  try {
+    for (const fp of existingFloorplans) {
+      await api(`/floorplans/${fp.id}`, { method: 'DELETE' })
+    }
+  } catch (e) {
+    return toast(e.message)
+  }
+
   const fp = await api('/floorplans', {
     method: 'POST',
     body: JSON.stringify({ name: file.name.replace(/\.svg$/i, ''), svg_content: text })
   })
   await refresh()
-  document.getElementById('floorplan-select').value = fp.id
   await loadFloorplan(fp.id)
 }
 
@@ -957,7 +996,6 @@ async function locateItem (item) {
   try {
     const result = await api(`/items/${item.id}/locate`)
     switchTab('floorplan')
-    document.getElementById('floorplan-select').value = result.floorplan_id
     await loadFloorplan(result.floorplan_id)
 
     const svg = document.querySelector('#floorplan-container svg')
@@ -1419,7 +1457,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.onclick = () => switchTab(btn.dataset.tab)
   })
 
-  document.getElementById('floorplan-select').onchange = e => loadFloorplan(e.target.value)
   document.getElementById('floorplan-upload').onchange = e => {
     if (e.target.files[0]) uploadFloorplan(e.target.files[0])
     e.target.value = ''

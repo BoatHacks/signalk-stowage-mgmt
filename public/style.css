@@ -86,6 +86,12 @@ header h1 { margin: 0; font-size: 18px; font-weight: 600; }
   flex-wrap: wrap;
 }
 
+.floorplan-name-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
 button, .upload-btn {
   padding: 7px 14px;
   border-radius: 6px;
