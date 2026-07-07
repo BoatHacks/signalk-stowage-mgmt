@@ -144,6 +144,19 @@ select {
 .node-actions { display: flex; gap: 6px; }
 .node-actions button { padding: 4px 8px; font-size: 12px; }
 
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #555;
+}
+.icon-btn svg { display: block; }
+.icon-btn:hover { background: #f0f0f0; color: #222; }
+.icon-btn.danger:hover { background: #fbeaea; border-color: #e3b3b3; color: #a33; }
+
 .children { margin-top: 8px; margin-left: 18px; padding-left: 12px; border-left: 2px solid #eee; }
 
 .item-row { display: block; padding: 6px 8px; border-radius: 6px; }
@@ -155,6 +168,58 @@ select {
   font-size: 13px;
 }
 .item-row .qty { color: #888; font-size: 12px; margin-left: 6px; }
+
+.qty-display {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.qty-display:hover { background: #eef2ff; color: #33389b; }
+
+.qty-editor {
+  display: inline-flex;
+  align-items: stretch;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.qty-input {
+  width: 46px;
+  font-size: 12px;
+  padding: 2px 4px;
+  border: 1px solid #ccc;
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  -moz-appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qty-steppers {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ccc;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+}
+
+.qty-step {
+  width: 18px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: #fff;
+  font-size: 7px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+}
+.qty-step.qty-up { border-bottom: 1px solid #ccc; }
+.qty-step:hover { background: #f0f0f0; }
 
 .item-categories {
   display: flex;
@@ -276,6 +341,13 @@ select {
   fill-opacity: 0.25;
   stroke: #185fa5;
   stroke-width: 1.5;
+}
+
+.floorplan-container svg [data-assignable="true"].floorplan-drop-target {
+  fill: #eaf3ea !important;
+  fill-opacity: 0.6 !important;
+  stroke: #4a8f4a !important;
+  stroke-width: 2.5 !important;
 }
 
 @keyframes inv-blink {

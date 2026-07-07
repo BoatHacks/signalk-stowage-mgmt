@@ -146,10 +146,12 @@ function renderOrphanedPanel () {
 }
 
 let dragDepth = 0
+let currentTab = 'tree'
 function updateOrphanedPanelVisibility () {
   const panel = document.getElementById('orphaned-panel')
+  const hiddenForTab = currentTab === 'overview' || currentTab === 'categories'
   const hasOrphans = childLocations(null).some(l => l.type === 'container') || itemsIn(null).length > 0
-  if (hasOrphans || dragDepth > 0) {
+  if (!hiddenForTab && (hasOrphans || dragDepth > 0)) {
     panel.classList.remove('hidden')
   } else {
     panel.classList.add('hidden')
@@ -250,9 +252,9 @@ function renderNode (loc) {
   actions.appendChild(addItemBtn)
 
   if (loc.type === 'container') {
-    actions.appendChild(mkBtn('Move', () => moveLocation(loc)))
+    actions.appendChild(mkIconBtn('move', 'Move', () => moveLocation(loc)))
   }
-  actions.appendChild(mkBtn('Delete', () => deleteLocation(loc)))
+  actions.appendChild(mkIconBtn('delete', 'Delete', () => deleteLocation(loc), 'danger'))
 
   header.appendChild(actions)
   el.appendChild(header)
@@ -293,11 +295,14 @@ function renderItemRow (item) {
   const thumb = item.thumbnail
     ? `<img class="item-thumb" src="${item.thumbnail}" alt="">`
     : '<span class="item-thumb item-thumb-placeholder"></span>'
-  main.innerHTML = `<span>${thumb}${escapeHtml(item.name)}<span class="qty">×${item.quantity}</span></span>`
+  const info = document.createElement('span')
+  info.innerHTML = `${thumb}${escapeHtml(item.name)}`
+  info.appendChild(renderQuantityDisplay(item, { prefix: '×', className: 'qty' }))
+  main.appendChild(info)
   const actions = document.createElement('span')
-  actions.appendChild(mkBtn('Photo', () => openPhotoDialog(item)))
-  actions.appendChild(mkBtn('Move', () => moveItem(item)))
-  actions.appendChild(mkBtn('Delete', () => deleteItem(item)))
+  actions.appendChild(mkIconBtn('photo', 'Photo', () => openPhotoDialog(item)))
+  actions.appendChild(mkIconBtn('move', 'Move', () => moveItem(item)))
+  actions.appendChild(mkIconBtn('delete', 'Delete', () => deleteItem(item), 'danger'))
   main.appendChild(actions)
   row.appendChild(main)
 
@@ -329,6 +334,112 @@ function mkBtn (label, onClick) {
   b.textContent = label
   b.onclick = onClick
   return b
+}
+
+const ICONS = {
+  photo: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  move: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>',
+  delete: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+}
+
+function mkIconBtn (icon, label, onClick, extraClass) {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.className = 'icon-btn' + (extraClass ? ' ' + extraClass : '')
+  b.innerHTML = ICONS[icon]
+  b.title = label
+  b.setAttribute('aria-label', label)
+  b.onclick = onClick
+  return b
+}
+
+// ---------- editable quantity ----------
+
+function renderQuantityDisplay (item, opts = {}) {
+  const display = document.createElement('span')
+  display.className = 'qty-display' + (opts.className ? ' ' + opts.className : '')
+  display.textContent = `${opts.prefix || ''}${item.quantity}`
+  display.title = 'Click to edit quantity'
+  display.onclick = (e) => {
+    e.stopPropagation()
+    startQuantityEdit(item, display, opts)
+  }
+  return display
+}
+
+function startQuantityEdit (item, display, opts = {}) {
+  let resolved = false
+
+  const editor = document.createElement('span')
+  editor.className = 'qty-editor'
+  editor.onclick = (e) => e.stopPropagation()
+  editor.onmousedown = (e) => e.stopPropagation()
+
+  const input = document.createElement('input')
+  input.type = 'number'
+  input.className = 'qty-input'
+  input.min = '0'
+  input.step = '1'
+  input.value = item.quantity
+
+  const steppers = document.createElement('span')
+  steppers.className = 'qty-steppers'
+  const upBtn = document.createElement('button')
+  upBtn.type = 'button'
+  upBtn.className = 'qty-step qty-up'
+  upBtn.textContent = '▲'
+  upBtn.setAttribute('aria-label', 'Increase quantity')
+  const downBtn = document.createElement('button')
+  downBtn.type = 'button'
+  downBtn.className = 'qty-step qty-down'
+  downBtn.textContent = '▼'
+  downBtn.setAttribute('aria-label', 'Decrease quantity')
+  steppers.append(upBtn, downBtn)
+
+  editor.append(input, steppers)
+
+  const step = (delta) => {
+    input.value = Math.max(0, (parseInt(input.value, 10) || 0) + delta)
+  }
+  // Prevent the buttons from stealing focus on mousedown — otherwise the
+  // input's blur handler would commit/tear down the editor before the
+  // click handler ever runs.
+  upBtn.onmousedown = (e) => e.preventDefault()
+  downBtn.onmousedown = (e) => e.preventDefault()
+  upBtn.onclick = (e) => { e.stopPropagation(); step(1) }
+  downBtn.onclick = (e) => { e.stopPropagation(); step(-1) }
+
+  const finish = (newDisplay) => {
+    if (resolved) return
+    resolved = true
+    editor.replaceWith(newDisplay)
+  }
+  const cancel = () => finish(renderQuantityDisplay(item, opts))
+  const commit = async () => {
+    if (resolved) return
+    const value = Math.max(0, parseInt(input.value, 10) || 0)
+    if (value === item.quantity) return cancel()
+    resolved = true
+    try {
+      await api(`/items/${item.id}`, { method: 'PATCH', body: JSON.stringify({ quantity: value }) })
+      await refresh()
+    } catch (err) {
+      toast(err.message)
+      resolved = false
+      cancel()
+    }
+  }
+
+  input.onkeydown = (e) => {
+    e.stopPropagation()
+    if (e.key === 'Enter') commit()
+    else if (e.key === 'Escape') cancel()
+  }
+  input.onblur = () => commit()
+
+  display.replaceWith(editor)
+  input.focus()
+  input.select()
 }
 
 function escapeHtml (str) {
@@ -680,6 +791,38 @@ async function loadFloorplan (floorplanId) {
     el.setAttribute('data-assignable', 'true')
     if (mappedElementIds.has(el.id)) el.setAttribute('data-mapped', 'true')
     el.addEventListener('click', () => openAssignDialog(el.id))
+
+    // Lets "not stored" items be dragged straight onto a floorplan area to
+    // stow them in whichever storage space that area is assigned to.
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      e.dataTransfer.dropEffect = 'move'
+      el.classList.add('floorplan-drop-target')
+    })
+    el.addEventListener('dragleave', () => el.classList.remove('floorplan-drop-target'))
+    el.addEventListener('drop', async (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      el.classList.remove('floorplan-drop-target')
+      const dragType = e.dataTransfer.getData('application/x-drag-type')
+      const draggedId = e.dataTransfer.getData('text/plain')
+      if (dragType !== 'item' || !draggedId) return
+
+      const target = state.locations.find(
+        l => l.type === 'storage_space' && l.floorplan_id === state.currentFloorplanId && l.svg_element_id === el.id
+      )
+      if (!target) return toast('This area is not assigned to a storage space yet.')
+
+      try {
+        await api(`/items/${draggedId}/move`, { method: 'PATCH', body: JSON.stringify({ location_id: target.id }) })
+        await refresh()
+        await loadFloorplan(state.currentFloorplanId)
+        toast(`Stored in "${target.name}".`)
+      } catch (err) {
+        toast(err.message)
+      }
+    })
   })
 
   document.getElementById('assign-hint').textContent =
@@ -1002,8 +1145,10 @@ function renderCategories () {
 // ---------- tabs ----------
 
 function switchTab (name) {
+  currentTab = name
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name))
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`))
+  updateOrphanedPanelVisibility()
   if (name === 'floorplan') fitFloorplanSvg()
 }
 
