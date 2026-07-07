@@ -97,23 +97,35 @@ function renderTree () {
   root.innerHTML = ''
 
   const topLevel = childLocations(null)
-  if (topLevel.length === 0) {
+  const storageSpaces = topLevel.filter(l => l.type === 'storage_space')
+  if (storageSpaces.length === 0) {
     root.innerHTML = '<p class="hint">No storage spaces created yet.</p>'
   }
-  topLevel.filter(l => l.type === 'storage_space').forEach(loc => root.appendChild(renderNode(loc)))
+  storageSpaces.forEach(loc => root.appendChild(renderNode(loc)))
 
-  renderNoLocationPanel()
+  renderOrphanedPanel()
 }
 
-function renderNoLocationPanel () {
-  const panel = document.getElementById('no-location-panel')
+function renderOrphanedPanel () {
+  const panel = document.getElementById('orphaned-panel')
   panel.innerHTML = ''
 
-  const header = document.createElement('div')
-  header.className = 'node-header'
-  header.innerHTML = '<span class="node-title">No Location</span><span class="node-type">unassigned</span>'
-  addDropTargetHandlers(header, null)
-  panel.appendChild(header)
+  const title = document.createElement('div')
+  title.className = 'orphaned-panel-title'
+  title.textContent = 'Not Stored'
+  panel.appendChild(title)
+
+  const dropHeader = document.createElement('div')
+  dropHeader.className = 'node-header'
+  dropHeader.innerHTML = '<span class="node-title">Drop here to unassign</span>'
+  addDropTargetHandlers(dropHeader, null)
+  panel.appendChild(dropHeader)
+
+  // Top-level containers (parent_id null) aren't nested under any storage
+  // space, so they'd otherwise be invisible in the main tree — surface them
+  // here along with their own children/items.
+  const orphanedContainers = childLocations(null).filter(l => l.type === 'container')
+  orphanedContainers.forEach(loc => panel.appendChild(renderNode(loc)))
 
   const unassigned = itemsIn(null)
   if (unassigned.length) {
@@ -122,16 +134,34 @@ function renderNoLocationPanel () {
     unassigned.forEach(item => list.appendChild(renderItemRow(item)))
     panel.appendChild(list)
   }
+
+  if (!orphanedContainers.length && !unassigned.length) {
+    const empty = document.createElement('p')
+    empty.className = 'hint'
+    empty.textContent = 'Nothing unstored right now.'
+    panel.appendChild(empty)
+  }
+
+  updateOrphanedPanelVisibility()
 }
 
 let dragDepth = 0
+function updateOrphanedPanelVisibility () {
+  const panel = document.getElementById('orphaned-panel')
+  const hasOrphans = childLocations(null).some(l => l.type === 'container') || itemsIn(null).length > 0
+  if (hasOrphans || dragDepth > 0) {
+    panel.classList.remove('hidden')
+  } else {
+    panel.classList.add('hidden')
+  }
+}
 function showNoLocationPanel () {
   dragDepth++
-  document.getElementById('no-location-panel').classList.remove('hidden')
+  updateOrphanedPanelVisibility()
 }
 function hideNoLocationPanel () {
   dragDepth = Math.max(0, dragDepth - 1)
-  if (dragDepth === 0) document.getElementById('no-location-panel').classList.add('hidden')
+  updateOrphanedPanelVisibility()
 }
 
 // Wires up an element as a drag-and-drop target for items and containers.

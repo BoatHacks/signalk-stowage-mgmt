@@ -405,13 +405,13 @@ select {
   padding-top: 12px;
 }
 
-/* ---------- no-location drop panel ---------- */
+/* ---------- orphaned containers / items panel ---------- */
 
-.no-location-panel {
+.orphaned-panel {
   position: fixed;
   top: 100px;
   right: 20px;
-  width: 240px;
+  width: 260px;
   max-height: 70vh;
   overflow-y: auto;
   background: #fff;
@@ -423,16 +423,29 @@ select {
   transition: opacity 0.15s ease;
 }
 
-.no-location-panel.hidden {
+.orphaned-panel.hidden {
   display: none;
 }
 
-.no-location-panel .node-header {
+.orphaned-panel-title {
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.orphaned-panel .node-header {
   padding: 4px 2px;
 }
 
+.orphaned-panel .node {
+  border-style: dashed;
+}
+
 @media (max-width: 900px) {
-  .no-location-panel {
+  .orphaned-panel {
     top: auto;
     bottom: 20px;
     right: 20px;
