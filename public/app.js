@@ -1160,8 +1160,13 @@ function fitFloorplanSvg () {
   const container = document.getElementById('floorplan-container')
   const svg = container && container.querySelector('svg')
   if (!svg) return
+  const style = window.getComputedStyle(container)
+  const verticalChrome =
+    parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
+    parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
   const top = container.getBoundingClientRect().top
-  const available = Math.max(200, window.innerHeight - top - 24)
+  const bottomMargin = 24 // breathing room below the container
+  const available = Math.max(150, window.innerHeight - top - verticalChrome - bottomMargin)
   svg.style.maxHeight = `${available}px`
 }
 
