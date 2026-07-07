@@ -591,7 +591,7 @@ function renderCategories () {
     row.className = 'category-row'
     row.innerHTML = `<span>${escapeHtml(cat.name)}<span class="category-count">${count} Item(s)</span></span>`
     const actions = document.createElement('span')
-    actions.appendChild(mkBtn('Umbenennen', () => renameCategory(cat)))
+    actions.appendChild(mkBtn('Rename', () => renameCategory(cat)))
     actions.appendChild(mkBtn('Delete', () => deleteCategory(cat)))
     row.appendChild(actions)
     list.appendChild(row)
