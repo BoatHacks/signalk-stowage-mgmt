@@ -44,7 +44,7 @@ module.exports = function registerItemRoutes (router, getDb) {
 
   router.post('/items', (req, res) => {
     const {
-      name, description, actual_quantity: actualQuantity, target_quantity: targetQuantity, notes,
+      name, actual_quantity: actualQuantity, target_quantity: targetQuantity, notes,
       location_id: locationId, category_ids: categoryIds
     } = req.body || {}
     if (!name) return res.status(400).json({ error: 'name required' })
@@ -61,8 +61,8 @@ module.exports = function registerItemRoutes (router, getDb) {
     const id = randomUUID()
     const create = db().transaction(() => {
       db().prepare(
-        'INSERT INTO items (id, name, description, actual_quantity, target_quantity, notes, location_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(id, name, description || null, actualQuantity || 1, targetQuantity ?? null, notes || null, locationId || null)
+        'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(id, name, actualQuantity || 1, targetQuantity ?? null, notes || null, locationId || null)
       const link = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
       for (const catId of ids) link.run(id, catId)
     })
@@ -74,20 +74,18 @@ module.exports = function registerItemRoutes (router, getDb) {
     const item = getItemOr404(req.params.id, res)
     if (!item) return
     const body = req.body || {}
-    const { name, description, actual_quantity: actualQuantity } = body
+    const { name, actual_quantity: actualQuantity } = body
     const hasTargetQuantity = Object.prototype.hasOwnProperty.call(body, 'target_quantity')
     const hasNotes = Object.prototype.hasOwnProperty.call(body, 'notes')
     db().prepare(
       `UPDATE items SET
         name = COALESCE(?, name),
-        description = COALESCE(?, description),
         actual_quantity = COALESCE(?, actual_quantity),
         target_quantity = CASE WHEN ? = 1 THEN ? ELSE target_quantity END,
         notes = CASE WHEN ? = 1 THEN ? ELSE notes END
        WHERE id = ?`
     ).run(
       name ?? null,
-      description ?? null,
       actualQuantity ?? null,
       hasTargetQuantity ? 1 : 0, hasTargetQuantity ? (body.target_quantity ?? null) : null,
       hasNotes ? 1 : 0, hasNotes ? (body.notes ?? null) : null,

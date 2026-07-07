@@ -309,7 +309,6 @@ function renderItemRow (item) {
   const actions = document.createElement('span')
   actions.appendChild(mkIconBtn('edit', 'Edit', () => openItemPropertiesDialog(item)))
   actions.appendChild(mkIconBtn('photo', 'Photo', () => openPhotoDialog(item)))
-  actions.appendChild(mkIconBtn('notes', 'Notes', () => openNotesDialog(item)))
   actions.appendChild(mkIconBtn('move', 'Move', () => moveItem(item)))
   actions.appendChild(mkIconBtn('delete', 'Delete', () => deleteItem(item), 'danger'))
   main.appendChild(actions)
@@ -1225,10 +1224,11 @@ function openItemPropertiesDialog (item) {
   propertiesModalItemId = item.id
   document.getElementById('properties-modal-title').textContent = `Properties for "${item.name}"`
   document.getElementById('properties-name-input').value = item.name
-  document.getElementById('properties-description-input').value = item.description || ''
   document.getElementById('properties-actual-qty-input').value = item.actual_quantity
   document.getElementById('properties-target-qty-input').value =
     item.target_quantity === null || item.target_quantity === undefined ? '' : item.target_quantity
+  document.getElementById('properties-notes-textarea').value = item.notes || ''
+  showPropertiesNotesTab('write')
   document.getElementById('properties-modal-overlay').classList.remove('hidden')
 }
 
@@ -1237,51 +1237,11 @@ function closePropertiesModal () {
   propertiesModalItemId = null
 }
 
-async function savePropertiesModal () {
-  const name = document.getElementById('properties-name-input').value.trim()
-  if (!name) return toast('Name is required.')
-  const description = document.getElementById('properties-description-input').value
-  const actualQuantityRaw = document.getElementById('properties-actual-qty-input').value
-  const targetQuantityRaw = document.getElementById('properties-target-qty-input').value
-
-  const body = {
-    name,
-    description,
-    actual_quantity: Math.max(0, parseInt(actualQuantityRaw, 10) || 0),
-    target_quantity: targetQuantityRaw === '' ? null : Math.max(0, parseInt(targetQuantityRaw, 10) || 0)
-  }
-
-  try {
-    await api(`/items/${propertiesModalItemId}`, { method: 'PATCH', body: JSON.stringify(body) })
-    await refresh()
-    closePropertiesModal()
-  } catch (e) {
-    toast(e.message)
-  }
-}
-
-// ---------- notes modal (markdown editor) ----------
-
-let notesModalItemId = null
-
-function openNotesDialog (item) {
-  notesModalItemId = item.id
-  document.getElementById('notes-modal-title').textContent = `Notes for "${item.name}"`
-  document.getElementById('notes-textarea').value = item.notes || ''
-  showNotesTab('write')
-  document.getElementById('notes-modal-overlay').classList.remove('hidden')
-}
-
-function closeNotesModal () {
-  document.getElementById('notes-modal-overlay').classList.add('hidden')
-  notesModalItemId = null
-}
-
-function showNotesTab (which) {
-  const writeTab = document.getElementById('notes-tab-write')
-  const previewTab = document.getElementById('notes-tab-preview')
-  const textarea = document.getElementById('notes-textarea')
-  const preview = document.getElementById('notes-preview')
+function showPropertiesNotesTab (which) {
+  const writeTab = document.getElementById('properties-notes-tab-write')
+  const previewTab = document.getElementById('properties-notes-tab-preview')
+  const textarea = document.getElementById('properties-notes-textarea')
+  const preview = document.getElementById('properties-notes-preview')
   const isWrite = which === 'write'
   writeTab.classList.toggle('active', isWrite)
   previewTab.classList.toggle('active', !isWrite)
@@ -1290,12 +1250,24 @@ function showNotesTab (which) {
   if (!isWrite) preview.innerHTML = renderMarkdown(textarea.value)
 }
 
-async function saveNotesModal () {
-  const notes = document.getElementById('notes-textarea').value
+async function savePropertiesModal () {
+  const name = document.getElementById('properties-name-input').value.trim()
+  if (!name) return toast('Name is required.')
+  const actualQuantityRaw = document.getElementById('properties-actual-qty-input').value
+  const targetQuantityRaw = document.getElementById('properties-target-qty-input').value
+  const notes = document.getElementById('properties-notes-textarea').value
+
+  const body = {
+    name,
+    actual_quantity: Math.max(0, parseInt(actualQuantityRaw, 10) || 0),
+    target_quantity: targetQuantityRaw === '' ? null : Math.max(0, parseInt(targetQuantityRaw, 10) || 0),
+    notes: notes || null
+  }
+
   try {
-    await api(`/items/${notesModalItemId}`, { method: 'PATCH', body: JSON.stringify({ notes: notes || null }) })
+    await api(`/items/${propertiesModalItemId}`, { method: 'PATCH', body: JSON.stringify(body) })
     await refresh()
-    closeNotesModal()
+    closePropertiesModal()
   } catch (e) {
     toast(e.message)
   }
@@ -1420,14 +1392,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.id === 'properties-modal-overlay') closePropertiesModal()
   }
   document.getElementById('properties-modal-save').onclick = savePropertiesModal
-
-  document.getElementById('notes-modal-close').onclick = closeNotesModal
-  document.getElementById('notes-modal-overlay').onclick = (e) => {
-    if (e.target.id === 'notes-modal-overlay') closeNotesModal()
-  }
-  document.getElementById('notes-tab-write').onclick = () => showNotesTab('write')
-  document.getElementById('notes-tab-preview').onclick = () => showNotesTab('preview')
-  document.getElementById('notes-modal-save').onclick = saveNotesModal
+  document.getElementById('properties-notes-tab-write').onclick = () => showPropertiesNotesTab('write')
+  document.getElementById('properties-notes-tab-preview').onclick = () => showPropertiesNotesTab('preview')
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -1435,7 +1401,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       closeLocationModal()
       closePhotoModal()
       closePropertiesModal()
-      closeNotesModal()
     }
   })
   document.getElementById('category-modal-new').onclick = async () => {

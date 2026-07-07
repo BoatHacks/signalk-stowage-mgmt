@@ -33,7 +33,6 @@ function initDb (dataDir) {
     CREATE TABLE IF NOT EXISTS items (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      description TEXT,
       actual_quantity INTEGER NOT NULL DEFAULT 1,
       target_quantity INTEGER,
       notes TEXT,
@@ -73,6 +72,27 @@ function initDb (dataDir) {
   }
   if (!itemColumnsAfterRename.includes('notes')) {
     db.exec('ALTER TABLE items ADD COLUMN notes TEXT')
+  }
+  if (itemColumnsAfterRename.includes('description')) {
+    // Merge any existing description text into notes (description first,
+    // separated by a blank line if notes already had content), then drop
+    // the now-redundant column.
+    db.exec(`
+      UPDATE items SET notes =
+        CASE
+          WHEN description IS NULL OR trim(description) = '' THEN notes
+          WHEN notes IS NULL OR trim(notes) = '' THEN description
+          ELSE description || char(10) || char(10) || notes
+        END
+      WHERE description IS NOT NULL AND trim(description) != ''
+    `)
+    try {
+      db.exec('ALTER TABLE items DROP COLUMN description')
+    } catch (err) {
+      // Older SQLite builds (pre-3.35) don't support DROP COLUMN. The data
+      // has already been merged into notes above, so this is safe to leave
+      // as an unused, ignored column if the drop isn't supported.
+    }
   }
 
   const categoryCount = db.prepare('SELECT COUNT(*) c FROM categories').get().c

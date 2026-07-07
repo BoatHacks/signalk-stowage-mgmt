@@ -138,7 +138,7 @@
   </div>
 
   <div id="properties-modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
+    <div class="modal modal-wide">
       <div class="modal-header">
         <h2 id="properties-modal-title">Item Properties</h2>
         <button id="properties-modal-close" class="modal-close" aria-label="Close">×</button>
@@ -147,11 +147,6 @@
       <div class="form-field">
         <label for="properties-name-input">Name</label>
         <input id="properties-name-input" type="text">
-      </div>
-
-      <div class="form-field">
-        <label for="properties-description-input">Description</label>
-        <textarea id="properties-description-input" rows="3"></textarea>
       </div>
 
       <div class="form-field-row">
@@ -165,29 +160,18 @@
         </div>
       </div>
 
+      <div class="form-field">
+        <label>Notes</label>
+        <div class="notes-editor-tabs">
+          <button id="properties-notes-tab-write" class="notes-editor-tab active" type="button">Write</button>
+          <button id="properties-notes-tab-preview" class="notes-editor-tab" type="button">Preview</button>
+        </div>
+        <textarea id="properties-notes-textarea" class="notes-textarea" placeholder="Markdown supported: **bold**, _italic_, # headings, - lists, `code`, [links](url)…"></textarea>
+        <div id="properties-notes-preview" class="notes-preview hidden"></div>
+      </div>
+
       <div class="modal-footer">
         <button id="properties-modal-save" class="primary-btn">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="notes-modal-overlay" class="modal-overlay hidden">
-    <div class="modal modal-wide">
-      <div class="modal-header">
-        <h2 id="notes-modal-title">Notes</h2>
-        <button id="notes-modal-close" class="modal-close" aria-label="Close">×</button>
-      </div>
-
-      <div class="notes-editor-tabs">
-        <button id="notes-tab-write" class="notes-editor-tab active" type="button">Write</button>
-        <button id="notes-tab-preview" class="notes-editor-tab" type="button">Preview</button>
-      </div>
-
-      <textarea id="notes-textarea" class="notes-textarea" placeholder="Markdown supported: **bold**, _italic_, # headings, - lists, `code`, [links](url)…"></textarea>
-      <div id="notes-preview" class="notes-preview hidden"></div>
-
-      <div class="modal-footer">
-        <button id="notes-modal-save" class="primary-btn">Save Notes</button>
       </div>
     </div>
   </div>
