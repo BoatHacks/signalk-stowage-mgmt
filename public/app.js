@@ -1266,7 +1266,7 @@ function openItemPropertiesDialog (item) {
   document.getElementById('properties-target-qty-input').value =
     item.target_quantity === null || item.target_quantity === undefined ? '' : item.target_quantity
   document.getElementById('properties-notes-textarea').value = item.notes || ''
-  showPropertiesNotesTab('write')
+  showPropertiesNotesTab('show')
   document.getElementById('properties-modal-overlay').classList.remove('hidden')
 }
 
@@ -1276,16 +1276,16 @@ function closePropertiesModal () {
 }
 
 function showPropertiesNotesTab (which) {
-  const writeTab = document.getElementById('properties-notes-tab-write')
-  const previewTab = document.getElementById('properties-notes-tab-preview')
+  const showTab = document.getElementById('properties-notes-tab-show')
+  const editTab = document.getElementById('properties-notes-tab-edit')
   const textarea = document.getElementById('properties-notes-textarea')
   const preview = document.getElementById('properties-notes-preview')
-  const isWrite = which === 'write'
-  writeTab.classList.toggle('active', isWrite)
-  previewTab.classList.toggle('active', !isWrite)
-  textarea.classList.toggle('hidden', !isWrite)
-  preview.classList.toggle('hidden', isWrite)
-  if (!isWrite) preview.innerHTML = renderMarkdown(textarea.value)
+  const isShow = which === 'show'
+  showTab.classList.toggle('active', isShow)
+  editTab.classList.toggle('active', !isShow)
+  textarea.classList.toggle('hidden', isShow)
+  preview.classList.toggle('hidden', !isShow)
+  if (isShow) preview.innerHTML = renderMarkdown(textarea.value)
 }
 
 async function savePropertiesModal () {
@@ -1430,8 +1430,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.id === 'properties-modal-overlay') closePropertiesModal()
   }
   document.getElementById('properties-modal-save').onclick = savePropertiesModal
-  document.getElementById('properties-notes-tab-write').onclick = () => showPropertiesNotesTab('write')
-  document.getElementById('properties-notes-tab-preview').onclick = () => showPropertiesNotesTab('preview')
+  document.getElementById('properties-notes-tab-show').onclick = () => showPropertiesNotesTab('show')
+  document.getElementById('properties-notes-tab-edit').onclick = () => showPropertiesNotesTab('edit')
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
