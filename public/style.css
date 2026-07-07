@@ -168,6 +168,7 @@ select {
   font-size: 13px;
 }
 .item-row .qty { color: #888; font-size: 12px; margin-left: 6px; }
+.qty-target-inline { color: #a35f00; font-size: 12px; margin-left: 2px; }
 
 .qty-display {
   cursor: pointer;

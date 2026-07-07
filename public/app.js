@@ -298,6 +298,13 @@ function renderItemRow (item) {
   const info = document.createElement('span')
   info.innerHTML = `${thumb}${escapeHtml(item.name)}`
   info.appendChild(renderQuantityDisplay(item, { prefix: '×', className: 'qty' }))
+  if (item.target_quantity !== null && item.target_quantity !== undefined) {
+    const target = document.createElement('span')
+    target.className = 'qty-target-inline'
+    target.textContent = ` / ${item.target_quantity}`
+    target.title = 'Target quantity'
+    info.appendChild(target)
+  }
   main.appendChild(info)
   const actions = document.createElement('span')
   actions.appendChild(mkIconBtn('edit', 'Edit', () => openItemPropertiesDialog(item)))
