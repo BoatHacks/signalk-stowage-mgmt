@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,31 +10,31 @@
   <header>
     <h1>Stowage Management</h1>
     <div class="search-box">
-      <input id="search-input" type="text" placeholder="Item suchen…" autocomplete="off">
+      <input id="search-input" type="text" placeholder="Search items…" autocomplete="off">
       <div id="search-results" class="search-results"></div>
     </div>
   </header>
 
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="tree">Bestand</button>
-    <button class="tab-btn" data-tab="floorplan">Grundriss</button>
-    <button class="tab-btn" data-tab="overview">Übersicht</button>
-    <button class="tab-btn" data-tab="categories">Kategorien</button>
+    <button class="tab-btn active" data-tab="tree">Inventory</button>
+    <button class="tab-btn" data-tab="floorplan">Floorplan</button>
+    <button class="tab-btn" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="categories">Categories</button>
   </nav>
 
   <main>
     <section id="tab-tree" class="tab-panel active">
       <div class="toolbar">
-        <button id="add-storage-space">+ Stauraum</button>
+        <button id="add-storage-space">+ Storage Space</button>
       </div>
       <div id="tree-root" class="tree"></div>
     </section>
 
     <section id="tab-floorplan" class="tab-panel">
       <div class="toolbar">
-        <select id="floorplan-select"><option value="">Grundriss wählen…</option></select>
+        <select id="floorplan-select"><option value="">Select floorplan…</option></select>
         <label class="upload-btn">
-          SVG hochladen
+          Upload SVG
           <input id="floorplan-upload" type="file" accept=".svg,image/svg+xml" hidden>
         </label>
         <span id="assign-hint" class="hint"></span>
@@ -44,18 +44,18 @@
 
     <section id="tab-overview" class="tab-panel">
       <div class="toolbar">
-        <input id="overview-filter" type="text" placeholder="Tabelle filtern…" style="flex:1; max-width:320px; padding:7px 10px; border-radius:6px; border:1px solid #ccc; font-size:13px;">
-        <span class="hint">Klick auf eine Zeile springt zum Grundriss (falls zugeordnet).</span>
+        <input id="overview-filter" type="text" placeholder="Filter table…" style="flex:1; max-width:320px; padding:7px 10px; border-radius:6px; border:1px solid #ccc; font-size:13px;">
+        <span class="hint">Clicking a row jumps to the floorplan (if assigned).</span>
       </div>
       <table id="overview-table" class="overview-table">
         <thead>
           <tr>
             <th data-sort="name">Item</th>
-            <th data-sort="quantity">Menge</th>
-            <th data-sort="directLocation">Direkter Ort</th>
-            <th data-sort="fullPath">Vollständiger Pfad</th>
-            <th data-sort="categoryNames">Kategorien</th>
-            <th data-sort="onFloorplan">Im Grundriss</th>
+            <th data-sort="quantity">Quantity</th>
+            <th data-sort="directLocation">Direct Location</th>
+            <th data-sort="fullPath">Full Path</th>
+            <th data-sort="categoryNames">Categories</th>
+            <th data-sort="onFloorplan">On Floorplan</th>
           </tr>
         </thead>
         <tbody id="overview-tbody"></tbody>
@@ -64,7 +64,7 @@
 
     <section id="tab-categories" class="tab-panel">
       <div class="toolbar">
-        <button id="add-category">+ Kategorie</button>
+        <button id="add-category">+ Category</button>
       </div>
       <div id="categories-list" class="categories-list"></div>
     </section>

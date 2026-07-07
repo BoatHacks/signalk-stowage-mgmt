@@ -98,7 +98,7 @@ function renderTree () {
 
   const topLevel = childLocations(null)
   if (topLevel.length === 0) {
-    root.innerHTML = '<p class="hint">Noch keine Stauräume angelegt.</p>'
+    root.innerHTML = '<p class="hint">No storage spaces created yet.</p>'
   }
   topLevel.filter(l => l.type === 'storage_space').forEach(loc => root.appendChild(renderNode(loc)))
 
@@ -106,7 +106,7 @@ function renderTree () {
   if (unassigned.length) {
     const wrap = document.createElement('div')
     wrap.className = 'node'
-    wrap.innerHTML = '<div class="node-header"><span class="node-title">Ohne Ort</span><span class="node-type">nicht zugeordnet</span></div>'
+    wrap.innerHTML = '<div class="node-header"><span class="node-title">No Location</span><span class="node-type">unassigned</span></div>'
     const list = document.createElement('div')
     list.className = 'children'
     unassigned.forEach(item => list.appendChild(renderItemRow(item)))
@@ -129,7 +129,7 @@ function renderNode (loc) {
   header.innerHTML = `
     <span>
       <span class="node-title">${escapeHtml(loc.name)}</span>
-      <span class="node-type">${loc.type === 'storage_space' ? 'Stauraum' : 'Container'}</span>
+      <span class="node-type">${loc.type === 'storage_space' ? 'Storage Space' : 'Container'}</span>
       ${mappedBadge}
     </span>
   `
@@ -145,7 +145,7 @@ function renderNode (loc) {
   if (loc.type === 'container') {
     actions.appendChild(mkBtn('Verschieben', () => moveLocation(loc)))
   }
-  actions.appendChild(mkBtn('Löschen', () => deleteLocation(loc)))
+  actions.appendChild(mkBtn('Delete', () => deleteLocation(loc)))
 
   header.appendChild(actions)
   el.appendChild(header)
@@ -172,7 +172,7 @@ function renderItemRow (item) {
   main.innerHTML = `<span>${escapeHtml(item.name)}<span class="qty">×${item.quantity}</span></span>`
   const actions = document.createElement('span')
   actions.appendChild(mkBtn('Verschieben', () => moveItem(item)))
-  actions.appendChild(mkBtn('Löschen', () => deleteItem(item)))
+  actions.appendChild(mkBtn('Delete', () => deleteItem(item)))
   main.appendChild(actions)
   row.appendChild(main)
 
@@ -191,7 +191,7 @@ function renderItemRow (item) {
   })
   const addBtn = document.createElement('button')
   addBtn.className = 'add-category-inline'
-  addBtn.textContent = '+ Kategorie'
+  addBtn.textContent = '+ Category'
   addBtn.onclick = (e) => { e.stopPropagation(); addCategoryToItem(item) }
   catRow.appendChild(addBtn)
   row.appendChild(catRow)
@@ -215,14 +215,14 @@ function escapeHtml (str) {
 // ---------- location / item actions ----------
 
 async function addStorageSpace () {
-  const name = prompt('Name des neuen Stauraums (z.B. "Backskiste"):')
+  const name = prompt('Name of the new storage space (e.g. "Lazarette"):')
   if (!name) return
   await api('/locations', { method: 'POST', body: JSON.stringify({ name, type: 'storage_space' }) })
   await refresh()
 }
 
 async function addContainer (parentId) {
-  const name = prompt('Name des neuen Containers (z.B. "Erste-Hilfe-Box"):')
+  const name = prompt('Name of the new container (e.g. "First Aid Box"):')
   if (!name) return
   await api('/locations', { method: 'POST', body: JSON.stringify({ name, type: 'container', parent_id: parentId }) })
   await refresh()
@@ -231,13 +231,13 @@ async function addContainer (parentId) {
 async function addItem (locationId) {
   const name = prompt('Item-Name:')
   if (!name) return
-  const qtyRaw = prompt('Menge:', '1')
+  const qtyRaw = prompt('Quantity:', '1')
   const quantity = parseInt(qtyRaw, 10) || 1
 
   let categoryIds = []
   if (state.categories.length) {
     const listStr = state.categories.map((c, i) => `${i + 1}: ${c.name}`).join('\n')
-    const catAnswer = prompt(`Kategorien zuweisen (kommagetrennte Nummern, optional):\n${listStr}`, '')
+    const catAnswer = prompt(`Assign categories (comma-separated numbers, optional):\n${listStr}`, '')
     if (catAnswer) {
       categoryIds = catAnswer.split(',')
         .map(s => parseInt(s.trim(), 10))
@@ -253,9 +253,9 @@ async function addItem (locationId) {
 async function addCategoryToItem (item) {
   const assignedIds = new Set((item.categories || []).map(c => c.id))
   const available = state.categories.filter(c => !assignedIds.has(c.id))
-  if (!available.length) return toast('Alle vorhandenen Kategorien sind diesem Item bereits zugeordnet.')
+  if (!available.length) return toast('All existing categories are already assigned to this item.')
   const listStr = available.map((c, i) => `${i + 1}: ${c.name}`).join('\n')
-  const answer = prompt(`Welche Kategorie zu "${item.name}" hinzufügen?\n${listStr}`)
+  const answer = prompt(`Which category to add to "${item.name}"?\n${listStr}`)
   if (answer === null) return
   const idx = parseInt(answer, 10)
   if (idx > 0 && idx <= available.length) {
@@ -272,8 +272,8 @@ async function removeCategoryFromItem (item, categoryId) {
 async function moveLocation (loc) {
   const forbidden = new Set([loc.id, ...descendantIds(loc.id)])
   const targets = state.locations.filter(l => !forbidden.has(l.id))
-  if (!targets.length) return toast('Kein gültiges Ziel verfügbar.')
-  const listStr = targets.map((t, i) => `${i + 1}: ${pathToRoot(t.id)} [${t.type === 'storage_space' ? 'Stauraum' : 'Container'}]`).join('\n')
+  if (!targets.length) return toast('No valid target available.')
+  const listStr = targets.map((t, i) => `${i + 1}: ${pathToRoot(t.id)} [${t.type === 'storage_space' ? 'Storage Space' : 'Container'}]`).join('\n')
   const answer = prompt(`"${loc.name}" wohin verschieben?\n0 = oberste Ebene\n${listStr}`)
   if (answer === null) return
   const idx = parseInt(answer, 10)
@@ -288,7 +288,7 @@ async function moveLocation (loc) {
 }
 
 async function moveItem (item) {
-  const listStr = state.locations.map((l, i) => `${i + 1}: ${pathToRoot(l.id)} [${l.type === 'storage_space' ? 'Stauraum' : 'Container'}]`).join('\n')
+  const listStr = state.locations.map((l, i) => `${i + 1}: ${pathToRoot(l.id)} [${l.type === 'storage_space' ? 'Storage Space' : 'Container'}]`).join('\n')
   const answer = prompt(`"${item.name}" wohin verschieben?\n0 = ohne Ort\n${listStr}`)
   if (answer === null) return
   const idx = parseInt(answer, 10)
@@ -303,7 +303,7 @@ async function moveItem (item) {
 }
 
 async function deleteLocation (loc) {
-  if (!confirm(`"${loc.name}" wirklich löschen?`)) return
+  if (!confirm(`Really delete "${loc.name}"?`)) return
   try {
     await api(`/locations/${loc.id}`, { method: 'DELETE' })
     await refresh()
@@ -313,7 +313,7 @@ async function deleteLocation (loc) {
 }
 
 async function deleteItem (item) {
-  if (!confirm(`"${item.name}" wirklich löschen?`)) return
+  if (!confirm(`Really delete "${item.name}"?`)) return
   await api(`/items/${item.id}`, { method: 'DELETE' })
   await refresh()
 }
@@ -323,7 +323,7 @@ async function deleteItem (item) {
 function populateFloorplanSelect () {
   const select = document.getElementById('floorplan-select')
   const current = select.value
-  select.innerHTML = '<option value="">Grundriss wählen…</option>'
+  select.innerHTML = '<option value="">Select floorplan…</option>'
   state.floorplans.forEach(fp => {
     const opt = document.createElement('option')
     opt.value = fp.id
@@ -336,7 +336,7 @@ function populateFloorplanSelect () {
 async function loadFloorplan (floorplanId) {
   const container = document.getElementById('floorplan-container')
   if (!floorplanId) {
-    container.innerHTML = '<p class="hint">Wähle oben einen Grundriss aus oder lade eine SVG-Datei hoch.</p>'
+    container.innerHTML = '<p class="hint">Select a floorplan above or upload an SVG file.</p>'
     state.currentFloorplanId = null
     return
   }
@@ -346,7 +346,7 @@ async function loadFloorplan (floorplanId) {
 
   const svg = container.querySelector('svg')
   if (!svg) {
-    container.innerHTML = '<p class="hint">Diese Datei enthält kein gültiges &lt;svg&gt;.</p>'
+    container.innerHTML = '<p class="hint">This file does not contain a valid &lt;svg&gt;.</p>'
     return
   }
 
@@ -368,17 +368,17 @@ async function loadFloorplan (floorplanId) {
   })
 
   document.getElementById('assign-hint').textContent =
-    `${assignable.length} zuweisbare Fläche(n) gefunden. Klicke eine Fläche an, um sie einem Stauraum zuzuordnen.`
+    `${assignable.length} assignable area(s) found. Click an area to assign it to a storage space.`
 }
 
 async function assignAreaToStorageSpace (svgElementId) {
   const storageSpaces = state.locations.filter(l => l.type === 'storage_space')
-  if (!storageSpaces.length) return toast('Lege zuerst einen Stauraum im Tab "Bestand" an.')
+  if (!storageSpaces.length) return toast('Create a storage space in the "Inventory" tab first.')
 
   const listStr = storageSpaces
     .map((s, i) => `${i + 1}: ${s.name}${s.svg_element_id === svgElementId ? ' (aktuell zugeordnet)' : ''}`)
     .join('\n')
-  const answer = prompt(`Fläche "${svgElementId}" welchem Stauraum zuordnen?\n0 = Zuordnung entfernen\n${listStr}`)
+  const answer = prompt(`Assign area "${svgElementId}" to which storage space?\n0 = remove assignment\n${listStr}`)
   if (answer === null) return
   const idx = parseInt(answer, 10)
 
@@ -407,7 +407,7 @@ async function assignAreaToStorageSpace (svgElementId) {
 
 async function uploadFloorplan (file) {
   const text = await file.text()
-  if (!text.includes('<svg')) return toast('Das ist keine gültige SVG-Datei.')
+  if (!text.includes('<svg')) return toast('This is not a valid SVG file.')
   const fp = await api('/floorplans', {
     method: 'POST',
     body: JSON.stringify({ name: file.name.replace(/\.svg$/i, ''), svg_content: text })
@@ -439,7 +439,7 @@ function renderSearchResults (query) {
   matches.forEach(item => {
     const row = document.createElement('div')
     row.className = 'search-result'
-    const where = item.location_id ? pathToRoot(item.location_id) : 'ohne Ort'
+    const where = item.location_id ? pathToRoot(item.location_id) : 'no location'
     row.innerHTML = `${escapeHtml(item.name)}<span class="path">${escapeHtml(where)}</span>`
     row.onclick = () => locateItem(item)
     box.appendChild(row)
@@ -464,7 +464,7 @@ async function locateItem (item) {
       target.classList.add('inv-blinking')
       target.scrollIntoView({ behavior: 'smooth', block: 'center' })
       blinkTimer = setTimeout(() => target.classList.remove('inv-blinking'), 6000)
-      toast(`"${item.name}" liegt in ${result.storage_space.name}`)
+      toast(`"${item.name}" is located in ${result.storage_space.name}`)
     }
   } catch (e) {
     toast(`"${item.name}": ${e.message}`)
@@ -485,8 +485,8 @@ function buildOverviewRows () {
       name: item.name,
       quantity: item.quantity,
       directLocation: directLoc ? directLoc.name : '\u2014',
-      directType: directLoc ? (directLoc.type === 'storage_space' ? 'Stauraum' : 'Container') : '',
-      fullPath: item.location_id ? pathToRoot(item.location_id) : 'ohne Ort',
+      directType: directLoc ? (directLoc.type === 'storage_space' ? 'Storage Space' : 'Container') : '',
+      fullPath: item.location_id ? pathToRoot(item.location_id) : 'no location',
       categoryNames: categoryNames || '\u2014',
       onFloorplan: !!mapped
     }
@@ -549,7 +549,7 @@ function renderOverview () {
 // ---------- category management ----------
 
 async function addCategory () {
-  const name = prompt('Name der neuen Kategorie (z.B. "Elektrik"):')
+  const name = prompt('Name of the new category (e.g. "Electrical"):')
   if (!name) return
   try {
     await api('/categories', { method: 'POST', body: JSON.stringify({ name }) })
@@ -560,7 +560,7 @@ async function addCategory () {
 }
 
 async function renameCategory (cat) {
-  const name = prompt('Neuer Name:', cat.name)
+  const name = prompt('New name:', cat.name)
   if (!name || name === cat.name) return
   try {
     await api(`/categories/${cat.id}`, { method: 'PATCH', body: JSON.stringify({ name }) })
@@ -573,7 +573,7 @@ async function renameCategory (cat) {
 async function deleteCategory (cat) {
   const count = state.items.filter(i => (i.categories || []).some(c => c.id === cat.id)).length
   const warning = count > 0 ? ` Sie ist aktuell ${count} Item(s) zugeordnet — diese Zuordnung wird ebenfalls entfernt.` : ''
-  if (!confirm(`Kategorie "${cat.name}" wirklich löschen?${warning}`)) return
+  if (!confirm(`Really delete category "${cat.name}"?${warning}`)) return
   await api(`/categories/${cat.id}`, { method: 'DELETE' })
   await refresh()
 }
@@ -582,7 +582,7 @@ function renderCategories () {
   const list = document.getElementById('categories-list')
   list.innerHTML = ''
   if (!state.categories.length) {
-    list.innerHTML = '<p class="hint">Noch keine Kategorien angelegt.</p>'
+    list.innerHTML = '<p class="hint">No categories created yet.</p>'
     return
   }
   state.categories.forEach(cat => {
@@ -592,7 +592,7 @@ function renderCategories () {
     row.innerHTML = `<span>${escapeHtml(cat.name)}<span class="category-count">${count} Item(s)</span></span>`
     const actions = document.createElement('span')
     actions.appendChild(mkBtn('Umbenennen', () => renameCategory(cat)))
-    actions.appendChild(mkBtn('Löschen', () => deleteCategory(cat)))
+    actions.appendChild(mkBtn('Delete', () => deleteCategory(cat)))
     row.appendChild(actions)
     list.appendChild(row)
   })
@@ -656,6 +656,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     await refresh()
   } catch (e) {
-    toast('Fehler beim Laden: ' + e.message)
+    toast('Error loading: ' + e.message)
   }
 })
