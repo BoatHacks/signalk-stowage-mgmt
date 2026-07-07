@@ -785,3 +785,12 @@ select {
 }
 
 .understocked-chip-actions { display: flex; }
+
+/* ---------- export as markdown ---------- */
+
+.export-textarea {
+  min-height: 400px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  white-space: pre;
+}

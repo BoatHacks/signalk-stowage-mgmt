@@ -1194,6 +1194,67 @@ function renderCategories () {
   })
 }
 
+// ---------- export as markdown ----------
+
+function itemMarkdownLine (item) {
+  let line = `- ${item.name} — ×${item.actual_quantity}`
+  if (item.target_quantity !== null && item.target_quantity !== undefined) {
+    line += ` (target ${item.target_quantity})`
+  }
+  const cats = (item.categories || []).map(c => c.name)
+  if (cats.length) line += ` [${cats.join(', ')}]`
+  return line
+}
+
+function buildInventoryMarkdown () {
+  const lines = ['# Inventory Export', '']
+
+  const renderLocation = (loc, depth) => {
+    const headingLevel = Math.min(depth + 1, 6)
+    lines.push(`${'#'.repeat(headingLevel)} ${loc.name}`)
+    lines.push('')
+    const items = itemsIn(loc.id)
+    items.forEach(item => lines.push(itemMarkdownLine(item)))
+    if (items.length) lines.push('')
+    childLocations(loc.id).forEach(child => renderLocation(child, depth + 1))
+  }
+
+  const topLevel = childLocations(null).filter(l => l.type === 'storage_space')
+  topLevel.forEach(loc => renderLocation(loc, 1))
+
+  const orphanedContainers = childLocations(null).filter(l => l.type === 'container')
+  const unassignedItems = itemsIn(null)
+  if (orphanedContainers.length || unassignedItems.length) {
+    lines.push('## Not Stored')
+    lines.push('')
+    orphanedContainers.forEach(loc => renderLocation(loc, 2))
+    unassignedItems.forEach(item => lines.push(itemMarkdownLine(item)))
+    if (unassignedItems.length) lines.push('')
+  }
+
+  return lines.join('\n').trim() + '\n'
+}
+
+function openExportModal () {
+  document.getElementById('export-markdown-textarea').value = buildInventoryMarkdown()
+  document.getElementById('export-modal-overlay').classList.remove('hidden')
+}
+
+function closeExportModal () {
+  document.getElementById('export-modal-overlay').classList.add('hidden')
+}
+
+async function copyExportMarkdown () {
+  const textarea = document.getElementById('export-markdown-textarea')
+  try {
+    await navigator.clipboard.writeText(textarea.value)
+  } catch (e) {
+    textarea.select()
+    document.execCommand('copy')
+  }
+  toast('Copied to clipboard.')
+}
+
 // ---------- understocked page ----------
 
 function renderUnderstocked () {
@@ -1406,6 +1467,12 @@ async function refresh () {
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('add-storage-space').onclick = addStorageSpace
   document.getElementById('add-category').onclick = addCategory
+  document.getElementById('export-markdown-btn').onclick = openExportModal
+  document.getElementById('export-modal-close').onclick = closeExportModal
+  document.getElementById('export-modal-overlay').onclick = (e) => {
+    if (e.target.id === 'export-modal-overlay') closeExportModal()
+  }
+  document.getElementById('export-modal-copy').onclick = copyExportMarkdown
 
   document.getElementById('category-modal-close').onclick = closeCategoryModal
   document.getElementById('category-modal-overlay').onclick = (e) => {
@@ -1439,6 +1506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       closeLocationModal()
       closePhotoModal()
       closePropertiesModal()
+      closeExportModal()
     }
   })
   document.getElementById('category-modal-new').onclick = async () => {

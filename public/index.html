@@ -27,6 +27,7 @@
     <section id="tab-tree" class="tab-panel active">
       <div class="toolbar">
         <button id="add-storage-space">+ Storage Space</button>
+        <button id="export-markdown-btn">Export as Markdown</button>
       </div>
       <div id="tree-root" class="tree"></div>
     </section>
@@ -102,6 +103,20 @@
       </div>
       <p class="hint">Click a storage space to assign this area to it, or click it again to remove the assignment.</p>
       <div id="location-modal-chips" class="category-chip-list"></div>
+    </div>
+  </div>
+
+  <div id="export-modal-overlay" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2>Export as Markdown</h2>
+        <button id="export-modal-close" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <p class="hint">Select all and copy, or use the button below.</p>
+      <textarea id="export-markdown-textarea" class="notes-textarea export-textarea" readonly></textarea>
+      <div class="modal-footer">
+        <button id="export-modal-copy" class="primary-btn">Copy to Clipboard</button>
+      </div>
     </div>
   </div>
 
