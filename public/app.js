@@ -159,7 +159,7 @@ function renderNode (loc) {
   addDropTargetHandlers(header, loc.id)
 
   const mappedBadge = loc.type === 'storage_space' && loc.svg_element_id
-    ? '<span class="svg-mapped-badge">im Grundriss</span>'
+    ? '<span class="svg-mapped-badge">on plan</span>'
     : ''
 
   header.innerHTML = `
@@ -239,7 +239,7 @@ function renderItemRow (item) {
   const addBtn = document.createElement('button')
   addBtn.className = 'add-category-inline'
   addBtn.textContent = '+ Category'
-  addBtn.onclick = (e) => { e.stopPropagation(); addCategoryToItem(item) }
+  addBtn.onclick = (e) => { e.stopPropagation(); openCategoryDialog(item) }
   catRow.appendChild(addBtn)
   row.appendChild(catRow)
 
@@ -297,17 +297,53 @@ async function addItem (locationId) {
   await refresh()
 }
 
-async function addCategoryToItem (item) {
+let categoryModalItemId = null
+
+function closeCategoryModal () {
+  document.getElementById('category-modal-overlay').classList.add('hidden')
+  categoryModalItemId = null
+}
+
+function openCategoryDialog (item) {
+  categoryModalItemId = item.id
+  document.getElementById('category-modal-title').textContent = `Categories for "${item.name}"`
+  renderCategoryModalChips()
+  document.getElementById('category-modal-overlay').classList.remove('hidden')
+}
+
+function renderCategoryModalChips () {
+  const chipList = document.getElementById('category-modal-chips')
+  chipList.innerHTML = ''
+  const item = state.items.find(i => i.id === categoryModalItemId)
+  if (!item) return closeCategoryModal()
+
+  if (!state.categories.length) {
+    chipList.innerHTML = '<span class="category-chip-empty">No categories exist yet. Create one below.</span>'
+    return
+  }
+
   const assignedIds = new Set((item.categories || []).map(c => c.id))
-  const available = state.categories.filter(c => !assignedIds.has(c.id))
-  if (!available.length) return toast('All existing categories are already assigned to this item.')
-  const listStr = available.map((c, i) => `${i + 1}: ${c.name}`).join('\n')
-  const answer = prompt(`Which category to add to "${item.name}"?\n${listStr}`)
-  if (answer === null) return
-  const idx = parseInt(answer, 10)
-  if (idx > 0 && idx <= available.length) {
-    await api(`/items/${item.id}/categories`, { method: 'POST', body: JSON.stringify({ category_id: available[idx - 1].id }) })
+  state.categories.forEach(cat => {
+    const chip = document.createElement('button')
+    chip.type = 'button'
+    chip.className = 'category-chip' + (assignedIds.has(cat.id) ? ' assigned' : '')
+    chip.textContent = cat.name
+    chip.onclick = () => toggleCategoryOnItem(item, cat.id, !assignedIds.has(cat.id))
+    chipList.appendChild(chip)
+  })
+}
+
+async function toggleCategoryOnItem (item, categoryId, shouldAssign) {
+  try {
+    if (shouldAssign) {
+      await api(`/items/${item.id}/categories`, { method: 'POST', body: JSON.stringify({ category_id: categoryId }) })
+    } else {
+      await api(`/items/${item.id}/categories/${categoryId}`, { method: 'DELETE' })
+    }
     await refresh()
+    if (categoryModalItemId === item.id) renderCategoryModalChips()
+  } catch (e) {
+    toast(e.message)
   }
 }
 
@@ -411,45 +447,76 @@ async function loadFloorplan (floorplanId) {
   assignable.forEach(el => {
     el.setAttribute('data-assignable', 'true')
     if (mappedElementIds.has(el.id)) el.setAttribute('data-mapped', 'true')
-    el.addEventListener('click', () => assignAreaToStorageSpace(el.id))
+    el.addEventListener('click', () => openAssignDialog(el.id))
   })
 
   document.getElementById('assign-hint').textContent =
     `${assignable.length} assignable area(s) found. Click an area to assign it to a storage space.`
 }
 
-async function assignAreaToStorageSpace (svgElementId) {
+let locationModalElementId = null
+
+function closeLocationModal () {
+  document.getElementById('location-modal-overlay').classList.add('hidden')
+  locationModalElementId = null
+}
+
+function openAssignDialog (svgElementId) {
+  locationModalElementId = svgElementId
+  document.getElementById('location-modal-title').textContent = `Assign area "${svgElementId}"`
+  renderLocationModalChips()
+  document.getElementById('location-modal-overlay').classList.remove('hidden')
+}
+
+function renderLocationModalChips () {
+  const chipList = document.getElementById('location-modal-chips')
+  chipList.innerHTML = ''
   const storageSpaces = state.locations.filter(l => l.type === 'storage_space')
-  if (!storageSpaces.length) return toast('Create a storage space in the "Inventory" tab first.')
 
-  const listStr = storageSpaces
-    .map((s, i) => `${i + 1}: ${s.name}${s.svg_element_id === svgElementId ? ' (aktuell zugeordnet)' : ''}`)
-    .join('\n')
-  const answer = prompt(`Assign area "${svgElementId}" to which storage space?\n0 = remove assignment\n${listStr}`)
-  if (answer === null) return
-  const idx = parseInt(answer, 10)
-
-  // Clear any existing location that already points at this exact element,
-  // so an SVG area never maps to more than one storage space.
-  const existingOwner = state.locations.find(
-    l => l.floorplan_id === state.currentFloorplanId && l.svg_element_id === svgElementId
-  )
-  if (existingOwner) {
-    await api(`/locations/${existingOwner.id}/svg-mapping`, {
-      method: 'PATCH',
-      body: JSON.stringify({ floorplan_id: null, svg_element_id: null })
-    })
+  if (!storageSpaces.length) {
+    chipList.innerHTML = '<span class="category-chip-empty">Create a storage space in the "Inventory" tab first.</span>'
+    return
   }
 
-  if (idx > 0 && idx <= storageSpaces.length) {
-    await api(`/locations/${storageSpaces[idx - 1].id}/svg-mapping`, {
-      method: 'PATCH',
-      body: JSON.stringify({ floorplan_id: state.currentFloorplanId, svg_element_id: svgElementId })
-    })
-  }
+  storageSpaces.forEach(s => {
+    const isAssigned = s.floorplan_id === state.currentFloorplanId && s.svg_element_id === locationModalElementId
+    const chip = document.createElement('button')
+    chip.type = 'button'
+    chip.className = 'category-chip' + (isAssigned ? ' assigned' : '')
+    chip.textContent = s.name
+    chip.onclick = () => toggleAreaAssignment(s, !isAssigned)
+    chipList.appendChild(chip)
+  })
+}
 
-  await refresh()
-  await loadFloorplan(state.currentFloorplanId)
+async function toggleAreaAssignment (storageSpace, shouldAssign) {
+  const svgElementId = locationModalElementId
+  try {
+    // Clear any existing location that already points at this exact element,
+    // so an SVG area never maps to more than one storage space.
+    const existingOwner = state.locations.find(
+      l => l.floorplan_id === state.currentFloorplanId && l.svg_element_id === svgElementId
+    )
+    if (existingOwner) {
+      await api(`/locations/${existingOwner.id}/svg-mapping`, {
+        method: 'PATCH',
+        body: JSON.stringify({ floorplan_id: null, svg_element_id: null })
+      })
+    }
+
+    if (shouldAssign) {
+      await api(`/locations/${storageSpace.id}/svg-mapping`, {
+        method: 'PATCH',
+        body: JSON.stringify({ floorplan_id: state.currentFloorplanId, svg_element_id: svgElementId })
+      })
+    }
+
+    await refresh()
+    await loadFloorplan(state.currentFloorplanId)
+    if (locationModalElementId === svgElementId) renderLocationModalChips()
+  } catch (e) {
+    toast(e.message)
+  }
 }
 
 async function uploadFloorplan (file) {
@@ -619,7 +686,7 @@ async function renameCategory (cat) {
 
 async function deleteCategory (cat) {
   const count = state.items.filter(i => (i.categories || []).some(c => c.id === cat.id)).length
-  const warning = count > 0 ? ` Sie ist aktuell ${count} Item(s) zugeordnet — diese Zuordnung wird ebenfalls entfernt.` : ''
+  const warning = count > 0 ? ` It is currently assigned to ${count} item(s) — this assignment will also be removed.` : ''
   if (!confirm(`Really delete category "${cat.name}"?${warning}`)) return
   await api(`/categories/${cat.id}`, { method: 'DELETE' })
   await refresh()
@@ -665,6 +732,32 @@ async function refresh () {
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('add-storage-space').onclick = addStorageSpace
   document.getElementById('add-category').onclick = addCategory
+
+  document.getElementById('category-modal-close').onclick = closeCategoryModal
+  document.getElementById('category-modal-overlay').onclick = (e) => {
+    if (e.target.id === 'category-modal-overlay') closeCategoryModal()
+  }
+  document.getElementById('location-modal-close').onclick = closeLocationModal
+  document.getElementById('location-modal-overlay').onclick = (e) => {
+    if (e.target.id === 'location-modal-overlay') closeLocationModal()
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeCategoryModal()
+      closeLocationModal()
+    }
+  })
+  document.getElementById('category-modal-new').onclick = async () => {
+    const name = prompt('Name of the new category (e.g. "Electrical"):')
+    if (!name) return
+    try {
+      await api('/categories', { method: 'POST', body: JSON.stringify({ name }) })
+      await refresh()
+      if (categoryModalItemId) renderCategoryModalChips()
+    } catch (e) {
+      toast(e.message)
+    }
+  }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = () => switchTab(btn.dataset.tab)

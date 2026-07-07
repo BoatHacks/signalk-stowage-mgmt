@@ -72,6 +72,31 @@
 
   <div id="toast" class="toast"></div>
 
+  <div id="category-modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="category-modal-title">Categories</h2>
+        <button id="category-modal-close" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <p class="hint">Click a category to assign or remove it.</p>
+      <div id="category-modal-chips" class="category-chip-list"></div>
+      <div class="modal-footer">
+        <button id="category-modal-new">+ New Category</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="location-modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="location-modal-title">Assign area</h2>
+        <button id="location-modal-close" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <p class="hint">Click a storage space to assign this area to it, or click it again to remove the assignment.</p>
+      <div id="location-modal-chips" class="category-chip-list"></div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
