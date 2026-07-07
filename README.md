@@ -1,5 +1,7 @@
 # SignalK Stowage Management
 
+> ⚠️ **Warning:** this is 100% vibecoded AI slop, install and use at your own risk, and always remember: only you can prevent grey goo! never release nanobot assemblers without replication limiting code.
+
 Inventory manager for Signal K Server. Organize items into containers and
 storage spaces (nested to any depth), upload an SVG floorplan of your boat,
 map areas on the floorplan to storage spaces, and make the matching area
