@@ -36,6 +36,7 @@ function initDb (dataDir) {
       description TEXT,
       quantity INTEGER NOT NULL DEFAULT 1,
       location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
+      thumbnail TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -56,6 +57,11 @@ function initDb (dataDir) {
     CREATE INDEX IF NOT EXISTS idx_items_location ON items(location_id);
     CREATE INDEX IF NOT EXISTS idx_item_categories_category ON item_categories(category_id);
   `)
+
+  const itemColumns = db.prepare("PRAGMA table_info(items)").all().map(c => c.name)
+  if (!itemColumns.includes('thumbnail')) {
+    db.exec('ALTER TABLE items ADD COLUMN thumbnail TEXT')
+  }
 
   const categoryCount = db.prepare('SELECT COUNT(*) c FROM categories').get().c
   if (categoryCount === 0) {

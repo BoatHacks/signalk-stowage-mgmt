@@ -134,6 +134,10 @@ select {
 .item-row.dragging { opacity: 0.4; }
 .item-row:active { cursor: grabbing; }
 
+.node-header.draggable-node { cursor: grab; }
+.node-header.draggable-node:active { cursor: grabbing; }
+.node-header.dragging { opacity: 0.4; }
+
 .node-title { font-weight: 600; font-size: 14px; }
 .node-type { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.03em; }
 
@@ -399,4 +403,106 @@ select {
   justify-content: flex-end;
   border-top: 1px solid #eee;
   padding-top: 12px;
+}
+
+/* ---------- no-location drop panel ---------- */
+
+.no-location-panel {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  width: 240px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 2px dashed #bbb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 900;
+  transition: opacity 0.15s ease;
+}
+
+.no-location-panel.hidden {
+  display: none;
+}
+
+.no-location-panel .node-header {
+  padding: 4px 2px;
+}
+
+@media (max-width: 900px) {
+  .no-location-panel {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
+    left: 20px;
+    width: auto;
+  }
+}
+
+/* ---------- item thumbnails ---------- */
+
+.item-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  vertical-align: middle;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+.item-thumb-placeholder {
+  background: #eee;
+  border: 1px dashed #ccc;
+}
+
+.overview-table .item-thumb {
+  width: 36px;
+  height: 36px;
+  margin-right: 0;
+}
+
+/* ---------- photo capture / crop dialog ---------- */
+
+.photo-crop-viewport {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #222;
+  touch-action: none;
+}
+
+#photo-crop-image {
+  position: absolute;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#photo-crop-image:active { cursor: grabbing; }
+
+.photo-modal-footer {
+  justify-content: space-between;
+}
+
+.primary-btn {
+  background: #2f6f2f;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.primary-btn:hover { background: #275e27; }
+
+#photo-modal-remove {
+  color: #a33;
+  border-color: #d9b3b3;
 }

@@ -76,6 +76,19 @@ module.exports = function registerItemRoutes (router, getDb) {
     res.json(withCategories(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 
+  // Sets or clears an item's thumbnail. Body: { thumbnail } — a data URI
+  // string, or null/omitted to remove the thumbnail entirely.
+  router.patch('/items/:id/thumbnail', (req, res) => {
+    const item = getItemOr404(req.params.id, res)
+    if (!item) return
+    const { thumbnail } = req.body || {}
+    if (thumbnail && typeof thumbnail !== 'string') {
+      return res.status(400).json({ error: 'thumbnail must be a string (data URI) or null' })
+    }
+    db().prepare('UPDATE items SET thumbnail = ? WHERE id = ?').run(thumbnail || null, item.id)
+    res.json(withCategories(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
+  })
+
   // Add one category to an item. Body: { category_id }
   router.post('/items/:id/categories', (req, res) => {
     const item = getItemOr404(req.params.id, res)

@@ -102,27 +102,40 @@ function renderTree () {
   }
   topLevel.filter(l => l.type === 'storage_space').forEach(loc => root.appendChild(renderNode(loc)))
 
+  renderNoLocationPanel()
+}
+
+function renderNoLocationPanel () {
+  const panel = document.getElementById('no-location-panel')
+  panel.innerHTML = ''
+
+  const header = document.createElement('div')
+  header.className = 'node-header'
+  header.innerHTML = '<span class="node-title">No Location</span><span class="node-type">unassigned</span>'
+  addDropTargetHandlers(header, null)
+  panel.appendChild(header)
+
   const unassigned = itemsIn(null)
-  if (unassigned.length || true) {
-    const wrap = document.createElement('div')
-    wrap.className = 'node'
-    const header = document.createElement('div')
-    header.className = 'node-header'
-    header.innerHTML = '<span class="node-title">No Location</span><span class="node-type">unassigned</span>'
-    addDropTargetHandlers(header, null)
-    wrap.appendChild(header)
-    if (unassigned.length) {
-      const list = document.createElement('div')
-      list.className = 'children'
-      unassigned.forEach(item => list.appendChild(renderItemRow(item)))
-      wrap.appendChild(list)
-    }
-    root.appendChild(wrap)
+  if (unassigned.length) {
+    const list = document.createElement('div')
+    list.className = 'children'
+    unassigned.forEach(item => list.appendChild(renderItemRow(item)))
+    panel.appendChild(list)
   }
 }
 
-// Wires up a node-header element as a drag-and-drop target for items.
-// `locationId` is the destination (null = unassign / no location).
+let dragDepth = 0
+function showNoLocationPanel () {
+  dragDepth++
+  document.getElementById('no-location-panel').classList.remove('hidden')
+}
+function hideNoLocationPanel () {
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) document.getElementById('no-location-panel').classList.add('hidden')
+}
+
+// Wires up an element as a drag-and-drop target for items and containers.
+// `locationId` is the destination (null = unassign item / move container to top level).
 function addDropTargetHandlers (el, locationId) {
   el.addEventListener('dragover', (e) => {
     e.preventDefault()
@@ -135,12 +148,23 @@ function addDropTargetHandlers (el, locationId) {
   el.addEventListener('drop', async (e) => {
     e.preventDefault()
     el.classList.remove('drop-target')
-    const itemId = e.dataTransfer.getData('text/plain')
-    if (!itemId) return
-    const item = state.items.find(i => i.id === itemId)
-    if (!item || (item.location_id || null) === (locationId || null)) return
+    const dragType = e.dataTransfer.getData('application/x-drag-type')
+    const draggedId = e.dataTransfer.getData('text/plain')
+    if (!draggedId) return
+
     try {
-      await api(`/items/${itemId}/move`, { method: 'PATCH', body: JSON.stringify({ location_id: locationId }) })
+      if (dragType === 'container') {
+        if (draggedId === locationId) return
+        const forbidden = new Set([draggedId, ...descendantIds(draggedId)])
+        if (forbidden.has(locationId)) return toast("Can't move a container into itself or its own contents.")
+        const loc = state.locations.find(l => l.id === draggedId)
+        if (!loc || (loc.parent_id || null) === (locationId || null)) return
+        await api(`/locations/${draggedId}/move`, { method: 'PATCH', body: JSON.stringify({ parent_id: locationId }) })
+      } else {
+        const item = state.items.find(i => i.id === draggedId)
+        if (!item || (item.location_id || null) === (locationId || null)) return
+        await api(`/items/${draggedId}/move`, { method: 'PATCH', body: JSON.stringify({ location_id: locationId }) })
+      }
       await refresh()
     } catch (err) {
       toast(err.message)
@@ -157,6 +181,23 @@ function renderNode (loc) {
   header.dataset.locationId = loc.id
 
   addDropTargetHandlers(header, loc.id)
+
+  if (loc.type === 'container') {
+    header.draggable = true
+    header.classList.add('draggable-node')
+    header.addEventListener('dragstart', (e) => {
+      e.stopPropagation()
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', loc.id)
+      e.dataTransfer.setData('application/x-drag-type', 'container')
+      header.classList.add('dragging')
+      showNoLocationPanel()
+    })
+    header.addEventListener('dragend', () => {
+      header.classList.remove('dragging')
+      hideNoLocationPanel()
+    })
+  }
 
   const mappedBadge = loc.type === 'storage_space' && loc.svg_element_id
     ? '<span class="svg-mapped-badge">on plan</span>'
@@ -208,16 +249,23 @@ function renderItemRow (item) {
   row.addEventListener('dragstart', (e) => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', item.id)
+    e.dataTransfer.setData('application/x-drag-type', 'item')
     row.classList.add('dragging')
+    showNoLocationPanel()
   })
   row.addEventListener('dragend', () => {
     row.classList.remove('dragging')
+    hideNoLocationPanel()
   })
 
   const main = document.createElement('div')
   main.className = 'item-row-main'
-  main.innerHTML = `<span>${escapeHtml(item.name)}<span class="qty">×${item.quantity}</span></span>`
+  const thumb = item.thumbnail
+    ? `<img class="item-thumb" src="${item.thumbnail}" alt="">`
+    : '<span class="item-thumb item-thumb-placeholder"></span>'
+  main.innerHTML = `<span>${thumb}${escapeHtml(item.name)}<span class="qty">×${item.quantity}</span></span>`
   const actions = document.createElement('span')
+  actions.appendChild(mkBtn('Photo', () => openPhotoDialog(item)))
   actions.appendChild(mkBtn('Move', () => moveItem(item)))
   actions.appendChild(mkBtn('Delete', () => deleteItem(item)))
   main.appendChild(actions)
@@ -350,6 +398,160 @@ async function toggleCategoryOnItem (item, categoryId, shouldAssign) {
 async function removeCategoryFromItem (item, categoryId) {
   await api(`/items/${item.id}/categories/${categoryId}`, { method: 'DELETE' })
   await refresh()
+}
+
+// ---------- photo capture / square-crop dialog ----------
+
+const PHOTO_VIEWPORT_SIZE = 280
+const PHOTO_OUTPUT_SIZE = 300
+
+const photoState = {
+  itemId: null,
+  naturalWidth: 0,
+  naturalHeight: 0,
+  baseScale: 1,
+  zoomPercent: 100,
+  offsetX: 0,
+  offsetY: 0,
+  dragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  dragStartOffsetX: 0,
+  dragStartOffsetY: 0
+}
+
+function openPhotoDialog (item) {
+  photoState.itemId = item.id
+  document.getElementById('photo-modal-title').textContent = `Photo for "${item.name}"`
+  document.getElementById('photo-modal-empty').classList.remove('hidden')
+  document.getElementById('photo-modal-editor').classList.add('hidden')
+  document.getElementById('photo-modal-remove').style.display = item.thumbnail ? '' : 'none'
+  document.getElementById('photo-file-input').value = ''
+  document.getElementById('photo-modal-overlay').classList.remove('hidden')
+}
+
+function closePhotoModal () {
+  document.getElementById('photo-modal-overlay').classList.add('hidden')
+  photoState.itemId = null
+}
+
+function loadPhotoFile (file) {
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const img = document.getElementById('photo-crop-image')
+    img.onload = () => {
+      photoState.naturalWidth = img.naturalWidth
+      photoState.naturalHeight = img.naturalHeight
+      photoState.baseScale = PHOTO_VIEWPORT_SIZE / Math.min(img.naturalWidth, img.naturalHeight)
+      photoState.zoomPercent = 100
+      const scaledW = img.naturalWidth * photoState.baseScale
+      const scaledH = img.naturalHeight * photoState.baseScale
+      photoState.offsetX = (PHOTO_VIEWPORT_SIZE - scaledW) / 2
+      photoState.offsetY = (PHOTO_VIEWPORT_SIZE - scaledH) / 2
+      document.getElementById('photo-zoom-slider').value = 100
+      applyPhotoTransform()
+      document.getElementById('photo-modal-empty').classList.add('hidden')
+      document.getElementById('photo-modal-editor').classList.remove('hidden')
+    }
+    img.src = reader.result
+  }
+  reader.readAsDataURL(file)
+}
+
+function currentPhotoScale () {
+  return photoState.baseScale * (photoState.zoomPercent / 100)
+}
+
+function clampPhotoOffsets () {
+  const scale = currentPhotoScale()
+  const scaledW = photoState.naturalWidth * scale
+  const scaledH = photoState.naturalHeight * scale
+  const minX = Math.min(0, PHOTO_VIEWPORT_SIZE - scaledW)
+  const minY = Math.min(0, PHOTO_VIEWPORT_SIZE - scaledH)
+  photoState.offsetX = Math.max(minX, Math.min(0, photoState.offsetX))
+  photoState.offsetY = Math.max(minY, Math.min(0, photoState.offsetY))
+}
+
+function applyPhotoTransform () {
+  clampPhotoOffsets()
+  const img = document.getElementById('photo-crop-image')
+  const scale = currentPhotoScale()
+  img.style.width = `${photoState.naturalWidth * scale}px`
+  img.style.height = `${photoState.naturalHeight * scale}px`
+  img.style.left = `${photoState.offsetX}px`
+  img.style.top = `${photoState.offsetY}px`
+}
+
+function initPhotoCropInteractions () {
+  const viewport = document.getElementById('photo-crop-viewport')
+  const img = document.getElementById('photo-crop-image')
+
+  const startDrag = (clientX, clientY) => {
+    photoState.dragging = true
+    photoState.dragStartX = clientX
+    photoState.dragStartY = clientY
+    photoState.dragStartOffsetX = photoState.offsetX
+    photoState.dragStartOffsetY = photoState.offsetY
+  }
+  const moveDrag = (clientX, clientY) => {
+    if (!photoState.dragging) return
+    photoState.offsetX = photoState.dragStartOffsetX + (clientX - photoState.dragStartX)
+    photoState.offsetY = photoState.dragStartOffsetY + (clientY - photoState.dragStartY)
+    applyPhotoTransform()
+  }
+  const endDrag = () => { photoState.dragging = false }
+
+  img.addEventListener('mousedown', (e) => { e.preventDefault(); startDrag(e.clientX, e.clientY) })
+  window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY))
+  window.addEventListener('mouseup', endDrag)
+
+  img.addEventListener('touchstart', (e) => {
+    const t = e.touches[0]
+    startDrag(t.clientX, t.clientY)
+  }, { passive: true })
+  viewport.addEventListener('touchmove', (e) => {
+    const t = e.touches[0]
+    moveDrag(t.clientX, t.clientY)
+  }, { passive: true })
+  viewport.addEventListener('touchend', endDrag)
+
+  document.getElementById('photo-zoom-slider').addEventListener('input', (e) => {
+    photoState.zoomPercent = parseInt(e.target.value, 10)
+    applyPhotoTransform()
+  })
+}
+
+async function savePhotoThumbnail () {
+  const canvas = document.createElement('canvas')
+  canvas.width = PHOTO_OUTPUT_SIZE
+  canvas.height = PHOTO_OUTPUT_SIZE
+  const ctx = canvas.getContext('2d')
+  const scale = currentPhotoScale()
+  const srcX = -photoState.offsetX / scale
+  const srcY = -photoState.offsetY / scale
+  const srcSize = PHOTO_VIEWPORT_SIZE / scale
+  const img = document.getElementById('photo-crop-image')
+  ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, PHOTO_OUTPUT_SIZE, PHOTO_OUTPUT_SIZE)
+  const dataUri = canvas.toDataURL('image/jpeg', 0.85)
+
+  try {
+    await api(`/items/${photoState.itemId}/thumbnail`, { method: 'PATCH', body: JSON.stringify({ thumbnail: dataUri }) })
+    await refresh()
+    closePhotoModal()
+  } catch (e) {
+    toast(e.message)
+  }
+}
+
+async function removePhotoThumbnail () {
+  try {
+    await api(`/items/${photoState.itemId}/thumbnail`, { method: 'PATCH', body: JSON.stringify({ thumbnail: null }) })
+    await refresh()
+    closePhotoModal()
+  } catch (e) {
+    toast(e.message)
+  }
 }
 
 async function moveLocation (loc) {
@@ -598,6 +800,7 @@ function buildOverviewRows () {
       item,
       name: item.name,
       quantity: item.quantity,
+      thumbnail: item.thumbnail || null,
       directLocation: directLoc ? directLoc.name : '\u2014',
       directType: directLoc ? (directLoc.type === 'storage_space' ? 'Storage Space' : 'Container') : '',
       fullPath: item.location_id ? pathToRoot(item.location_id) : 'no location',
@@ -641,19 +844,23 @@ function renderOverview () {
 
   tbody.innerHTML = ''
   if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Keine Items gefunden.</td></tr>'
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No items found.</td></tr>'
     return
   }
 
   rows.forEach(r => {
     const tr = document.createElement('tr')
+    const thumbCell = r.thumbnail
+      ? `<img class="item-thumb" src="${r.thumbnail}" alt="">`
+      : '<span class="item-thumb item-thumb-placeholder"></span>'
     tr.innerHTML = `
+      <td>${thumbCell}</td>
       <td>${escapeHtml(r.name)}</td>
       <td>${r.quantity}</td>
       <td>${escapeHtml(r.directLocation)}${r.directType ? ` <span class="node-type">${r.directType}</span>` : ''}</td>
       <td>${escapeHtml(r.fullPath)}</td>
       <td>${escapeHtml(r.categoryNames)}</td>
-      <td>${r.onFloorplan ? '<span class="badge-yes">ja</span>' : '<span class="badge-no">nein</span>'}</td>
+      <td>${r.onFloorplan ? '<span class="badge-yes">yes</span>' : '<span class="badge-no">no</span>'}</td>
     `
     tr.onclick = () => locateItem(r.item)
     tbody.appendChild(tr)
@@ -741,10 +948,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('location-modal-overlay').onclick = (e) => {
     if (e.target.id === 'location-modal-overlay') closeLocationModal()
   }
+  document.getElementById('photo-modal-close').onclick = closePhotoModal
+  document.getElementById('photo-modal-overlay').onclick = (e) => {
+    if (e.target.id === 'photo-modal-overlay') closePhotoModal()
+  }
+  document.getElementById('photo-file-input').onchange = (e) => loadPhotoFile(e.target.files[0])
+  document.getElementById('photo-modal-choose-different').onclick = () => document.getElementById('photo-file-input').click()
+  document.getElementById('photo-modal-save').onclick = savePhotoThumbnail
+  document.getElementById('photo-modal-remove').onclick = removePhotoThumbnail
+  initPhotoCropInteractions()
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeCategoryModal()
       closeLocationModal()
+      closePhotoModal()
     }
   })
   document.getElementById('category-modal-new').onclick = async () => {
