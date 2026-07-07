@@ -624,3 +624,157 @@ select {
   color: #a33;
   border-color: #d9b3b3;
 }
+
+/* ---------- modal wide variant + form fields (item properties) ---------- */
+
+.modal-wide {
+  max-width: 620px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex: 1;
+}
+
+.form-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.form-field input,
+.form-field textarea {
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.form-field textarea { resize: vertical; }
+
+.form-field-row {
+  display: flex;
+  gap: 12px;
+}
+
+/* ---------- notes markdown editor ---------- */
+
+.notes-editor-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.notes-editor-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #777;
+  cursor: pointer;
+}
+
+.notes-editor-tab.active {
+  color: #22221f;
+  border-bottom-color: #2f6f2f;
+  font-weight: 600;
+}
+
+.notes-textarea {
+  width: 100%;
+  min-height: 260px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.notes-preview {
+  min-height: 260px;
+  padding: 10px 14px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  background: #fbfbf9;
+  font-size: 14px;
+  overflow-y: auto;
+}
+
+.notes-preview h1, .notes-preview h2, .notes-preview h3,
+.notes-preview h4, .notes-preview h5, .notes-preview h6 {
+  margin: 0.6em 0 0.3em;
+}
+.notes-preview p { margin: 0.4em 0; }
+.notes-preview ul, .notes-preview ol { margin: 0.4em 0; padding-left: 1.4em; }
+.notes-preview code {
+  background: #eee;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 0.9em;
+}
+.notes-preview a { color: #185fa5; }
+
+/* ---------- understocked page ---------- */
+
+.understocked-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.understocked-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 16px 12px;
+  gap: 10px;
+}
+
+.understocked-chip-thumb {
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.understocked-chip-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.understocked-chip-thumb.item-thumb-placeholder {
+  background: #eee;
+  border: 1px dashed #ccc;
+}
+
+.understocked-chip-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.understocked-chip-qty {
+  font-size: 13px;
+  color: #555;
+}
+
+.understocked-chip-qty .qty-actual {
+  font-weight: 600;
+  color: #a35f00;
+}
+
+.understocked-chip-actions { display: flex; }

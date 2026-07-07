@@ -34,7 +34,9 @@ function initDb (dataDir) {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
-      quantity INTEGER NOT NULL DEFAULT 1,
+      actual_quantity INTEGER NOT NULL DEFAULT 1,
+      target_quantity INTEGER,
+      notes TEXT,
       location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
       thumbnail TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -61,6 +63,16 @@ function initDb (dataDir) {
   const itemColumns = db.prepare("PRAGMA table_info(items)").all().map(c => c.name)
   if (!itemColumns.includes('thumbnail')) {
     db.exec('ALTER TABLE items ADD COLUMN thumbnail TEXT')
+  }
+  if (itemColumns.includes('quantity') && !itemColumns.includes('actual_quantity')) {
+    db.exec('ALTER TABLE items RENAME COLUMN quantity TO actual_quantity')
+  }
+  const itemColumnsAfterRename = db.prepare("PRAGMA table_info(items)").all().map(c => c.name)
+  if (!itemColumnsAfterRename.includes('target_quantity')) {
+    db.exec('ALTER TABLE items ADD COLUMN target_quantity INTEGER')
+  }
+  if (!itemColumnsAfterRename.includes('notes')) {
+    db.exec('ALTER TABLE items ADD COLUMN notes TEXT')
   }
 
   const categoryCount = db.prepare('SELECT COUNT(*) c FROM categories').get().c

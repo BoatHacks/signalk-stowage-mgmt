@@ -149,7 +149,7 @@ let dragDepth = 0
 let currentTab = 'tree'
 function updateOrphanedPanelVisibility () {
   const panel = document.getElementById('orphaned-panel')
-  const hiddenForTab = currentTab === 'overview' || currentTab === 'categories'
+  const hiddenForTab = currentTab === 'overview' || currentTab === 'categories' || currentTab === 'understocked'
   const hasOrphans = childLocations(null).some(l => l.type === 'container') || itemsIn(null).length > 0
   if (!hiddenForTab && (hasOrphans || dragDepth > 0)) {
     panel.classList.remove('hidden')
@@ -300,7 +300,9 @@ function renderItemRow (item) {
   info.appendChild(renderQuantityDisplay(item, { prefix: '×', className: 'qty' }))
   main.appendChild(info)
   const actions = document.createElement('span')
+  actions.appendChild(mkIconBtn('edit', 'Edit', () => openItemPropertiesDialog(item)))
   actions.appendChild(mkIconBtn('photo', 'Photo', () => openPhotoDialog(item)))
+  actions.appendChild(mkIconBtn('notes', 'Notes', () => openNotesDialog(item)))
   actions.appendChild(mkIconBtn('move', 'Move', () => moveItem(item)))
   actions.appendChild(mkIconBtn('delete', 'Delete', () => deleteItem(item), 'danger'))
   main.appendChild(actions)
@@ -339,7 +341,9 @@ function mkBtn (label, onClick) {
 const ICONS = {
   photo: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
   move: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>',
-  delete: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+  delete: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  notes: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h13l3 3v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M17 3v4h4"/><line x1="7" y1="10" x2="15" y2="10"/><line x1="7" y1="14" x2="15" y2="14"/><line x1="7" y1="18" x2="12" y2="18"/></svg>'
 }
 
 function mkIconBtn (icon, label, onClick, extraClass) {
@@ -356,9 +360,10 @@ function mkIconBtn (icon, label, onClick, extraClass) {
 // ---------- editable quantity ----------
 
 function renderQuantityDisplay (item, opts = {}) {
+  const field = opts.field || 'actual_quantity'
   const display = document.createElement('span')
   display.className = 'qty-display' + (opts.className ? ' ' + opts.className : '')
-  display.textContent = `${opts.prefix || ''}${item.quantity}`
+  display.textContent = `${opts.prefix || ''}${item[field]}`
   display.title = 'Click to edit quantity'
   display.onclick = (e) => {
     e.stopPropagation()
@@ -368,6 +373,7 @@ function renderQuantityDisplay (item, opts = {}) {
 }
 
 function startQuantityEdit (item, display, opts = {}) {
+  const field = opts.field || 'actual_quantity'
   let resolved = false
 
   const editor = document.createElement('span')
@@ -380,7 +386,7 @@ function startQuantityEdit (item, display, opts = {}) {
   input.className = 'qty-input'
   input.min = '0'
   input.step = '1'
-  input.value = item.quantity
+  input.value = item[field]
 
   const steppers = document.createElement('span')
   steppers.className = 'qty-steppers'
@@ -418,11 +424,12 @@ function startQuantityEdit (item, display, opts = {}) {
   const commit = async () => {
     if (resolved) return
     const value = Math.max(0, parseInt(input.value, 10) || 0)
-    if (value === item.quantity) return cancel()
+    if (value === item[field]) return cancel()
     resolved = true
     try {
-      await api(`/items/${item.id}`, { method: 'PATCH', body: JSON.stringify({ quantity: value }) })
+      await api(`/items/${item.id}`, { method: 'PATCH', body: JSON.stringify({ [field]: value }) })
       await refresh()
+      if (typeof opts.onSaved === 'function') opts.onSaved()
     } catch (err) {
       toast(err.message)
       resolved = false
@@ -465,10 +472,10 @@ async function addContainer (parentId) {
 }
 
 async function addItem (locationId) {
-  const name = prompt('Item-Name:')
+  const name = prompt('Item Name:')
   if (!name) return
-  const qtyRaw = prompt('Quantity:', '1')
-  const quantity = parseInt(qtyRaw, 10) || 1
+  const qtyRaw = prompt('Actual Quantity:', '1')
+  const actualQuantity = parseInt(qtyRaw, 10) || 1
 
   let categoryIds = []
   if (state.categories.length) {
@@ -482,7 +489,7 @@ async function addItem (locationId) {
     }
   }
 
-  await api('/items', { method: 'POST', body: JSON.stringify({ name, quantity, location_id: locationId, category_ids: categoryIds }) })
+  await api('/items', { method: 'POST', body: JSON.stringify({ name, actual_quantity: actualQuantity, location_id: locationId, category_ids: categoryIds }) })
   await refresh()
 }
 
@@ -974,7 +981,8 @@ function buildOverviewRows () {
     return {
       item,
       name: item.name,
-      quantity: item.quantity,
+      actualQuantity: item.actual_quantity,
+      targetQuantity: item.target_quantity,
       thumbnail: item.thumbnail || null,
       directLocation: directLoc ? directLoc.name : '\u2014',
       directType: directLoc ? (directLoc.type === 'storage_space' ? 'Storage Space' : 'Container') : '',
@@ -1031,7 +1039,7 @@ function renderOverview () {
     tr.innerHTML = `
       <td>${thumbCell}</td>
       <td>${escapeHtml(r.name)}</td>
-      <td>${r.quantity}</td>
+      <td>${r.actualQuantity}</td>
       <td>${escapeHtml(r.directLocation)}${r.directType ? ` <span class="node-type">${r.directType}</span>` : ''}</td>
       <td>${escapeHtml(r.fullPath)}</td>
       <td>${escapeHtml(r.categoryNames)}</td>
@@ -1142,6 +1150,198 @@ function renderCategories () {
   })
 }
 
+// ---------- understocked page ----------
+
+function renderUnderstocked () {
+  const list = document.getElementById('understocked-list')
+  list.innerHTML = ''
+
+  const understocked = state.items.filter(
+    i => i.target_quantity !== null && i.target_quantity !== undefined && i.actual_quantity < i.target_quantity
+  )
+
+  if (!understocked.length) {
+    list.innerHTML = '<p class="hint">Nothing understocked right now — every item with a target quantity has enough on hand.</p>'
+    return
+  }
+
+  understocked.forEach(item => list.appendChild(renderUnderstockedChip(item)))
+}
+
+function renderUnderstockedChip (item) {
+  const chip = document.createElement('div')
+  chip.className = 'understocked-chip'
+
+  const thumb = document.createElement('div')
+  thumb.className = 'understocked-chip-thumb'
+  if (item.thumbnail) {
+    const img = document.createElement('img')
+    img.src = item.thumbnail
+    img.alt = ''
+    thumb.appendChild(img)
+  } else {
+    thumb.classList.add('item-thumb-placeholder')
+  }
+  chip.appendChild(thumb)
+
+  const info = document.createElement('div')
+  info.className = 'understocked-chip-info'
+  const name = document.createElement('div')
+  name.className = 'understocked-chip-name'
+  name.textContent = item.name
+  info.appendChild(name)
+
+  const qtyLine = document.createElement('div')
+  qtyLine.className = 'understocked-chip-qty'
+  qtyLine.appendChild(renderQuantityDisplay(item, { field: 'actual_quantity', prefix: 'Actual: ', className: 'qty-actual', onSaved: renderUnderstocked }))
+  const targetSpan = document.createElement('span')
+  targetSpan.className = 'qty-target'
+  targetSpan.textContent = ` / Target: ${item.target_quantity}`
+  qtyLine.appendChild(targetSpan)
+  info.appendChild(qtyLine)
+
+  chip.appendChild(info)
+
+  const actions = document.createElement('div')
+  actions.className = 'understocked-chip-actions'
+  actions.appendChild(mkIconBtn('edit', 'Edit', () => openItemPropertiesDialog(item)))
+  chip.appendChild(actions)
+
+  return chip
+}
+
+// ---------- item properties modal ----------
+
+let propertiesModalItemId = null
+
+function openItemPropertiesDialog (item) {
+  propertiesModalItemId = item.id
+  document.getElementById('properties-modal-title').textContent = `Properties for "${item.name}"`
+  document.getElementById('properties-name-input').value = item.name
+  document.getElementById('properties-description-input').value = item.description || ''
+  document.getElementById('properties-actual-qty-input').value = item.actual_quantity
+  document.getElementById('properties-target-qty-input').value =
+    item.target_quantity === null || item.target_quantity === undefined ? '' : item.target_quantity
+  document.getElementById('properties-modal-overlay').classList.remove('hidden')
+}
+
+function closePropertiesModal () {
+  document.getElementById('properties-modal-overlay').classList.add('hidden')
+  propertiesModalItemId = null
+}
+
+async function savePropertiesModal () {
+  const name = document.getElementById('properties-name-input').value.trim()
+  if (!name) return toast('Name is required.')
+  const description = document.getElementById('properties-description-input').value
+  const actualQuantityRaw = document.getElementById('properties-actual-qty-input').value
+  const targetQuantityRaw = document.getElementById('properties-target-qty-input').value
+
+  const body = {
+    name,
+    description,
+    actual_quantity: Math.max(0, parseInt(actualQuantityRaw, 10) || 0),
+    target_quantity: targetQuantityRaw === '' ? null : Math.max(0, parseInt(targetQuantityRaw, 10) || 0)
+  }
+
+  try {
+    await api(`/items/${propertiesModalItemId}`, { method: 'PATCH', body: JSON.stringify(body) })
+    await refresh()
+    closePropertiesModal()
+  } catch (e) {
+    toast(e.message)
+  }
+}
+
+// ---------- notes modal (markdown editor) ----------
+
+let notesModalItemId = null
+
+function openNotesDialog (item) {
+  notesModalItemId = item.id
+  document.getElementById('notes-modal-title').textContent = `Notes for "${item.name}"`
+  document.getElementById('notes-textarea').value = item.notes || ''
+  showNotesTab('write')
+  document.getElementById('notes-modal-overlay').classList.remove('hidden')
+}
+
+function closeNotesModal () {
+  document.getElementById('notes-modal-overlay').classList.add('hidden')
+  notesModalItemId = null
+}
+
+function showNotesTab (which) {
+  const writeTab = document.getElementById('notes-tab-write')
+  const previewTab = document.getElementById('notes-tab-preview')
+  const textarea = document.getElementById('notes-textarea')
+  const preview = document.getElementById('notes-preview')
+  const isWrite = which === 'write'
+  writeTab.classList.toggle('active', isWrite)
+  previewTab.classList.toggle('active', !isWrite)
+  textarea.classList.toggle('hidden', !isWrite)
+  preview.classList.toggle('hidden', isWrite)
+  if (!isWrite) preview.innerHTML = renderMarkdown(textarea.value)
+}
+
+async function saveNotesModal () {
+  const notes = document.getElementById('notes-textarea').value
+  try {
+    await api(`/items/${notesModalItemId}`, { method: 'PATCH', body: JSON.stringify({ notes: notes || null }) })
+    await refresh()
+    closeNotesModal()
+  } catch (e) {
+    toast(e.message)
+  }
+}
+
+// Small, dependency-free markdown-ish renderer covering the basics: headings,
+// bold/italic, inline code, links, unordered/ordered lists, and paragraphs.
+// Not a full CommonMark implementation — just enough for item notes.
+function renderMarkdown (src) {
+  const escaped = escapeHtml(src || '')
+  const lines = escaped.split('\n')
+  const htmlLines = []
+  let inUl = false
+  let inOl = false
+
+  const closeLists = () => {
+    if (inUl) { htmlLines.push('</ul>'); inUl = false }
+    if (inOl) { htmlLines.push('</ol>'); inOl = false }
+  }
+
+  const inline = (text) => text
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/_([^_]+)_/g, '<em>$1</em>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+    const heading = line.match(/^(#{1,6})\s+(.*)$/)
+    const ulItem = line.match(/^[-*]\s+(.*)$/)
+    const olItem = line.match(/^\d+\.\s+(.*)$/)
+
+    if (heading) {
+      closeLists()
+      const level = heading[1].length
+      htmlLines.push(`<h${level}>${inline(heading[2])}</h${level}>`)
+    } else if (ulItem) {
+      if (!inUl) { closeLists(); htmlLines.push('<ul>'); inUl = true }
+      htmlLines.push(`<li>${inline(ulItem[1])}</li>`)
+    } else if (olItem) {
+      if (!inOl) { closeLists(); htmlLines.push('<ol>'); inOl = true }
+      htmlLines.push(`<li>${inline(olItem[1])}</li>`)
+    } else if (line === '') {
+      closeLists()
+    } else {
+      closeLists()
+      htmlLines.push(`<p>${inline(line)}</p>`)
+    }
+  }
+  closeLists()
+  return htmlLines.join('\n') || '<p class="hint">Nothing to preview yet.</p>'
+}
+
 // ---------- tabs ----------
 
 function switchTab (name) {
@@ -1183,6 +1383,7 @@ async function refresh () {
   populateFloorplanSelect()
   renderOverview()
   renderCategories()
+  renderUnderstocked()
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1206,11 +1407,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('photo-modal-save').onclick = savePhotoThumbnail
   document.getElementById('photo-modal-remove').onclick = removePhotoThumbnail
   initPhotoCropInteractions()
+
+  document.getElementById('properties-modal-close').onclick = closePropertiesModal
+  document.getElementById('properties-modal-overlay').onclick = (e) => {
+    if (e.target.id === 'properties-modal-overlay') closePropertiesModal()
+  }
+  document.getElementById('properties-modal-save').onclick = savePropertiesModal
+
+  document.getElementById('notes-modal-close').onclick = closeNotesModal
+  document.getElementById('notes-modal-overlay').onclick = (e) => {
+    if (e.target.id === 'notes-modal-overlay') closeNotesModal()
+  }
+  document.getElementById('notes-tab-write').onclick = () => showNotesTab('write')
+  document.getElementById('notes-tab-preview').onclick = () => showNotesTab('preview')
+  document.getElementById('notes-modal-save').onclick = saveNotesModal
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeCategoryModal()
       closeLocationModal()
       closePhotoModal()
+      closePropertiesModal()
+      closeNotesModal()
     }
   })
   document.getElementById('category-modal-new').onclick = async () => {
