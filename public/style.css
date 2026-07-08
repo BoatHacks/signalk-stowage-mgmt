@@ -815,3 +815,21 @@ select {
   stroke: #185fa5 !important;
   stroke-width: 1.5 !important;
 }
+
+/* ---------- new storage space row in area-assign modal ---------- */
+
+.location-modal-new-row {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+  justify-content: stretch;
+}
+
+.location-modal-new-row input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+}

@@ -923,7 +923,7 @@ function renderLocationModalChips () {
   const storageSpaces = state.locations.filter(l => l.type === 'storage_space')
 
   if (!storageSpaces.length) {
-    chipList.innerHTML = '<span class="category-chip-empty">Create a storage space in the "Inventory" tab first.</span>'
+    chipList.innerHTML = '<span class="category-chip-empty">No storage spaces yet — create one below.</span>'
     return
   }
 
@@ -936,6 +936,20 @@ function renderLocationModalChips () {
     chip.onclick = () => toggleAreaAssignment(s, !isAssigned)
     chipList.appendChild(chip)
   })
+}
+
+async function createStorageSpaceFromLocationModal () {
+  const input = document.getElementById('location-modal-new-name')
+  const name = input.value.trim()
+  if (!name) return toast('Enter a name for the new storage space.')
+  try {
+    await api('/locations', { method: 'POST', body: JSON.stringify({ name, type: 'storage_space' }) })
+    await refresh()
+    input.value = ''
+    if (locationModalElementId) renderLocationModalChips()
+  } catch (e) {
+    toast(e.message)
+  }
 }
 
 async function toggleAreaAssignment (storageSpace, shouldAssign) {
@@ -1537,6 +1551,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('location-modal-close').onclick = closeLocationModal
   document.getElementById('location-modal-overlay').onclick = (e) => {
     if (e.target.id === 'location-modal-overlay') closeLocationModal()
+  }
+  document.getElementById('location-modal-new-btn').onclick = createStorageSpaceFromLocationModal
+  document.getElementById('location-modal-new-name').onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      createStorageSpaceFromLocationModal()
+    }
   }
   document.getElementById('photo-modal-close').onclick = closePhotoModal
   document.getElementById('photo-modal-overlay').onclick = (e) => {
