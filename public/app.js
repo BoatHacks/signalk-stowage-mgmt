@@ -910,10 +910,23 @@ function closeLocationModal () {
   locationModalElementId = null
 }
 
+// Turns an SVG element id like "area-navtable" or "v_berth_locker" into a
+// readable default name: "Navtable", "V Berth Locker".
+function deriveNameFromSvgElementId (svgElementId) {
+  return svgElementId
+    .replace(/^area[-_]?/i, '')
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+}
+
 function openAssignDialog (svgElementId) {
   locationModalElementId = svgElementId
   document.getElementById('location-modal-title').textContent = `Assign area "${svgElementId}"`
   renderLocationModalChips()
+  const newNameInput = document.getElementById('location-modal-new-name')
+  newNameInput.value = deriveNameFromSvgElementId(svgElementId)
+  newNameInput.dataset.prefilled = 'true'
   document.getElementById('location-modal-overlay').classList.remove('hidden')
 }
 
@@ -1559,6 +1572,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       createStorageSpaceFromLocationModal()
     }
   }
+  document.getElementById('location-modal-new-name').addEventListener('focus', (e) => {
+    if (e.target.dataset.prefilled === 'true') {
+      e.target.value = ''
+      e.target.dataset.prefilled = 'false'
+    }
+  })
   document.getElementById('photo-modal-close').onclick = closePhotoModal
   document.getElementById('photo-modal-overlay').onclick = (e) => {
     if (e.target.id === 'photo-modal-overlay') closePhotoModal()
