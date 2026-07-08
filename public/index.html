@@ -39,6 +39,7 @@
           Upload SVG
           <input id="floorplan-upload" type="file" accept=".svg,image/svg+xml" hidden>
         </label>
+        <button id="floorplan-mode-toggle">Edit</button>
         <span id="assign-hint" class="hint"></span>
       </div>
       <div id="floorplan-container" class="floorplan-container"></div>
@@ -78,6 +79,8 @@
   </main>
 
   <div id="orphaned-panel" class="orphaned-panel hidden"></div>
+
+  <div id="floorplan-contents-panel" class="orphaned-panel floorplan-contents-panel hidden"></div>
 
   <div id="toast" class="toast"></div>
 

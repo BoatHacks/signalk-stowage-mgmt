@@ -794,3 +794,24 @@ select {
   font-size: 12.5px;
   white-space: pre;
 }
+
+/* ---------- floorplan contents panel (display-mode area click) ---------- */
+
+.floorplan-contents-panel {
+  top: auto;
+  bottom: 20px;
+  position: fixed;
+}
+
+.floorplan-contents-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+}
+
+.floorplan-container svg [data-assignable="true"][data-edit-unmapped="true"] {
+  fill: #cfe8fa !important;
+  fill-opacity: 0.7 !important;
+  stroke: #185fa5 !important;
+  stroke-width: 1.5 !important;
+}

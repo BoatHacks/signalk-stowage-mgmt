@@ -147,6 +147,7 @@ function renderOrphanedPanel () {
 
 let dragDepth = 0
 let currentTab = 'tree'
+let floorplanMode = 'display'
 function updateOrphanedPanelVisibility () {
   const panel = document.getElementById('orphaned-panel')
   const hiddenForTab = currentTab === 'overview' || currentTab === 'categories' || currentTab === 'understocked'
@@ -776,6 +777,7 @@ function populateFloorplanSelect () {
 }
 
 async function loadFloorplan (floorplanId) {
+  closeFloorplanContentsPanel()
   const container = document.getElementById('floorplan-container')
   if (!floorplanId) {
     container.innerHTML = '<p class="hint">Select a floorplan above or upload an SVG file.</p>'
@@ -805,8 +807,15 @@ async function loadFloorplan (floorplanId) {
 
   assignable.forEach(el => {
     el.setAttribute('data-assignable', 'true')
-    if (mappedElementIds.has(el.id)) el.setAttribute('data-mapped', 'true')
-    el.addEventListener('click', () => openAssignDialog(el.id))
+    const isMapped = mappedElementIds.has(el.id)
+    if (isMapped) el.setAttribute('data-mapped', 'true')
+
+    if (floorplanMode === 'edit') {
+      if (!isMapped) el.setAttribute('data-edit-unmapped', 'true')
+      el.addEventListener('click', () => openAssignDialog(el.id))
+    } else {
+      el.addEventListener('click', () => openFloorplanContentsPanel(el.id))
+    }
 
     // Lets "not stored" items be dragged straight onto a floorplan area to
     // stow them in whichever storage space that area is assigned to.
@@ -841,10 +850,57 @@ async function loadFloorplan (floorplanId) {
     })
   })
 
-  document.getElementById('assign-hint').textContent =
-    `${assignable.length} assignable area(s) found. Click an area to assign it to a storage space.`
+  document.getElementById('assign-hint').textContent = floorplanMode === 'edit'
+    ? `${assignable.length} assignable area(s) found. Light blue areas have no storage space assigned yet — click an area to assign it.`
+    : `${assignable.length} assignable area(s) found. Click an area to see what's stored there.`
 
   fitFloorplanSvg()
+}
+
+function setFloorplanMode (mode) {
+  floorplanMode = mode
+  const toggleBtn = document.getElementById('floorplan-mode-toggle')
+  toggleBtn.textContent = mode === 'edit' ? 'Save' : 'Edit'
+  closeFloorplanContentsPanel()
+  if (state.currentFloorplanId) loadFloorplan(state.currentFloorplanId)
+}
+
+function openFloorplanContentsPanel (svgElementId) {
+  const panel = document.getElementById('floorplan-contents-panel')
+  panel.innerHTML = ''
+
+  const closeBtn = document.createElement('button')
+  closeBtn.className = 'modal-close floorplan-contents-close'
+  closeBtn.setAttribute('aria-label', 'Close')
+  closeBtn.textContent = '\u00d7'
+  closeBtn.onclick = closeFloorplanContentsPanel
+  panel.appendChild(closeBtn)
+
+  const space = state.locations.find(
+    l => l.type === 'storage_space' && l.floorplan_id === state.currentFloorplanId && l.svg_element_id === svgElementId
+  )
+
+  const title = document.createElement('div')
+  title.className = 'orphaned-panel-title'
+
+  if (!space) {
+    title.textContent = 'No Storage Space'
+    panel.appendChild(title)
+    const msg = document.createElement('p')
+    msg.className = 'hint'
+    msg.textContent = 'This area is not assigned to a storage space yet.'
+    panel.appendChild(msg)
+  } else {
+    title.textContent = space.name
+    panel.appendChild(title)
+    panel.appendChild(renderNode(space))
+  }
+
+  panel.classList.remove('hidden')
+}
+
+function closeFloorplanContentsPanel () {
+  document.getElementById('floorplan-contents-panel').classList.add('hidden')
 }
 
 let locationModalElementId = null
@@ -1528,6 +1584,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('floorplan-upload').onchange = e => {
     if (e.target.files[0]) uploadFloorplan(e.target.files[0])
     e.target.value = ''
+  }
+
+  document.getElementById('floorplan-mode-toggle').onclick = () => {
+    setFloorplanMode(floorplanMode === 'edit' ? 'display' : 'edit')
   }
 
   document.querySelectorAll('#overview-table th[data-sort]').forEach(th => {
