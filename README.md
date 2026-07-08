@@ -25,6 +25,17 @@ go to **Server → App Store**, search for "Stowage Management", and click
    cd signalk-stowage-mgmt
    npm install
    ```
+   This plugin depends on `better-sqlite3`, a native module. Most of the
+   time a prebuilt binary is downloaded automatically and this "just works" —
+   but depending on your platform, architecture, and Node.js version, you may
+   need to install some system packages first so it can compile from source
+   instead. On Debian/Ubuntu-based systems (including Raspberry Pi OS), if
+   `npm install` fails or the plugin won't start afterward, try:
+   ```
+   sudo apt-get install -y build-essential python3 libsqlite3-dev
+   ```
+   then re-run `npm install` (or `npm rebuild better-sqlite3 --build-from-source`
+   in the plugin's directory).
 3. Restart the Signal K server.
 4. In the Admin UI, enable the plugin under **Server → Plugin Config**
    ("Stowage Management").
