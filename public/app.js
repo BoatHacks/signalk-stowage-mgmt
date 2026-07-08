@@ -1330,6 +1330,14 @@ function extractSourceFromNotes (notes) {
   return match ? match[1].trim() : null
 }
 
+// Sort key for an item based on its categories: first category name
+// (alphabetically among the item's own categories), lowercased. Items with
+// no categories sort after everything that has one.
+function categorySortKey (item) {
+  const names = (item.categories || []).map(c => c.name).sort((a, b) => a.localeCompare(b))
+  return names.length ? names[0].toLowerCase() : '\uffff'
+}
+
 function buildShoppingListMarkdown () {
   const understocked = state.items.filter(
     i => i.target_quantity !== null && i.target_quantity !== undefined && i.actual_quantity < i.target_quantity
@@ -1338,15 +1346,34 @@ function buildShoppingListMarkdown () {
 
   if (!understocked.length) {
     lines.push('Nothing needed right now.')
-  } else {
-    understocked.forEach(item => {
-      const needed = item.target_quantity - item.actual_quantity
-      const source = extractSourceFromNotes(item.notes)
-      let line = `- ${item.name} — need ${needed}`
-      if (source) line += ` (${source})`
-      lines.push(line)
-    })
+    return lines.join('\n').trim() + '\n'
   }
+
+  // Group by shop name (from "source: ..." in notes); items with no shop
+  // specified land in their own group, listed last.
+  const groups = new Map()
+  understocked.forEach(item => {
+    const shop = extractSourceFromNotes(item.notes)
+    const key = shop || null
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(item)
+  })
+
+  const shopNames = [...groups.keys()].filter(k => k !== null).sort((a, b) => a.localeCompare(b))
+  const orderedKeys = groups.has(null) ? [...shopNames, null] : shopNames
+
+  orderedKeys.forEach(key => {
+    lines.push(`## ${key === null ? 'No Shop Specified' : key}`)
+    lines.push('')
+    const items = groups.get(key)
+      .slice()
+      .sort((a, b) => categorySortKey(a).localeCompare(categorySortKey(b)) || a.name.localeCompare(b.name))
+    items.forEach(item => {
+      const needed = item.target_quantity - item.actual_quantity
+      lines.push(`- ${item.name} — need ${needed}`)
+    })
+    lines.push('')
+  })
 
   return lines.join('\n').trim() + '\n'
 }
