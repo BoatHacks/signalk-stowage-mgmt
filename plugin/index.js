@@ -9,7 +9,7 @@ const registerCategoryRoutes = require('./routes/categories')
 module.exports = function (app) {
   const plugin = {}
   plugin.id = 'signalk-stowage-mgmt'
-  plugin.name = 'SignalK Stowage Management'
+  plugin.name = 'Stowage Management'
   plugin.description = 'Organize items into containers and storage spaces, and locate them on an SVG floorplan.'
 
   let db = null
