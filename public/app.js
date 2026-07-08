@@ -956,10 +956,9 @@ async function createStorageSpaceFromLocationModal () {
   const name = input.value.trim()
   if (!name) return toast('Enter a name for the new storage space.')
   try {
-    await api('/locations', { method: 'POST', body: JSON.stringify({ name, type: 'storage_space' }) })
-    await refresh()
+    const newSpace = await api('/locations', { method: 'POST', body: JSON.stringify({ name, type: 'storage_space' }) })
     input.value = ''
-    if (locationModalElementId) renderLocationModalChips()
+    await toggleAreaAssignment(newSpace, true)
   } catch (e) {
     toast(e.message)
   }
