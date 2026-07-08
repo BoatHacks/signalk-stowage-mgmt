@@ -1322,6 +1322,40 @@ function openExportModal () {
   document.getElementById('export-modal-overlay').classList.remove('hidden')
 }
 
+// Looks for a line like "source: West Marine" anywhere in an item's notes
+// and returns the shop name, or null if there isn't one.
+function extractSourceFromNotes (notes) {
+  if (!notes) return null
+  const match = notes.match(/^\s*source:\s*(.+)$/im)
+  return match ? match[1].trim() : null
+}
+
+function buildShoppingListMarkdown () {
+  const understocked = state.items.filter(
+    i => i.target_quantity !== null && i.target_quantity !== undefined && i.actual_quantity < i.target_quantity
+  )
+  const lines = ['# Shopping List', '']
+
+  if (!understocked.length) {
+    lines.push('Nothing needed right now.')
+  } else {
+    understocked.forEach(item => {
+      const needed = item.target_quantity - item.actual_quantity
+      const source = extractSourceFromNotes(item.notes)
+      let line = `- ${item.name} — need ${needed}`
+      if (source) line += ` (${source})`
+      lines.push(line)
+    })
+  }
+
+  return lines.join('\n').trim() + '\n'
+}
+
+function openShoppingListExportModal () {
+  document.getElementById('export-markdown-textarea').value = buildShoppingListMarkdown()
+  document.getElementById('export-modal-overlay').classList.remove('hidden')
+}
+
 function closeExportModal () {
   document.getElementById('export-modal-overlay').classList.add('hidden')
 }
@@ -1550,6 +1584,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('add-storage-space').onclick = addStorageSpace
   document.getElementById('add-category').onclick = addCategory
   document.getElementById('export-markdown-btn').onclick = openExportModal
+  document.getElementById('export-shopping-list-btn').onclick = openShoppingListExportModal
   document.getElementById('export-modal-close').onclick = closeExportModal
   document.getElementById('export-modal-overlay').onclick = (e) => {
     if (e.target.id === 'export-modal-overlay') closeExportModal()
