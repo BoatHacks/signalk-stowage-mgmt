@@ -1,6 +1,6 @@
 const path = require('path')
-const express = require('express')
 const { initDb } = require('./db')
+const { jsonBodyParser } = require('./jsonBody')
 const registerLocationRoutes = require('./routes/locations')
 const registerItemRoutes = require('./routes/items')
 const registerFloorplanRoutes = require('./routes/floorplans')
@@ -36,7 +36,7 @@ module.exports = function (app) {
 
   // The server mounts this router under /plugins/signalk-stowage-mgmt
   plugin.registerWithRouter = function (router) {
-    router.use(express.json({ limit: '15mb' })) // floorplan SVGs can be a few MB
+    router.use(jsonBodyParser({ limit: 15 * 1024 * 1024 })) // floorplan SVGs can be a few MB
 
     registerLocationRoutes(router, () => db)
     registerItemRoutes(router, () => db)
