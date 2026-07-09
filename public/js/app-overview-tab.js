@@ -75,7 +75,7 @@ export function OverviewTab() {
   return html`
     <section class="tab-panel active">
       <div class="toolbar">
-        <input type="text" placeholder="Filter table&hellip;" value=${filter} onInput=${function (e) { setFilter(e.target.value); }} />
+        <input type="text" placeholder="Filter table…" value=${filter} onInput=${function (e) { setFilter(e.target.value); }} />
       </div>
       <p class="hint">Clicking a row jumps to the floorplan (if assigned).</p>
       <table class="overview-table">

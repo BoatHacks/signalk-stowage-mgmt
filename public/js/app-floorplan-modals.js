@@ -109,11 +109,11 @@ export function LocationAssignModal() {
       <div class="modal">
         <div class="modal-header">
           <h2>Assign area "${svgElementId}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closeLocationAssignModal}>&times;</button>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeLocationAssignModal}>×</button>
         </div>
         <p class="hint">Click a storage space to assign this area to it, or click it again to remove the assignment.</p>
         <div class="category-chip-list">
-          ${!storageSpaces.length ? html`<span class="category-chip-empty">No storage spaces yet &mdash; create one below.</span>` : null}
+          ${!storageSpaces.length ? html`<span class="category-chip-empty">No storage spaces yet — create one below.</span>` : null}
           ${storageSpaces.map(function (s) {
             var isAssigned = s.floorplan_id === floorplanId && s.svg_element_id === svgElementId;
             return html`
@@ -123,7 +123,7 @@ export function LocationAssignModal() {
           })}
         </div>
         <div class="modal-footer location-modal-new-row">
-          <input type="text" placeholder="New storage space name&hellip;" value=${newName}
+          <input type="text" placeholder="New storage space name…" value=${newName}
                  onFocus=${function (e) { if (prefilledRef.current) { setNewName(''); prefilledRef.current = false; } }}
                  onInput=${function (e) { setNewName(e.target.value); }}
                  onKeyDown=${function (e) { if (e.key === 'Enter') createAndAssign(); }} />
@@ -207,7 +207,7 @@ export function MoveModal() {
       <div class="modal modal-wide">
         <div class="modal-header">
           <h2>Move "${move.entity.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closeMoveModal}>&times;</button>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeMoveModal}>×</button>
         </div>
         <p class="hint">Drag the chip onto a storage space below, or click a storage space (hover first to see its containers).</p>
 
@@ -225,7 +225,7 @@ export function MoveModal() {
         ${floorplan ? html`
           <${FloorplanSvg} svgContent=${floorplan.svg_content} className="floorplan-container move-modal-floorplan"
                            mappedIds=${mappedIds} onAreaClick=${onAreaClick} onAreaHover=${onAreaHover} onAreaDrop=${onAreaDrop} fit=${true} />
-        ` : html`<p class="hint">No floorplan uploaded &mdash; pick a target from the list below.</p>`}
+        ` : html`<p class="hint">No floorplan uploaded — pick a target from the list below.</p>`}
 
         ${fallbackTargets.length ? html`
           <div class="orphaned-panel-title">Other targets</div>
@@ -248,9 +248,9 @@ export function MoveModal() {
       ${popup ? html`
         <div class="move-container-popup" style=${'left:' + popup.x + 'px;top:' + popup.y + 'px;'}>
           <div class="move-container-popup-title">${popup.space.name}</div>
-          <button type="button" onClick=${function () { performMove(popup.space.id, popup.space.name); }}>&rarr; this storage space</button>
+          <button type="button" onClick=${function () { performMove(popup.space.id, popup.space.name); }}>→ this storage space</button>
           ${childLocations(app.data, popup.space.id).filter(function (l) { return l.type === 'container' && forbidden.indexOf(l.id) === -1; }).map(function (c) {
-            return html`<button type="button" key=${c.id} onClick=${function () { performMove(c.id, c.name); }}>&rarr; ${c.name}</button>`;
+            return html`<button type="button" key=${c.id} onClick=${function () { performMove(c.id, c.name); }}>→ ${c.name}</button>`;
           })}
         </div>
       ` : null}

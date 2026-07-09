@@ -228,7 +228,7 @@ function App() {
       </nav>
 
       <main>
-        ${!loaded ? html`<p class="hint">Loading&hellip;</p>` : activeTabView}
+        ${!loaded ? html`<p class="hint">Loading…</p>` : activeTabView}
       </main>
 
       <${NotStoredPanel} />

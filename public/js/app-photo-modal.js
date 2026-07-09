@@ -122,7 +122,7 @@ export function PhotoModal() {
       <div class="modal">
         <div class="modal-header">
           <h2>Photo for "${item.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closePhotoModal}>&times;</button>
+          <button class="modal-close" aria-label="Close" onClick=${app.closePhotoModal}>×</button>
         </div>
 
         ${stage === 'empty' ? html`

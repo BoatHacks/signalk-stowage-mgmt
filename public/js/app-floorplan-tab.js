@@ -137,7 +137,7 @@ export function FloorplanTab() {
 
     ${contentsPanel ? html`
       <div class="orphaned-panel floorplan-contents-panel">
-        <button class="modal-close floorplan-contents-close" aria-label="Close" onClick=${function () { setContentsPanel(null); }}>&times;</button>
+        <button class="modal-close floorplan-contents-close" aria-label="Close" onClick=${function () { setContentsPanel(null); }}>×</button>
         ${contentsPanel.__unmapped ? html`
           <div class="orphaned-panel-title">No Storage Space</div>
           <p class="hint">This area is not assigned to a storage space yet.</p>

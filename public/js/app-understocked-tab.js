@@ -12,7 +12,7 @@ export function UnderstockedTab() {
         <button type="button" onClick=${function () { app.openExportModal('shopping'); }}>Export as Markdown</button>
       </div>
       <div class="understocked-list">
-        ${!understocked.length ? html`<p class="hint">Nothing understocked right now &mdash; every item with a target quantity has enough on hand.</p>` : null}
+        ${!understocked.length ? html`<p class="hint">Nothing understocked right now — every item with a target quantity has enough on hand.</p>` : null}
         ${understocked.map(function (item) {
           var thumb = item.thumbnail
             ? html`<img src=${item.thumbnail} alt="" />`

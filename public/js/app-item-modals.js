@@ -48,7 +48,7 @@ export function ItemPropertiesModal() {
       <div class="modal modal-wide">
         <div class="modal-header">
           <h2>Properties for "${item.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closePropertiesModal}>&times;</button>
+          <button class="modal-close" aria-label="Close" onClick=${app.closePropertiesModal}>×</button>
         </div>
 
         <div class="form-field">
@@ -79,7 +79,7 @@ export function ItemPropertiesModal() {
             <button type="button" class=${'notes-editor-tab' + (noteView === 'edit' ? ' active' : '')} onClick=${function () { setNoteView('edit'); }}>Edit</button>
           </div>
           ${noteView === 'edit' ? html`
-            <textarea class="notes-textarea" placeholder="Markdown supported: **bold**, _italic_, # headings, - lists, \`code\`, [links](url)&hellip;"
+            <textarea class="notes-textarea" placeholder="Markdown supported: **bold**, _italic_, # headings, - lists, \`code\`, [links](url)…"
                       value=${notes} onInput=${function (e) { setNotes(e.target.value); }}></textarea>
             <div class="notes-preview-label">Preview</div>
           ` : null}
@@ -118,7 +118,7 @@ export function CategoryModal() {
       <div class="modal">
         <div class="modal-header">
           <h2>Categories for "${liveItem.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closeCategoryModal}>&times;</button>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeCategoryModal}>×</button>
         </div>
         <p class="hint">Click a category to assign or remove it.</p>
         <div class="category-chip-list">
@@ -167,7 +167,7 @@ export function ExportModal() {
       <div class="modal modal-wide">
         <div class="modal-header">
           <h2>Export as Markdown</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closeExportModal}>&times;</button>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeExportModal}>×</button>
         </div>
         <p class="hint">Select all and copy, or use the button below.</p>
         <textarea class="notes-textarea export-textarea" readonly value=${app.exportModalContent}></textarea>

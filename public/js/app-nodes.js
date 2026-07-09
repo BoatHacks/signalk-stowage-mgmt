@@ -20,7 +20,7 @@ export function ItemChip(props) {
       <span class="category-badge" key=${cat.id}>
         ${cat.name}
         <button type="button" class="category-badge-remove" title=${'Remove "' + cat.name + '" from this item'}
-                onClick=${function (e) { e.stopPropagation(); app.removeItemCategory(item.id, cat.id); }}>&times;</button>
+                onClick=${function (e) { e.stopPropagation(); app.removeItemCategory(item.id, cat.id); }}>×</button>
       </span>
     `;
   });

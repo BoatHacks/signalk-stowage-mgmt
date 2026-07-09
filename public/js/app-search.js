@@ -21,7 +21,7 @@ export function SearchBox() {
 
   return html`
     <div class="search-box">
-      <input type="text" placeholder="Search items&hellip;" autocomplete="off" value=${query}
+      <input type="text" placeholder="Search items…" autocomplete="off" value=${query}
              onInput=${function (e) { setQuery(e.target.value); setOpen(true); }}
              onFocus=${function () { setOpen(true); }}
              onBlur=${function () { setTimeout(function () { setOpen(false); }, 150); }} />
@@ -41,7 +41,7 @@ export function LocateItemPopup() {
   var liveItem = app.data.items.find(function (i) { return i.id === app.locatePopupItem.id; }) || app.locatePopupItem;
   return html`
     <div class="locate-item-popup">
-      <button class="modal-close locate-item-popup-close" aria-label="Close" onClick=${app.closeLocatePopup}>&times;</button>
+      <button class="modal-close locate-item-popup-close" aria-label="Close" onClick=${app.closeLocatePopup}>×</button>
       <div class="orphaned-panel-title">Found</div>
       <${ItemChip} item=${liveItem} />
     </div>
