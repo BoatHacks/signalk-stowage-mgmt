@@ -1,4 +1,4 @@
-import { h, html, useState, useEffect } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useEffect } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { renderMarkdown } from './markdown.js';
 
@@ -40,7 +40,7 @@ export function ItemPropertiesModal() {
       target_quantity: targetQty === '' ? null : Math.max(0, parseInt(targetQty, 10) || 0),
       notes: notes || null
     };
-    app.updateItem(item.id, body).then(app.closePropertiesModal).catch(app.showToast);
+    app.updateItem(item.id, body).then(app.closePropertiesModal).catch(function () {});
   }
 
   return html`
@@ -102,6 +102,8 @@ export function CategoryModal() {
   var newNameState = useState('');
   var newName = newNameState[0], setNewName = newNameState[1];
 
+  useEffect(function () { setNewName(''); }, [item ? item.id : null]);
+
   if (!item) return null;
   var liveItem = app.data.items.find(function (i) { return i.id === item.id; }) || item;
   var assignedIds = {};
@@ -110,7 +112,7 @@ export function CategoryModal() {
   function createCategory() {
     var name = newName.trim();
     if (!name) return;
-    app.createCategory(name).then(function () { setNewName(''); }).catch(app.showToast);
+    app.createCategory(name).then(function () { setNewName(''); }).catch(function () {});
   }
 
   return html`
@@ -129,7 +131,7 @@ export function CategoryModal() {
               <button type="button" key=${cat.id} class=${'category-chip' + (isAssigned ? ' assigned' : '')}
                       onClick=${function () {
                         var action = isAssigned ? app.removeItemCategory(item.id, cat.id) : app.addItemCategory(item.id, cat.id);
-                        action.catch(app.showToast);
+                        action.catch(function () {});
                       }}>${cat.name}</button>
             `;
           })}

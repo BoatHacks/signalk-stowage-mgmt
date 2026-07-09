@@ -1,4 +1,4 @@
-import { h, html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { childLocations, descendantIds, pathToRoot, deriveNameFromSvgElementId } from './helpers.js';
 
@@ -92,7 +92,7 @@ export function LocationAssignModal() {
     var action = shouldAssign
       ? app.setSvgMapping(space.id, floorplanId, svgElementId)
       : app.setSvgMapping(space.id, null, null);
-    action.catch(app.showToast);
+    action.catch(function () {});
   }
 
   function createAndAssign() {
@@ -101,7 +101,7 @@ export function LocationAssignModal() {
     app.createLocation({ name: name, type: 'storage_space' })
       .then(function (space) { return app.setSvgMapping(space.id, floorplanId, svgElementId); })
       .then(function () { setNewName(''); })
-      .catch(app.showToast);
+      .catch(function () {});
   }
 
   return html`
@@ -147,6 +147,7 @@ export function MoveModal() {
   var summary = app.data.floorplans.length ? app.data.floorplans[0] : null;
 
   useEffect(function () {
+    setPopup(null);
     if (!move || !summary) { setFloorplanContent(null); return; }
     var cancelled = false;
     app.getFloorplan(summary.id).then(function (fp) {
@@ -176,7 +177,7 @@ export function MoveModal() {
     action.then(function () {
       app.showToast('Moved "' + move.entity.name + '" to ' + targetName + '.');
       app.closeMoveModal();
-    }).catch(app.showToast);
+    }).catch(function () {});
   }
 
   function onAreaClick(elementId) {

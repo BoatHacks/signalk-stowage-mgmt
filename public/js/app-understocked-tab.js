@@ -1,4 +1,4 @@
-import { h, html } from '../vendor/preact-htm-standalone.js';
+import { html } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn, QuantityEditor } from './app-core.js';
 import { isUnderstocked } from './helpers.js';
 

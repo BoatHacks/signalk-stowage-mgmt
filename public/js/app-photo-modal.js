@@ -1,4 +1,4 @@
-import { h, html, useState, useRef, useEffect } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useRef, useEffect } from '../vendor/preact-htm-standalone.js';
 import { useApp, PHOTO_VIEWPORT_SIZE, PHOTO_OUTPUT_SIZE } from './app-core.js';
 
 export function PhotoModal() {
@@ -103,11 +103,11 @@ export function PhotoModal() {
     var srcSize = PHOTO_VIEWPORT_SIZE / scale;
     ctx.drawImage(imgRef.current, srcX, srcY, srcSize, srcSize, 0, 0, PHOTO_OUTPUT_SIZE, PHOTO_OUTPUT_SIZE);
     var dataUri = canvas.toDataURL('image/jpeg', 0.85);
-    app.setThumbnail(item.id, dataUri).then(app.closePhotoModal).catch(app.showToast);
+    app.setThumbnail(item.id, dataUri).then(app.closePhotoModal).catch(function () {});
   }
 
   function remove() {
-    app.setThumbnail(item.id, null).then(app.closePhotoModal).catch(app.showToast);
+    app.setThumbnail(item.id, null).then(app.closePhotoModal).catch(function () {});
   }
 
   var imgStyle = '';

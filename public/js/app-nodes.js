@@ -1,4 +1,4 @@
-import { h, html, useState } from '../vendor/preact-htm-standalone.js';
+import { html, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn, QuantityEditor } from './app-core.js';
 import { childLocations, itemsIn } from './helpers.js';
 

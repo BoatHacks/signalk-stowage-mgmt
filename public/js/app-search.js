@@ -1,4 +1,4 @@
-import { h, html, useState } from '../vendor/preact-htm-standalone.js';
+import { html, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp, Icon } from './app-core.js';
 import { ItemChip } from './app-nodes.js';
 

@@ -1,4 +1,4 @@
-import { h, html } from '../vendor/preact-htm-standalone.js';
+import { html } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { LocationNode } from './app-nodes.js';
 import { childLocations } from './helpers.js';

@@ -1,4 +1,4 @@
-import { h, html, useState, useMemo } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useMemo } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { pathToRoot } from './helpers.js';
 

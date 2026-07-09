@@ -1,16 +1,8 @@
 import {
-  h, html, render, Component, createContext,
-  useState, useEffect, useRef, useCallback, useContext, useMemo
+  html, createContext,
+  useState, useEffect, useRef, useContext
 } from '../vendor/preact-htm-standalone.js';
-import { api } from './api.js';
-import { renderMarkdown } from './markdown.js';
 import { ICONS } from './icons.js';
-import {
-  childLocations, itemsIn, descendantIds, pathToRoot, locationHasAnyItems,
-  isUnderstocked, deriveNameFromSvgElementId, buildInventoryMarkdown,
-  buildShoppingListMarkdown
-} from './helpers.js';
-import { getPreferredTheme, applyTheme } from './theme.js';
 
 var POLL_INTERVAL_MS = 5000;
 var PHOTO_VIEWPORT_SIZE = 280;
@@ -68,7 +60,7 @@ function QuantityEditor(props) {
     var v = Math.max(0, parseInt(value, 10) || 0);
     setEditing(false);
     if (v === item.actual_quantity) return;
-    app.updateItem(item.id, { actual_quantity: v }).catch(app.showToast);
+    app.updateItem(item.id, { actual_quantity: v }).catch(function () {});
   }
 
   if (!isEditing) {

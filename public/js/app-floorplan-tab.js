@@ -1,4 +1,4 @@
-import { h, html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { FloorplanSvg, fitFloorplanSvgIn } from './app-floorplan-modals.js';
 import { LocationNode } from './app-nodes.js';
@@ -67,7 +67,7 @@ export function FloorplanTab() {
     if (!space) { app.showToast('This area is not assigned to a storage space yet.'); return; }
     app.moveItemTo(draggedId, space.id).then(function () {
       app.showToast('Stored in "' + space.name + '".');
-    }).catch(app.showToast);
+    }).catch(function () {});
   }
 
   function onSvgReady(count) {
@@ -107,7 +107,7 @@ export function FloorplanTab() {
           return app.uploadFloorplan(file.name.replace(/\.svg$/i, ''), text);
         })
         .then(function () { app.refreshData(); })
-        .catch(app.showToast);
+        .catch(function () {});
     });
   }
 

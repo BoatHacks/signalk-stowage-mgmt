@@ -1,4 +1,4 @@
-import { h, html, useState } from '../vendor/preact-htm-standalone.js';
+import { html, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { ItemChip } from './app-nodes.js';
 import { pathToRoot } from './helpers.js';
@@ -19,7 +19,7 @@ export function CategoriesTab() {
   function createCategory() {
     var name = newName.trim();
     if (!name) return;
-    app.createCategory(name).then(function () { setNewName(''); }).catch(app.showToast);
+    app.createCategory(name).then(function () { setNewName(''); }).catch(function () {});
   }
 
   return html`
@@ -43,12 +43,12 @@ export function CategoriesTab() {
                   <button type="button" onClick=${function (e) {
                     e.stopPropagation();
                     var name = prompt('New name:', cat.name);
-                    if (name && name !== cat.name) app.renameCategory(cat.id, name).catch(app.showToast);
+                    if (name && name !== cat.name) app.renameCategory(cat.id, name).catch(function () {});
                   }}>Rename</button>
                   <button type="button" onClick=${function (e) {
                     e.stopPropagation();
                     var warning = items.length ? ' It is currently assigned to ' + items.length + ' item(s) \u2014 this assignment will also be removed.' : '';
-                    if (confirm('Really delete category "' + cat.name + '"?' + warning)) app.deleteCategory(cat.id).catch(app.showToast);
+                    if (confirm('Really delete category "' + cat.name + '"?' + warning)) app.deleteCategory(cat.id).catch(function () {});
                   }}>Delete</button>
                 </span>
               </div>

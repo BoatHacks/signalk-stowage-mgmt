@@ -1,4 +1,4 @@
-import { h, html, render, useState, useEffect, useRef, useCallback } from '../vendor/preact-htm-standalone.js';
+import { html, render, useState, useEffect, useRef, useCallback } from '../vendor/preact-htm-standalone.js';
 import { api } from './api.js';
 import { AppCtx, Toast, POLL_INTERVAL_MS } from './app-core.js';
 import { SearchBox, LocateItemPopup, ThemeToggle } from './app-search.js';
