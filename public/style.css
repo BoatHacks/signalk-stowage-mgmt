@@ -16,24 +16,33 @@
   --link: #185fa5;
   --danger: #a33;
   --warn: #a35f00;
+  --category-badge-bg: #eef2ff;
+  --category-badge-text: #33389b;
+  --category-badge-hover: #d8deff;
 }
 
 [data-theme="dark"] {
   --bg: #16181c;
   --surface: #21242a;
   --surface-alt: #262a31;
-  --text: #e8e6e1;
-  --text-muted: #9a9a95;
-  --text-muted-strong: #b7b5b0;
+  /* Text is warmed toward red on purpose: a red-shifted palette is the
+     traditional "night mode" choice on boats, since it disturbs
+     night-adapted vision far less than white or blue light. */
+  --text: #e2a89a;
+  --text-muted: #a5766c;
+  --text-muted-strong: #c99287;
   --border: #34383f;
   --border-strong: #454a52;
   --header-bg: #0f1115;
-  --header-text: #e8e6e1;
+  --header-text: #e2a89a;
   --accent: #4a9a4a;
   --accent-hover: #59ab59;
-  --link: #5b9fd8;
+  --link: #d8836f;
   --danger: #e17878;
   --warn: #d99a3d;
+  --category-badge-bg: #3a2320;
+  --category-badge-text: #e2a89a;
+  --category-badge-hover: #4a2c28;
 }
 
 body {
@@ -301,8 +310,8 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #eef2ff;
-  color: #33389b;
+  background: var(--category-badge-bg);
+  color: var(--category-badge-text);
   border-radius: 999px;
   padding: 2px 4px 2px 9px;
   font-size: 11px;
@@ -314,12 +323,12 @@ select {
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
-  color: #33389b;
+  color: var(--category-badge-text);
   padding: 2px 5px;
   border-radius: 999px;
 }
 
-.category-badge button:hover { background: #d8deff; }
+.category-badge button:hover { background: var(--category-badge-hover); }
 
 .add-category-inline {
   font-size: 11px;
