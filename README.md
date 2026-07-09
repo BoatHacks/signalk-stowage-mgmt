@@ -85,10 +85,13 @@ go to **Server → App Store**, search for "Stowage Management", and click
 
 **Floorplan (tab):**
 - Only the single most recently uploaded SVG is shown. Uploading a new one
-  replaces it — if any storage spaces are currently mapped to areas on the
-  floorplan being replaced, you'll get a confirmation warning naming them,
-  since those area assignments are cleared (and the old floorplan deleted)
-  as part of the replacement.
+  replaces it. If the new SVG has elements with the **same id** as ones your
+  storage spaces were already mapped to, those assignments carry over
+  automatically — no need to re-map anything just because you touched up
+  the file in your SVG editor. Only storage spaces whose matching area is
+  genuinely gone (a different or removed id) will lose their assignment,
+  and you'll get a confirmation warning naming exactly those, since that
+  part can't be undone.
 - **Important:** only SVG elements (`path`, `polygon`, `rect`, `circle`,
   `ellipse`) that already have a **custom** `id` attribute in the SVG
   source can be clicked and assigned. Auto-generated IDs from your SVG

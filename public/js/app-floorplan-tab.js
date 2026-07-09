@@ -88,22 +88,46 @@ export function FloorplanTab() {
     file.text().then(function (text) {
       if (text.indexOf('<svg') === -1) { app.showToast('This is not a valid SVG file.'); return; }
 
+      var newDoc = new DOMParser().parseFromString(text, 'image/svg+xml');
+      var newSvgRoot = newDoc.querySelector('svg');
+      if (!newSvgRoot || newDoc.querySelector('parsererror')) {
+        app.showToast('This is not a valid SVG file.');
+        return;
+      }
+
       var affectedSpaces = app.data.locations.filter(function (l) {
         return l.type === 'storage_space' && l.floorplan_id && app.data.floorplans.some(function (fp) { return fp.id === l.floorplan_id; });
       });
 
+      // If the new SVG still has an element with the same id, keep that
+      // storage space mapped to it (re-pointed at the new floorplan) rather
+      // than clearing the assignment.
+      var preserved = [];
+      var lost = [];
+      affectedSpaces.forEach(function (space) {
+        if (newSvgRoot.querySelector('#' + CSS.escape(space.svg_element_id))) {
+          preserved.push(space);
+        } else {
+          lost.push(space);
+        }
+      });
+
       var proceed = Promise.resolve();
-      if (affectedSpaces.length) {
-        var names = affectedSpaces.map(function (s) { return s.name; }).join(', ');
+      if (lost.length) {
+        var names = lost.map(function (s) { return s.name; }).join(', ');
         var confirmed = confirm(
-          'Uploading a new floorplan will remove the area assignment for ' + affectedSpaces.length +
-          ' storage space(s): ' + names + ". This can't be undone. Continue?"
+          'The new floorplan no longer has a matching area for ' + lost.length +
+          ' storage space(s): ' + names + ". Their area assignment will be removed. This can't be undone. Continue?"
         );
         if (!confirmed) return;
-        proceed = affectedSpaces.reduce(function (p, space) {
-          return p.then(function () { return app.setSvgMapping(space.id, null, null); });
-        }, Promise.resolve());
       }
+
+      // Every currently-mapped space needs to be unmapped before the old
+      // floorplan(s) can be deleted — preserved ones get re-mapped to the
+      // new floorplan afterward, using the same svg_element_id.
+      proceed = affectedSpaces.reduce(function (p, space) {
+        return p.then(function () { return app.setSvgMapping(space.id, null, null); });
+      }, proceed);
 
       proceed
         .then(function () {
@@ -114,7 +138,20 @@ export function FloorplanTab() {
         .then(function () {
           return app.uploadFloorplan(file.name.replace(/\.svg$/i, ''), text);
         })
-        .then(function () { app.refreshData(); })
+        .then(function (newFloorplan) {
+          return preserved.reduce(function (p, space) {
+            return p.then(function () { return app.setSvgMapping(space.id, newFloorplan.id, space.svg_element_id); });
+          }, Promise.resolve());
+        })
+        .then(function () {
+          app.refreshData();
+          if (preserved.length) {
+            app.showToast(
+              'Preserved ' + preserved.length + ' area assignment(s)' +
+              (lost.length ? ', removed ' + lost.length + '.' : '.')
+            );
+          }
+        })
         .catch(function () {});
     });
   }
