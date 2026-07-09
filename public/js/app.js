@@ -14,6 +14,10 @@ import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { buildInventoryMarkdown, buildShoppingListMarkdown } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 
+// Kept in sync manually with package.json's "version" field — there's no
+// build step here to inject it automatically.
+var APP_VERSION = '0.5.5';
+
 var TABS = [
   { id: 'inventory', label: 'Inventory' },
   { id: 'floorplan', label: 'Floorplan' },
@@ -208,6 +212,7 @@ function App() {
       <header>
         <h1>Stowage Management</h1>
         <${SearchBox} />
+        <span class="app-version">v${APP_VERSION}</span>
         <${ThemeToggle} />
       </header>
 
