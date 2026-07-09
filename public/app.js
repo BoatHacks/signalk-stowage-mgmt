@@ -252,6 +252,7 @@ function renderNode (loc) {
   actions.appendChild(addContainerBtn)
   actions.appendChild(addItemBtn)
 
+  actions.appendChild(mkIconBtn('edit', 'Rename', () => renameLocation(loc)))
   if (loc.type === 'container') {
     actions.appendChild(mkIconBtn('move', 'Move', () => moveLocation(loc)))
   }
@@ -704,6 +705,17 @@ async function removePhotoThumbnail () {
     await api(`/items/${photoState.itemId}/thumbnail`, { method: 'PATCH', body: JSON.stringify({ thumbnail: null }) })
     await refresh()
     closePhotoModal()
+  } catch (e) {
+    toast(e.message)
+  }
+}
+
+async function renameLocation (loc) {
+  const name = prompt('New name:', loc.name)
+  if (!name || name === loc.name) return
+  try {
+    await api(`/locations/${loc.id}`, { method: 'PATCH', body: JSON.stringify({ name }) })
+    await refresh()
   } catch (e) {
     toast(e.message)
   }

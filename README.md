@@ -36,6 +36,14 @@ go to **Server → App Store**, search for "Stowage Management", and click
    ```
    then re-run `npm install` (or `npm rebuild better-sqlite3 --build-from-source`
    in the plugin's directory).
+
+   If that doesn't help, your npm setup may be blocking install scripts from
+   running at all (some setups gate this for security). If so, approve the
+   script and rebuild:
+   ```
+   npm approve-scripts better-sqlite3
+   npm rebuild
+   ```
 3. Restart the Signal K server.
 4. In the Admin UI, enable the plugin under **Server → Plugin Config**
    ("Stowage Management").
