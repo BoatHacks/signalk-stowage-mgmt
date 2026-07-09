@@ -1,4 +1,5 @@
 const { randomUUID } = require('crypto')
+const { runInTransaction } = require('../tx')
 
 module.exports = function registerItemRoutes (router, getDb) {
   function db () {
@@ -59,14 +60,13 @@ module.exports = function registerItemRoutes (router, getDb) {
       }
     }
     const id = randomUUID()
-    const create = db().transaction(() => {
+    runInTransaction(db(), () => {
       db().prepare(
         'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id) VALUES (?, ?, ?, ?, ?, ?)'
       ).run(id, name, actualQuantity || 1, targetQuantity ?? null, notes || null, locationId || null)
       const link = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
       for (const catId of ids) link.run(id, catId)
     })
-    create()
     res.status(201).json(withCategories(db().prepare('SELECT * FROM items WHERE id = ?').get(id)))
   })
 

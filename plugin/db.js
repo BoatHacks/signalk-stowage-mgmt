@@ -1,16 +1,26 @@
-const Database = require('better-sqlite3')
+let DatabaseSync
+try {
+  ({ DatabaseSync } = require('node:sqlite'))
+} catch (err) {
+  throw new Error(
+    'signalk-stowage-mgmt requires Node.js 22.5.0 or newer (uses the built-in ' +
+    `node:sqlite module). Your Node.js version is ${process.version}. Please ` +
+    'upgrade Node.js and restart the server.'
+  )
+}
 const path = require('path')
 const fs = require('fs')
 const { randomUUID } = require('crypto')
+const { runInTransaction } = require('./tx')
 
 const DEFAULT_CATEGORIES = ['food', 'spare part', 'equipment', 'tools']
 
 function initDb (dataDir) {
   fs.mkdirSync(dataDir, { recursive: true })
   const dbPath = path.join(dataDir, 'inventory.db')
-  const db = new Database(dbPath)
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
+  const db = new DatabaseSync(dbPath)
+  db.exec('PRAGMA journal_mode = WAL')
+  db.exec('PRAGMA foreign_keys = ON')
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS floorplans (
@@ -98,10 +108,9 @@ function initDb (dataDir) {
   const categoryCount = db.prepare('SELECT COUNT(*) c FROM categories').get().c
   if (categoryCount === 0) {
     const insert = db.prepare('INSERT INTO categories (id, name) VALUES (?, ?)')
-    const insertMany = db.transaction((names) => {
-      for (const name of names) insert.run(randomUUID(), name)
+    runInTransaction(db, () => {
+      for (const name of DEFAULT_CATEGORIES) insert.run(randomUUID(), name)
     })
-    insertMany(DEFAULT_CATEGORIES)
   }
 
   return db

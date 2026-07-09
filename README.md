@@ -10,6 +10,10 @@ areas on the floorplan to storage spaces, and make the matching area blink
 
 ## Installation
 
+**Requires Node.js 22.5.0 or newer** (uses the built-in `node:sqlite` module —
+no native dependencies to compile, so installation is simple on any platform,
+including the Signal K App Store's script-free install process).
+
 **Via the Signal K App Store (recommended):** open the Signal K Admin UI,
 go to **Server → App Store**, search for "Stowage Management", and click
 **Install**. Restart the server when prompted, then enable the plugin under
@@ -24,25 +28,6 @@ go to **Server → App Store**, search for "Stowage Management", and click
    ```
    cd signalk-stowage-mgmt
    npm install
-   ```
-   This plugin depends on `better-sqlite3`, a native module. Most of the
-   time a prebuilt binary is downloaded automatically and this "just works" —
-   but depending on your platform, architecture, and Node.js version, you may
-   need to install some system packages first so it can compile from source
-   instead. On Debian/Ubuntu-based systems (including Raspberry Pi OS), if
-   `npm install` fails or the plugin won't start afterward, try:
-   ```
-   sudo apt-get install -y build-essential python3 libsqlite3-dev
-   ```
-   then re-run `npm install` (or `npm rebuild better-sqlite3 --build-from-source`
-   in the plugin's directory).
-
-   If that doesn't help, your npm setup may be blocking install scripts from
-   running at all (some setups gate this for security). If so, approve the
-   script and rebuild:
-   ```
-   npm approve-scripts better-sqlite3
-   npm rebuild
    ```
 3. Restart the Signal K server.
 4. In the Admin UI, enable the plugin under **Server → Plugin Config**
