@@ -14,6 +14,10 @@ areas on the floorplan to storage spaces, and make the matching area blink
 no native dependencies to compile, so installation is simple on any platform,
 including the Signal K App Store's script-free install process).
 
+**Not compatible with Victron Cerbo GX / Venus OS**, at least as of this
+writing — those ship Node.js 20, which predates `node:sqlite`. This plugin
+won't run there until Venus OS bundles a newer Node.js version.
+
 **Via the Signal K App Store (recommended):** open the Signal K Admin UI,
 go to **Server → App Store**, search for "Stowage Management", and click
 **Install**. Restart the server when prompted, then enable the plugin under
