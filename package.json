@@ -12,6 +12,9 @@
     "displayName": "Stowage Management"
   },
   "main": "plugin/index.js",
+  "scripts": {
+    "test": "node -e \"console.log('No dedicated test suite yet. See CI job steps (entry point, schema, and start/stop lifecycle checks) for automated plugin validation.')\""
+  },
   "author": "Tobias Rosenstock",
   "repository": {
     "type": "git",
