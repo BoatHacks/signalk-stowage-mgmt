@@ -194,6 +194,10 @@ Indexes exist on `locations.parent_id`, `locations.floorplan_id`,
 
 ## API (under `/plugins/signalk-stowage-mgmt`)
 
+Also published as an OpenAPI 3.0 spec (`openApi.json`), which renders in
+the Signal K Admin UI under **Documentation → OpenAPI** once the plugin is
+enabled.
+
 All request/response bodies are JSON. Errors are `{ "error": "..." }` with
 an appropriate HTTP status code.
 

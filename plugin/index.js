@@ -34,6 +34,10 @@ module.exports = function (app) {
     properties: {}
   }
 
+  plugin.getOpenApi = function () {
+    return require('../openApi.json')
+  }
+
   // The server mounts this router under /plugins/signalk-stowage-mgmt
   plugin.registerWithRouter = function (router) {
     router.use(jsonBodyParser({ limit: 15 * 1024 * 1024 })) // floorplan SVGs can be a few MB
