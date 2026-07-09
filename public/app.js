@@ -1207,7 +1207,7 @@ function renderSearchResults (query) {
   const q = query.toLowerCase()
   const matches = state.items.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8)
   if (!matches.length) {
-    box.innerHTML = '<div class="search-result">Keine Treffer</div>'
+    box.innerHTML = '<div class="search-result">No results</div>'
     box.classList.add('open')
     return
   }
@@ -1238,12 +1238,42 @@ async function locateItem (item) {
     if (target) {
       target.classList.add('inv-blinking')
       target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      blinkTimer = setTimeout(() => target.classList.remove('inv-blinking'), 6000)
-      toast(`"${item.name}" is located in ${result.storage_space.name}`)
+      showLocateItemPopup(item)
+      blinkTimer = setTimeout(() => {
+        target.classList.remove('inv-blinking')
+      }, 6000)
     }
   } catch (e) {
     toast(`"${item.name}": ${e.message}`)
   }
+}
+
+function showLocateItemPopup (item) {
+  const popup = document.getElementById('locate-item-popup')
+  popup.innerHTML = ''
+
+  const closeBtn = document.createElement('button')
+  closeBtn.className = 'modal-close locate-item-popup-close'
+  closeBtn.setAttribute('aria-label', 'Close')
+  closeBtn.textContent = '\u00d7'
+  closeBtn.onclick = () => {
+    clearTimeout(blinkTimer)
+    document.querySelectorAll('.inv-blinking').forEach(el => el.classList.remove('inv-blinking'))
+    hideLocateItemPopup()
+  }
+  popup.appendChild(closeBtn)
+
+  const title = document.createElement('div')
+  title.className = 'orphaned-panel-title'
+  title.textContent = 'Found'
+  popup.appendChild(title)
+
+  popup.appendChild(renderItemRow(item))
+  popup.classList.remove('hidden')
+}
+
+function hideLocateItemPopup () {
+  document.getElementById('locate-item-popup').classList.add('hidden')
 }
 
 // ---------- overview table ----------
@@ -1741,6 +1771,7 @@ function switchTab (name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name))
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`))
   updateOrphanedPanelVisibility()
+  if (name !== 'floorplan') hideLocateItemPopup()
   if (name === 'floorplan') fitFloorplanSvg()
 }
 
