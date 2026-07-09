@@ -833,3 +833,73 @@ select {
   border-radius: 6px;
   font-size: 13px;
 }
+
+/* ---------- move dialog ---------- */
+
+.move-modal-chip-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.move-drag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2f6f2f;
+  color: #fff;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: grab;
+  user-select: none;
+}
+.move-drag-chip:active { cursor: grabbing; }
+.move-drag-chip.dragging { opacity: 0.4; }
+.move-drag-chip::before {
+  content: "\1F4E6"; /* package emoji */
+}
+
+.move-modal-floorplan {
+  min-height: 120px;
+  margin-bottom: 12px;
+}
+
+.move-container-popup {
+  position: fixed;
+  z-index: 1100;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  width: 200px;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.move-container-popup-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 4px 4px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 2px;
+}
+
+.move-container-popup button {
+  text-align: left;
+  background: #f7f7f5;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.move-container-popup button:hover { background: #eaf3ea; border-color: #4a8f4a; }

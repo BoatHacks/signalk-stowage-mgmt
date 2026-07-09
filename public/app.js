@@ -254,7 +254,7 @@ function renderNode (loc) {
 
   actions.appendChild(mkIconBtn('edit', 'Rename', () => renameLocation(loc)))
   if (loc.type === 'container') {
-    actions.appendChild(mkIconBtn('move', 'Move', () => moveLocation(loc)))
+    actions.appendChild(mkIconBtn('move', 'Move', () => openMoveDialog('container', loc)))
   }
   actions.appendChild(mkIconBtn('delete', 'Delete', () => deleteLocation(loc), 'danger'))
 
@@ -311,7 +311,7 @@ function renderItemRow (item) {
   const actions = document.createElement('span')
   actions.appendChild(mkIconBtn('edit', 'Edit', () => openItemPropertiesDialog(item)))
   actions.appendChild(mkIconBtn('photo', 'Photo', () => openPhotoDialog(item)))
-  actions.appendChild(mkIconBtn('move', 'Move', () => moveItem(item)))
+  actions.appendChild(mkIconBtn('move', 'Move', () => openMoveDialog('item', item)))
   actions.appendChild(mkIconBtn('delete', 'Delete', () => deleteItem(item), 'danger'))
   main.appendChild(actions)
   row.appendChild(main)
@@ -721,37 +721,176 @@ async function renameLocation (loc) {
   }
 }
 
-async function moveLocation (loc) {
-  const forbidden = new Set([loc.id, ...descendantIds(loc.id)])
-  const targets = state.locations.filter(l => !forbidden.has(l.id))
-  if (!targets.length) return toast('No valid target available.')
-  const listStr = targets.map((t, i) => `${i + 1}: ${pathToRoot(t.id)} [${t.type === 'storage_space' ? 'Storage Space' : 'Container'}]`).join('\n')
-  const answer = prompt(`Move "${loc.name}" to where?\n0 = top level\n${listStr}`)
-  if (answer === null) return
-  const idx = parseInt(answer, 10)
-  if (idx === 0) {
-    await api(`/locations/${loc.id}/move`, { method: 'PATCH', body: JSON.stringify({ parent_id: null }) })
-  } else if (idx > 0 && idx <= targets.length) {
-    await api(`/locations/${loc.id}/move`, { method: 'PATCH', body: JSON.stringify({ parent_id: targets[idx - 1].id }) })
-  } else {
-    return
+// ---------- move dialog ----------
+
+let moveModalType = null // 'item' | 'container'
+let moveModalEntity = null
+
+function openMoveDialog (type, entity) {
+  moveModalType = type
+  moveModalEntity = entity
+  document.getElementById('move-modal-title').textContent = `Move "${entity.name}"`
+  document.getElementById('move-modal-chip-label').textContent = entity.name
+
+  const chip = document.getElementById('move-modal-chip')
+  chip.ondragstart = (e) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', entity.id)
+    e.dataTransfer.setData('application/x-drag-type', type === 'item' ? 'item' : 'container')
+    chip.classList.add('dragging')
   }
-  await refresh()
+  chip.ondragend = () => chip.classList.remove('dragging')
+
+  renderMoveModalFloorplan()
+  renderMoveModalFallbackList()
+  document.getElementById('move-modal-overlay').classList.remove('hidden')
 }
 
-async function moveItem (item) {
-  const listStr = state.locations.map((l, i) => `${i + 1}: ${pathToRoot(l.id)} [${l.type === 'storage_space' ? 'Storage Space' : 'Container'}]`).join('\n')
-  const answer = prompt(`Move "${item.name}" to where?\n0 = no location\n${listStr}`)
-  if (answer === null) return
-  const idx = parseInt(answer, 10)
-  if (idx === 0) {
-    await api(`/items/${item.id}/move`, { method: 'PATCH', body: JSON.stringify({ location_id: null }) })
-  } else if (idx > 0 && idx <= state.locations.length) {
-    await api(`/items/${item.id}/move`, { method: 'PATCH', body: JSON.stringify({ location_id: state.locations[idx - 1].id }) })
-  } else {
+function closeMoveDialog () {
+  document.getElementById('move-modal-overlay').classList.add('hidden')
+  hideMoveContainerPopup()
+  moveModalType = null
+  moveModalEntity = null
+}
+
+// Locations this move may not target: for a container, itself and any of
+// its own descendants (would create a cycle). Items have no such
+// restriction.
+function moveForbiddenIds () {
+  if (moveModalType !== 'container') return new Set()
+  return new Set([moveModalEntity.id, ...descendantIds(moveModalEntity.id)])
+}
+
+async function renderMoveModalFloorplan () {
+  const container = document.getElementById('move-modal-floorplan')
+  container.innerHTML = ''
+  hideMoveContainerPopup()
+
+  if (!state.floorplans.length) {
+    container.innerHTML = '<p class="hint">No floorplan uploaded — pick a target from the list below.</p>'
     return
   }
-  await refresh()
+
+  const fp = await api(`/floorplans/${state.floorplans[0].id}`)
+  container.innerHTML = fp.svg_content
+  const svg = container.querySelector('svg')
+  if (!svg) {
+    container.innerHTML = '<p class="hint">This floorplan file does not contain a valid &lt;svg&gt;.</p>'
+    return
+  }
+
+  const forbidden = moveForbiddenIds()
+  const assignable = svg.querySelectorAll('path[id], polygon[id], rect[id], circle[id], ellipse[id]')
+
+  assignable.forEach(el => {
+    const space = state.locations.find(
+      l => l.type === 'storage_space' && l.floorplan_id === fp.id && l.svg_element_id === el.id
+    )
+    if (!space || forbidden.has(space.id)) return
+
+    el.setAttribute('data-assignable', 'true')
+    el.setAttribute('data-mapped', 'true')
+
+    el.addEventListener('mouseenter', () => showMoveContainerPopup(el, space))
+    el.addEventListener('click', () => performMove(space.id, space.name))
+
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      el.classList.add('floorplan-drop-target')
+    })
+    el.addEventListener('dragleave', () => el.classList.remove('floorplan-drop-target'))
+    el.addEventListener('drop', (e) => {
+      e.preventDefault()
+      el.classList.remove('floorplan-drop-target')
+      performMove(space.id, space.name)
+    })
+  })
+
+  fitFloorplanSvgIn(container)
+}
+
+function showMoveContainerPopup (anchorEl, space) {
+  const popup = document.getElementById('move-container-popup')
+  const forbidden = moveForbiddenIds()
+  const containers = childLocations(space.id).filter(l => l.type === 'container' && !forbidden.has(l.id))
+
+  popup.innerHTML = ''
+  const title = document.createElement('div')
+  title.className = 'move-container-popup-title'
+  title.textContent = space.name
+  popup.appendChild(title)
+
+  const topLevelBtn = document.createElement('button')
+  topLevelBtn.type = 'button'
+  topLevelBtn.textContent = '→ this storage space'
+  topLevelBtn.onclick = () => performMove(space.id, space.name)
+  popup.appendChild(topLevelBtn)
+
+  containers.forEach(c => {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.textContent = `→ ${c.name}`
+    btn.onclick = () => performMove(c.id, c.name)
+    popup.appendChild(btn)
+  })
+
+  const rect = anchorEl.getBoundingClientRect()
+  popup.style.left = `${Math.min(rect.right + 8, window.innerWidth - 220)}px`
+  popup.style.top = `${Math.max(8, rect.top)}px`
+  popup.classList.remove('hidden')
+}
+
+function hideMoveContainerPopup () {
+  document.getElementById('move-container-popup').classList.add('hidden')
+}
+
+function renderMoveModalFallbackList () {
+  const list = document.getElementById('move-modal-fallback-list')
+  const title = document.getElementById('move-modal-fallback-title')
+  list.innerHTML = ''
+
+  const forbidden = moveForbiddenIds()
+  const mappedIds = new Set(
+    state.locations
+      .filter(l => l.type === 'storage_space' && state.floorplans.length && l.floorplan_id === state.floorplans[0].id)
+      .map(l => l.id)
+  )
+
+  const targets = state.locations.filter(l => !forbidden.has(l.id) && !mappedIds.has(l.id))
+
+  const topLevelChip = document.createElement('button')
+  topLevelChip.type = 'button'
+  topLevelChip.className = 'category-chip'
+  topLevelChip.textContent = moveModalType === 'item' ? 'No Location' : 'Top Level'
+  topLevelChip.onclick = () => performMove(null, topLevelChip.textContent)
+  list.appendChild(topLevelChip)
+
+  targets.forEach(loc => {
+    const chip = document.createElement('button')
+    chip.type = 'button'
+    chip.className = 'category-chip'
+    chip.textContent = `${pathToRoot(loc.id)} [${loc.type === 'storage_space' ? 'Storage Space' : 'Container'}]`
+    chip.onclick = () => performMove(loc.id, loc.name)
+    list.appendChild(chip)
+  })
+
+  title.classList.toggle('hidden', targets.length === 0)
+}
+
+async function performMove (targetId, targetName) {
+  try {
+    if (moveModalType === 'item') {
+      await api(`/items/${moveModalEntity.id}/move`, { method: 'PATCH', body: JSON.stringify({ location_id: targetId }) })
+    } else {
+      await api(`/locations/${moveModalEntity.id}/move`, { method: 'PATCH', body: JSON.stringify({ parent_id: targetId }) })
+    }
+    await refresh()
+    toast(`Moved "${moveModalEntity.name}" to ${targetName}.`)
+    closeMoveDialog()
+  } catch (e) {
+    toast(e.message)
+  }
 }
 
 async function deleteLocation (loc) {
@@ -1590,7 +1729,10 @@ function switchTab (name) {
 // Re-run whenever the SVG changes, the floorplan tab becomes active, or the
 // window is resized.
 function fitFloorplanSvg () {
-  const container = document.getElementById('floorplan-container')
+  fitFloorplanSvgIn(document.getElementById('floorplan-container'))
+}
+
+function fitFloorplanSvgIn (container) {
   const svg = container && container.querySelector('svg')
   if (!svg) return
   const style = window.getComputedStyle(container)
@@ -1651,6 +1793,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.target.dataset.prefilled = 'false'
     }
   })
+  document.getElementById('move-modal-close').onclick = closeMoveDialog
+  document.getElementById('move-modal-overlay').onclick = (e) => {
+    if (e.target.id === 'move-modal-overlay') closeMoveDialog()
+  }
+  document.getElementById('move-modal-floorplan').addEventListener('mouseleave', hideMoveContainerPopup)
   document.getElementById('photo-modal-close').onclick = closePhotoModal
   document.getElementById('photo-modal-overlay').onclick = (e) => {
     if (e.target.id === 'photo-modal-overlay') closePhotoModal()
@@ -1676,6 +1823,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       closePhotoModal()
       closePropertiesModal()
       closeExportModal()
+      closeMoveDialog()
     }
   })
   document.getElementById('category-modal-new').onclick = async () => {

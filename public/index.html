@@ -101,6 +101,29 @@
     </div>
   </div>
 
+  <div id="move-modal-overlay" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2 id="move-modal-title">Move</h2>
+        <button id="move-modal-close" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <p class="hint">Drag the chip onto a storage space below, or click a storage space (hover first to see its containers).</p>
+
+      <div class="move-modal-chip-row">
+        <span id="move-modal-chip" class="move-drag-chip" draggable="true">
+          <span id="move-modal-chip-label"></span>
+        </span>
+      </div>
+
+      <div id="move-modal-floorplan" class="floorplan-container move-modal-floorplan"></div>
+
+      <div id="move-modal-fallback-title" class="orphaned-panel-title hidden">Other targets</div>
+      <div id="move-modal-fallback-list" class="category-chip-list"></div>
+    </div>
+  </div>
+
+  <div id="move-container-popup" class="move-container-popup hidden"></div>
+
   <div id="location-modal-overlay" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
