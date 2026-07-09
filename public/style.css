@@ -903,3 +903,27 @@ select {
   cursor: pointer;
 }
 .move-container-popup button:hover { background: #eaf3ea; border-color: #4a8f4a; }
+
+/* Photo and Category dialogs can be opened from within the Properties
+   dialog, so they need to stack visually above it regardless of DOM order. */
+#photo-modal-overlay,
+#category-modal-overlay {
+  z-index: 1050;
+}
+
+/* ---------- item properties dialog: quick actions + live preview ---------- */
+
+.properties-quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.notes-preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 10px 0 4px;
+}

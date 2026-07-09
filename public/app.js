@@ -1429,21 +1429,30 @@ function renderCategories () {
 
 // ---------- export as markdown ----------
 
+// True if this location, or any of its descendant locations, contains at
+// least one item — used to skip empty branches in the markdown export.
+function locationHasAnyItems (locId) {
+  if (itemsIn(locId).length > 0) return true
+  return childLocations(locId).some(child => locationHasAnyItems(child.id))
+}
+
 function itemMarkdownLine (item) {
-  let line = `- ${item.name} — ×${item.actual_quantity}`
+  const understocked = item.target_quantity !== null && item.target_quantity !== undefined &&
+    item.actual_quantity < item.target_quantity
+  let qtyPart = `\u00d7${item.actual_quantity}`
   if (item.target_quantity !== null && item.target_quantity !== undefined) {
-    line += ` (target ${item.target_quantity})`
+    qtyPart += ` (target ${item.target_quantity})`
   }
-  const cats = (item.categories || []).map(c => c.name)
-  if (cats.length) line += ` [${cats.join(', ')}]`
-  return line
+  if (understocked) qtyPart = `**${qtyPart}**`
+  return `- ${item.name} \u2014 ${qtyPart}`
 }
 
 function buildInventoryMarkdown () {
-  const lines = ['# Inventory Export', '']
+  const lines = []
 
+  // Always renders — used for containers, which show even when empty.
   const renderLocation = (loc, depth) => {
-    const headingLevel = Math.min(depth + 1, 6)
+    const headingLevel = Math.min(depth, 6)
     lines.push(`${'#'.repeat(headingLevel)} ${loc.name}`)
     lines.push('')
     const items = itemsIn(loc.id)
@@ -1452,13 +1461,17 @@ function buildInventoryMarkdown () {
     childLocations(loc.id).forEach(child => renderLocation(child, depth + 1))
   }
 
+  // Storage spaces are the one thing skipped entirely when empty
+  // (recursively, i.e. no items anywhere in their subtree).
   const topLevel = childLocations(null).filter(l => l.type === 'storage_space')
-  topLevel.forEach(loc => renderLocation(loc, 1))
+  topLevel.forEach(loc => {
+    if (locationHasAnyItems(loc.id)) renderLocation(loc, 1)
+  })
 
   const orphanedContainers = childLocations(null).filter(l => l.type === 'container')
   const unassignedItems = itemsIn(null)
   if (orphanedContainers.length || unassignedItems.length) {
-    lines.push('## Not Stored')
+    lines.push('# Not Stored')
     lines.push('')
     orphanedContainers.forEach(loc => renderLocation(loc, 2))
     unassignedItems.forEach(item => lines.push(itemMarkdownLine(item)))
@@ -1625,6 +1638,10 @@ function openItemPropertiesDialog (item) {
   document.getElementById('properties-modal-overlay').classList.remove('hidden')
 }
 
+function currentPropertiesItem () {
+  return state.items.find(i => i.id === propertiesModalItemId)
+}
+
 function closePropertiesModal () {
   document.getElementById('properties-modal-overlay').classList.add('hidden')
   propertiesModalItemId = null
@@ -1634,13 +1651,16 @@ function showPropertiesNotesTab (which) {
   const showTab = document.getElementById('properties-notes-tab-show')
   const editTab = document.getElementById('properties-notes-tab-edit')
   const textarea = document.getElementById('properties-notes-textarea')
+  const previewLabel = document.getElementById('properties-notes-preview-label')
   const preview = document.getElementById('properties-notes-preview')
   const isShow = which === 'show'
   showTab.classList.toggle('active', isShow)
   editTab.classList.toggle('active', !isShow)
   textarea.classList.toggle('hidden', isShow)
-  preview.classList.toggle('hidden', !isShow)
-  if (isShow) preview.innerHTML = renderMarkdown(textarea.value)
+  // The preview stays visible in both modes: in Show mode it's the only
+  // thing shown; in Edit mode it renders live below the textarea.
+  previewLabel.classList.toggle('hidden', isShow)
+  preview.innerHTML = renderMarkdown(textarea.value)
 }
 
 async function savePropertiesModal () {
@@ -1815,6 +1835,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('properties-modal-save').onclick = savePropertiesModal
   document.getElementById('properties-notes-tab-show').onclick = () => showPropertiesNotesTab('show')
   document.getElementById('properties-notes-tab-edit').onclick = () => showPropertiesNotesTab('edit')
+  document.getElementById('properties-notes-textarea').addEventListener('input', (e) => {
+    document.getElementById('properties-notes-preview').innerHTML = renderMarkdown(e.target.value)
+  })
+  document.getElementById('properties-add-photo-btn').onclick = () => {
+    const item = currentPropertiesItem()
+    if (item) openPhotoDialog(item)
+  }
+  document.getElementById('properties-add-category-btn').onclick = () => {
+    const item = currentPropertiesItem()
+    if (item) openCategoryDialog(item)
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
