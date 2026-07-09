@@ -90,9 +90,13 @@ go to **Server → App Store**, search for "Stowage Management", and click
   since those area assignments are cleared (and the old floorplan deleted)
   as part of the replacement.
 - **Important:** only SVG elements (`path`, `polygon`, `rect`, `circle`,
-  `ellipse`) that already have an `id` attribute in the SVG source can be
-  clicked and assigned. Add IDs e.g. in Inkscape's "Object Properties"
-  panel, or edit the SVG source directly.
+  `ellipse`) that already have a **custom** `id` attribute in the SVG
+  source can be clicked and assigned. Auto-generated IDs from your SVG
+  editor (e.g. Inkscape's default `path10340`, `rect4821-3`, etc.) are
+  ignored, so tracing a floorplan without renaming anything won't turn
+  every single shape into a storage area. Give the shapes you want to use
+  a custom ID, e.g. in Inkscape's "Object Properties" panel, or by editing
+  the SVG source directly.
 - **Display mode** (default): click an area to pop open a panel showing
   everything stored in the matching storage space (fully interactive —
   same container/item rendering as the Inventory tab).

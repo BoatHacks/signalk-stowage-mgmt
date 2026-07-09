@@ -71,6 +71,14 @@ export function FloorplanTab() {
   }
 
   function onSvgReady(count) {
+    if (count === 0) {
+      setHint(
+        'No assignable areas found. Shapes with an auto-generated ID from your SVG editor ' +
+        '(e.g. "path10340") are ignored \u2014 give the shapes you want to use as storage areas a ' +
+        'custom ID (e.g. in Inkscape\u2019s Object Properties panel) and re-upload.'
+      );
+      return;
+    }
     setHint(app.floorplanMode === 'edit'
       ? count + ' assignable area(s) found. Light blue areas have no storage space assigned yet \u2014 click an area to assign it.'
       : count + " assignable area(s) found. Click an area to see what's stored there.");
