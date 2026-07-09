@@ -2,16 +2,16 @@
 
 > ⚠️ **Warning:** this is 100% vibecoded AI slop, install and use at your own risk, and always remember: only you can prevent grey goo! never release nanobot assemblers without replication limiting code.
 
-> 🧪 **`buildless-refactor` branch:** the frontend here has been rewritten as
-> a buildless Preact + [htm](https://github.com/developit/htm) SPA — no
-> bundler, no transpile step, targeting old embedded browsers (tested against
-> Chromium 69, as found on some Navico/B&G MFD displays). Preact/htm are
-> vendored locally (`public/vendor/preact-htm-standalone.js`, a single
-> self-contained ES module) so the app works fully offline with no CDN
-> dependency. Adds a light/dark theme toggle and live polling (the UI
-> refreshes from the server every 5s, so multiple simultaneous viewers stay
-> in sync) on top of the existing feature set. The backend (`plugin/`) is
-> unchanged — same REST API, same SQLite schema. Not yet merged to `main`.
+> 🧪 **Frontend architecture:** the frontend is a buildless Preact +
+> [htm](https://github.com/developit/htm) SPA — no bundler, no transpile
+> step, targeting old embedded browsers (tested against Chromium 69, as
+> found on some Navico/B&G MFD displays). Preact/htm are vendored locally
+> (`public/vendor/preact-htm-standalone.js`, a single self-contained ES
+> module) so the app works fully offline with no CDN dependency. Includes a
+> light/dark theme toggle and live polling (the UI refreshes from the
+> server every 5s, so multiple simultaneous viewers stay in sync). The
+> backend (`plugin/`) is a standard Signal K plugin — same REST API, same
+> SQLite schema, unaffected by the frontend's architecture.
 
 Inventory manager for Signal K Server. Organize items into containers and
 storage spaces (nested to any depth), track actual vs. target quantities,
