@@ -1,0 +1,259 @@
+import { h, html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
+import { useApp } from './app-core.js';
+import { childLocations, descendantIds, pathToRoot, deriveNameFromSvgElementId } from './helpers.js';
+
+// Fits an already-injected SVG's height to the visible viewport below its
+// container, in addition to CSS max-width:100% which caps its width.
+export function fitFloorplanSvgIn(container) {
+  var svg = container && container.querySelector('svg');
+  if (!svg) return;
+  var style = window.getComputedStyle(container);
+  var verticalChrome =
+    parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
+    parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+  var top = container.getBoundingClientRect().top;
+  var bottomMargin = 24;
+  var available = Math.max(150, window.innerHeight - top - verticalChrome - bottomMargin);
+  svg.style.maxHeight = available + 'px';
+}
+
+// Injects raw SVG markup into a container and wires up interaction on every
+// assignable shape (path/polygon/rect/circle/ellipse with an id). Since the
+// SVG comes from an untrusted string, we can't express per-shape behavior as
+// Preact props — we inject via innerHTML, then imperatively attach listeners
+// to the resulting DOM, same approach as the original vanilla-JS app.
+export function FloorplanSvg(props) {
+  var containerRef = useRef(null);
+
+  useEffect(function () {
+    var container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = props.svgContent || '';
+    var svg = container.querySelector('svg');
+    if (!svg) return;
+
+    var assignable = svg.querySelectorAll('path[id], polygon[id], rect[id], circle[id], ellipse[id]');
+    assignable.forEach(function (el) {
+      var isMapped = props.mappedIds && props.mappedIds.indexOf(el.id) !== -1;
+      el.setAttribute('data-assignable', 'true');
+      if (isMapped) el.setAttribute('data-mapped', 'true');
+      if (props.unmappedHighlight && !isMapped) el.setAttribute('data-edit-unmapped', 'true');
+
+      if (props.onAreaClick) {
+        el.addEventListener('click', function () { props.onAreaClick(el.id); });
+      }
+      if (props.onAreaHover) {
+        el.addEventListener('mouseenter', function () { props.onAreaHover(el.id, el); });
+      }
+      if (props.onAreaDrop) {
+        el.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          el.classList.add('floorplan-drop-target');
+        });
+        el.addEventListener('dragleave', function () { el.classList.remove('floorplan-drop-target'); });
+        el.addEventListener('drop', function (e) {
+          e.preventDefault();
+          el.classList.remove('floorplan-drop-target');
+          props.onAreaDrop(el.id, e);
+        });
+      }
+    });
+
+    if (props.fit) fitFloorplanSvgIn(container);
+    if (props.onReady) props.onReady(assignable.length);
+  }, [props.svgContent, props.mappedIds, props.unmappedHighlight]);
+
+  return html`<div ref=${containerRef} class=${props.className || 'floorplan-container'}></div>`;
+}
+
+// ---------- area assignment modal (edit mode) ----------
+
+export function LocationAssignModal() {
+  var app = useApp();
+  var svgElementId = app.locationAssignSvgElementId;
+  var newNameState = useState('');
+  var newName = newNameState[0], setNewName = newNameState[1];
+  var prefilledRef = useRef(true);
+
+  useEffect(function () {
+    if (svgElementId) {
+      setNewName(deriveNameFromSvgElementId(svgElementId));
+      prefilledRef.current = true;
+    }
+  }, [svgElementId]);
+
+  if (!svgElementId) return null;
+
+  var storageSpaces = app.data.locations.filter(function (l) { return l.type === 'storage_space'; });
+  var floorplanId = app.data.floorplans.length ? app.data.floorplans[0].id : null;
+
+  function toggle(space, shouldAssign) {
+    var action = shouldAssign
+      ? app.setSvgMapping(space.id, floorplanId, svgElementId)
+      : app.setSvgMapping(space.id, null, null);
+    action.catch(app.showToast);
+  }
+
+  function createAndAssign() {
+    var name = newName.trim();
+    if (!name) return app.showToast('Enter a name for the new storage space.');
+    app.createLocation({ name: name, type: 'storage_space' })
+      .then(function (space) { return app.setSvgMapping(space.id, floorplanId, svgElementId); })
+      .then(function () { setNewName(''); })
+      .catch(app.showToast);
+  }
+
+  return html`
+    <div class="modal-overlay" onClick=${function (e) { if (e.target === e.currentTarget) app.closeLocationAssignModal(); }}>
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Assign area "${svgElementId}"</h2>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeLocationAssignModal}>&times;</button>
+        </div>
+        <p class="hint">Click a storage space to assign this area to it, or click it again to remove the assignment.</p>
+        <div class="category-chip-list">
+          ${!storageSpaces.length ? html`<span class="category-chip-empty">No storage spaces yet &mdash; create one below.</span>` : null}
+          ${storageSpaces.map(function (s) {
+            var isAssigned = s.floorplan_id === floorplanId && s.svg_element_id === svgElementId;
+            return html`
+              <button type="button" key=${s.id} class=${'category-chip' + (isAssigned ? ' assigned' : '')}
+                      onClick=${function () { toggle(s, !isAssigned); }}>${s.name}</button>
+            `;
+          })}
+        </div>
+        <div class="modal-footer location-modal-new-row">
+          <input type="text" placeholder="New storage space name&hellip;" value=${newName}
+                 onFocus=${function (e) { if (prefilledRef.current) { setNewName(''); prefilledRef.current = false; } }}
+                 onInput=${function (e) { setNewName(e.target.value); }}
+                 onKeyDown=${function (e) { if (e.key === 'Enter') createAndAssign(); }} />
+          <button type="button" onClick=${createAndAssign}>+ Storage</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- move dialog (floorplan-based target picker) ----------
+
+export function MoveModal() {
+  var app = useApp();
+  var move = app.moveModal; // { type: 'item'|'container', entity }
+  var popupState = useState(null); // { space, x, y }
+  var popup = popupState[0], setPopup = popupState[1];
+  var floorplanContentState = useState(null); // full floorplan { id, name, svg_content } or null
+  var floorplanContent = floorplanContentState[0], setFloorplanContent = floorplanContentState[1];
+
+  var summary = app.data.floorplans.length ? app.data.floorplans[0] : null;
+
+  useEffect(function () {
+    if (!move || !summary) { setFloorplanContent(null); return; }
+    var cancelled = false;
+    app.getFloorplan(summary.id).then(function (fp) {
+      if (!cancelled) setFloorplanContent(fp);
+    }).catch(function () { if (!cancelled) setFloorplanContent(null); });
+    return function () { cancelled = true; };
+  }, [move ? move.entity.id : null, summary ? summary.id : null]);
+
+  if (!move) return null;
+
+  var forbidden = move.type === 'container'
+    ? [move.entity.id].concat(descendantIds(app.data, move.entity.id))
+    : [];
+  var floorplan = floorplanContent;
+  var mappedIds = app.data.locations
+    .filter(function (l) { return l.type === 'storage_space' && floorplan && l.floorplan_id === floorplan.id && forbidden.indexOf(l.id) === -1; })
+    .map(function (l) { return l.svg_element_id; });
+
+  function spaceForElementId(elementId) {
+    return app.data.locations.find(function (l) {
+      return l.type === 'storage_space' && floorplan && l.floorplan_id === floorplan.id && l.svg_element_id === elementId;
+    });
+  }
+
+  function performMove(targetId, targetName) {
+    var action = move.type === 'item' ? app.moveItemTo(move.entity.id, targetId) : app.moveContainer(move.entity.id, targetId);
+    action.then(function () {
+      app.showToast('Moved "' + move.entity.name + '" to ' + targetName + '.');
+      app.closeMoveModal();
+    }).catch(app.showToast);
+  }
+
+  function onAreaClick(elementId) {
+    var space = spaceForElementId(elementId);
+    if (!space) return;
+    performMove(space.id, space.name);
+  }
+
+  function onAreaHover(elementId, el) {
+    var space = spaceForElementId(elementId);
+    if (!space) return;
+    var rect = el.getBoundingClientRect();
+    setPopup({ space: space, x: Math.min(rect.right + 8, window.innerWidth - 220), y: Math.max(8, rect.top) });
+  }
+
+  function onAreaDrop(elementId) {
+    var space = spaceForElementId(elementId);
+    if (space) performMove(space.id, space.name);
+  }
+
+  var fallbackTargets = app.data.locations.filter(function (l) {
+    if (forbidden.indexOf(l.id) !== -1) return false;
+    return !(l.type === 'storage_space' && floorplan && l.floorplan_id === floorplan.id);
+  });
+
+  return html`
+    <div class="modal-overlay" onClick=${function (e) { if (e.target === e.currentTarget) app.closeMoveModal(); }}>
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h2>Move "${move.entity.name}"</h2>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeMoveModal}>&times;</button>
+        </div>
+        <p class="hint">Drag the chip onto a storage space below, or click a storage space (hover first to see its containers).</p>
+
+        <div class="move-modal-chip-row">
+          <span class="move-drag-chip" draggable="true"
+                onDragStart=${function (e) {
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', move.entity.id);
+                  e.dataTransfer.setData('application/x-drag-type', move.type);
+                }}>
+            <span>${move.entity.name}</span>
+          </span>
+        </div>
+
+        ${floorplan ? html`
+          <${FloorplanSvg} svgContent=${floorplan.svg_content} className="floorplan-container move-modal-floorplan"
+                           mappedIds=${mappedIds} onAreaClick=${onAreaClick} onAreaHover=${onAreaHover} onAreaDrop=${onAreaDrop} fit=${true} />
+        ` : html`<p class="hint">No floorplan uploaded &mdash; pick a target from the list below.</p>`}
+
+        ${fallbackTargets.length ? html`
+          <div class="orphaned-panel-title">Other targets</div>
+          <div class="category-chip-list">
+            <button type="button" class="category-chip" onClick=${function () { performMove(null, move.type === 'item' ? 'No Location' : 'Top Level'); }}>
+              ${move.type === 'item' ? 'No Location' : 'Top Level'}
+            </button>
+            ${fallbackTargets.map(function (loc) {
+              return html`
+                <button type="button" key=${loc.id} class="category-chip"
+                        onClick=${function () { performMove(loc.id, loc.name); }}>
+                  ${pathToRoot(app.data, loc.id)} [${loc.type === 'storage_space' ? 'Storage Space' : 'Container'}]
+                </button>
+              `;
+            })}
+          </div>
+        ` : null}
+      </div>
+
+      ${popup ? html`
+        <div class="move-container-popup" style=${'left:' + popup.x + 'px;top:' + popup.y + 'px;'}>
+          <div class="move-container-popup-title">${popup.space.name}</div>
+          <button type="button" onClick=${function () { performMove(popup.space.id, popup.space.name); }}>&rarr; this storage space</button>
+          ${childLocations(app.data, popup.space.id).filter(function (l) { return l.type === 'container' && forbidden.indexOf(l.id) === -1; }).map(function (c) {
+            return html`<button type="button" key=${c.id} onClick=${function () { performMove(c.id, c.name); }}>&rarr; ${c.name}</button>`;
+          })}
+        </div>
+      ` : null}
+    </div>
+  `;
+}
