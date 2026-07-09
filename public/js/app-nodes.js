@@ -100,6 +100,7 @@ export function LocationNode(props) {
              app.setDragActive(true);
            } : null}
            onDragEnd=${isContainer ? function () { setDragging(false); app.setDragActive(false); } : null}
+           onDragEnter=${function (e) { e.preventDefault(); }}
            onDragOver=${function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setIsDropTarget(true); }}
            onDragLeave=${function () { setIsDropTarget(false); }}
            onDrop=${handleDrop}>
@@ -152,6 +153,7 @@ export function NotStoredPanel() {
     <div class="orphaned-panel">
       <div class="orphaned-panel-title">Not Stored</div>
       <div class="node-header ${isDropTarget ? 'drop-target' : ''}"
+           onDragEnter=${function (e) { e.preventDefault(); }}
            onDragOver=${function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setIsDropTarget(true); }}
            onDragLeave=${function () { setIsDropTarget(false); }}
            onDrop=${handleDrop}>
