@@ -389,8 +389,8 @@ select {
 
 .svg-mapped-badge {
   font-size: 11px;
-  background: #e6f1fb;
-  color: #0c447c;
+  background: var(--category-badge-bg);
+  color: var(--category-badge-text);
   padding: 2px 6px;
   border-radius: 999px;
   pointer-events: none;
@@ -482,8 +482,8 @@ select {
 
 .overview-table .badge-yes {
   font-size: 11px;
-  background: #e6f1fb;
-  color: #0c447c;
+  background: var(--category-badge-bg);
+  color: var(--category-badge-text);
   padding: 2px 6px;
   border-radius: 999px;
 }
