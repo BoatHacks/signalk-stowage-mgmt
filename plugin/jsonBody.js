@@ -5,6 +5,14 @@
 // needed express for was JSON body parsing.
 function jsonBodyParser ({ limit = 1024 * 1024 } = {}) {
   return function (req, res, next) {
+    // If something upstream (e.g. the host server's own body-parsing
+    // middleware) already parsed this request, req.body will already be
+    // set. Reading the request stream a second time in that case finds it
+    // already drained: our 'data'/'end' listeners then never fire, and the
+    // request hangs forever instead of completing. Deferring to whatever
+    // already ran avoids that entirely.
+    if (req.body !== undefined) return next()
+
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'DELETE') {
       req.body = {}
       return next()
@@ -20,11 +28,21 @@ function jsonBodyParser ({ limit = 1024 * 1024 } = {}) {
     const chunks = []
     let aborted = false
 
+    // Safety net: if the body stream never completes for any reason, fail
+    // the request instead of hanging it forever.
+    const timeout = setTimeout(() => {
+      if (aborted) return
+      aborted = true
+      res.status(408).json({ error: 'timed out waiting for request body' })
+      req.destroy()
+    }, 30000)
+
     req.on('data', (chunk) => {
       if (aborted) return
       received += chunk.length
       if (received > limit) {
         aborted = true
+        clearTimeout(timeout)
         res.status(413).json({ error: 'request body too large' })
         req.destroy()
         return
@@ -34,6 +52,7 @@ function jsonBodyParser ({ limit = 1024 * 1024 } = {}) {
 
     req.on('end', () => {
       if (aborted) return
+      clearTimeout(timeout)
       if (!chunks.length) {
         req.body = {}
         return next()
@@ -46,7 +65,10 @@ function jsonBodyParser ({ limit = 1024 * 1024 } = {}) {
       }
     })
 
-    req.on('error', (err) => next(err))
+    req.on('error', (err) => {
+      clearTimeout(timeout)
+      next(err)
+    })
   }
 }
 
