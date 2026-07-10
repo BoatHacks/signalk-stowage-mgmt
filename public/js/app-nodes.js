@@ -109,6 +109,7 @@ export function LocationNode(props) {
           <button type="button" onClick=${function () { app.addContainer(loc.id); }}>+ Container</button>
           <button type="button" onClick=${function () { app.addItem(loc.id); }}>+ Item</button>
           <${IconBtn} icon="edit" title="Rename" onClick=${function () { app.renameLocation(loc); }} />
+          ${!isContainer ? html`<button type="button" title="Manually set the SVG area id this storage space maps to" onClick=${function () { app.setManualSvgId(loc); }}>Area ID</button>` : null}
           ${isContainer ? html`<${IconBtn} icon="move" title="Move" onClick=${function () { app.openMoveModal('container', loc); }} />` : null}
           <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${function () { app.deleteLocation(loc); }} />
         </span>

@@ -121,6 +121,21 @@ function App() {
       if (!name || name === loc.name) return;
       act(function () { return api.renameLocation(loc.id, name); });
     },
+    setManualSvgId: function (loc) {
+      var current = loc.svg_element_id || '';
+      var answer = prompt(
+        'SVG element id for "' + loc.name + '" (from the floorplan\u2019s SVG source). ' +
+        'Useful for areas that overlap another one on the map and can\u2019t be clicked directly. ' +
+        'Leave blank to remove the mapping.',
+        current
+      );
+      if (answer === null) return;
+      var trimmed = answer.trim();
+      if (trimmed === current) return;
+      var floorplanId = trimmed ? (data.floorplans.length ? data.floorplans[0].id : null) : null;
+      if (trimmed && !floorplanId) return showToast('Upload a floorplan first.');
+      act(function () { return api.setSvgMapping(loc.id, floorplanId, trimmed || null); });
+    },
     deleteLocation: function (loc) {
       if (!confirm('Really delete "' + loc.name + '"?')) return;
       act(function () { return api.deleteLocation(loc.id); });

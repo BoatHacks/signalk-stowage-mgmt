@@ -110,6 +110,12 @@ go to **Server → App Store**, search for "Stowage Management", and click
   the field is pre-filled with a name guessed from the area's SVG id
   (e.g. `area-navtable` → "Navtable"), which clears on first click so you
   can type your own.
+- If two areas visually overlap on the floorplan (e.g. a locker drawn
+  above a berth, with storage space behind/below it), only the topmost one
+  is clickable. For the one underneath, use the **"Area ID"** button on
+  that storage space (in the Inventory tree) to type its SVG element id
+  directly instead — no click required. Leave the field blank to remove
+  the mapping.
 
 **Categories (tab):**
 - "+ Category" creates a new category. Four defaults are seeded on first
