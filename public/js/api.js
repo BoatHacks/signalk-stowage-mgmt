@@ -66,6 +66,12 @@ export const api = {
 
   // Floorplans
   listFloorplans: function () { return get('/floorplans'); },
+  getItemLog: function (start, end) {
+    var params = [];
+    if (start) params.push('start=' + encodeURIComponent(start));
+    if (end) params.push('end=' + encodeURIComponent(end));
+    return get('/item-log' + (params.length ? '?' + params.join('&') : ''));
+  },
   getFloorplan: function (id) { return get('/floorplans/' + id); },
   uploadFloorplan: function (name, svgContent) { return post('/floorplans', { name: name, svg_content: svgContent }); },
   deleteFloorplan: function (id) { return del('/floorplans/' + id); }

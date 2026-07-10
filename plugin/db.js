@@ -63,10 +63,24 @@ function initDb (dataDir) {
       PRIMARY KEY (item_id, category_id)
     );
 
+    CREATE TABLE IF NOT EXISTS item_log (
+      id TEXT PRIMARY KEY,
+      item_id TEXT NOT NULL,
+      item_name TEXT NOT NULL,
+      event TEXT NOT NULL CHECK (event IN ('created', 'actual_quantity', 'target_quantity', 'deleted')),
+      old_value INTEGER,
+      new_value INTEGER,
+      delta INTEGER NOT NULL,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_locations_parent ON locations(parent_id);
     CREATE INDEX IF NOT EXISTS idx_locations_floorplan ON locations(floorplan_id);
     CREATE INDEX IF NOT EXISTS idx_items_location ON items(location_id);
     CREATE INDEX IF NOT EXISTS idx_item_categories_category ON item_categories(category_id);
+    CREATE INDEX IF NOT EXISTS idx_item_log_created_at ON item_log(created_at);
+    CREATE INDEX IF NOT EXISTS idx_item_log_item ON item_log(item_id);
   `)
 
   const itemColumns = db.prepare("PRAGMA table_info(items)").all().map(c => c.name)

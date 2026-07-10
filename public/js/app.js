@@ -8,6 +8,7 @@ import { FloorplanTab } from './app-floorplan-tab.js';
 import { CategoriesTab } from './app-categories-tab.js';
 import { OverviewTab } from './app-overview-tab.js';
 import { UnderstockedTab } from './app-understocked-tab.js';
+import { StoreLogTab, buildStoreLogMarkdown } from './app-storelog-tab.js';
 import { ItemPropertiesModal, CategoryModal, ExportModal } from './app-item-modals.js';
 import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
@@ -25,7 +26,8 @@ var TABS = [
   { id: 'floorplan', label: 'Floorplan' },
   { id: 'overview', label: 'Overview' },
   { id: 'categories', label: 'Categories' },
-  { id: 'understocked', label: 'Understocked' }
+  { id: 'understocked', label: 'Understocked' },
+  { id: 'storelog', label: 'Store Log' }
 ];
 
 var EMPTY_DATA = { locations: [], items: [], categories: [], floorplans: [] };
@@ -193,11 +195,16 @@ function App() {
     closeLocationAssignModal: function () { locationAssignSvgElementIdState[1](null); },
 
     exportModalContent: exportModalContentState[0],
-    openExportModal: function (kind) {
-      var text = kind === 'shopping' ? buildShoppingListMarkdown(data) : buildInventoryMarkdown(data);
+    openExportModal: function (kind, payload) {
+      var text;
+      if (kind === 'shopping') text = buildShoppingListMarkdown(data);
+      else if (kind === 'storelog') text = buildStoreLogMarkdown(payload);
+      else text = buildInventoryMarkdown(data);
       exportModalContentState[1](text);
     },
     closeExportModal: function () { exportModalContentState[1](null); },
+
+    getItemLog: function (start, end) { return api.getItemLog(start, end); },
 
     // search / locate
     locateTarget: locateTargetState[0],
@@ -223,6 +230,7 @@ function App() {
   else if (activeTab === 'overview') activeTabView = html`<${OverviewTab} />`;
   else if (activeTab === 'categories') activeTabView = html`<${CategoriesTab} />`;
   else if (activeTab === 'understocked') activeTabView = html`<${UnderstockedTab} />`;
+  else if (activeTab === 'storelog') activeTabView = html`<${StoreLogTab} />`;
 
   return html`
     <${AppCtx.Provider} value=${ctx}>

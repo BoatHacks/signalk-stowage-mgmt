@@ -12,6 +12,7 @@ export function ItemPropertiesModal() {
   var actualState = useState(0);
   var targetState = useState('');
   var notesState = useState('');
+  var changeNoteState = useState('');
   var noteViewState = useState('show'); // 'show' | 'edit'
 
   useEffect(function () {
@@ -20,6 +21,7 @@ export function ItemPropertiesModal() {
     actualState[1](item.actual_quantity);
     targetState[1](item.target_quantity === null || item.target_quantity === undefined ? '' : String(item.target_quantity));
     notesState[1](item.notes || '');
+    changeNoteState[1]('');
     noteViewState[1]('show');
   }, [item && item.id]);
 
@@ -29,6 +31,7 @@ export function ItemPropertiesModal() {
   var actualQty = actualState[0], setActualQty = actualState[1];
   var targetQty = targetState[0], setTargetQty = targetState[1];
   var notes = notesState[0], setNotes = notesState[1];
+  var changeNote = changeNoteState[0], setChangeNote = changeNoteState[1];
   var noteView = noteViewState[0], setNoteView = noteViewState[1];
 
   function save() {
@@ -38,7 +41,8 @@ export function ItemPropertiesModal() {
       name: trimmedName,
       actual_quantity: Math.max(0, parseInt(actualQty, 10) || 0),
       target_quantity: targetQty === '' ? null : Math.max(0, parseInt(targetQty, 10) || 0),
-      notes: notes || null
+      notes: notes || null,
+      note: changeNote || null
     };
     app.updateItem(item.id, body).then(app.closePropertiesModal).catch(function () {});
   }
@@ -70,6 +74,12 @@ export function ItemPropertiesModal() {
             <label>Target Quantity</label>
             <input type="number" min="0" step="1" placeholder="none" value=${targetQty} onInput=${function (e) { setTargetQty(e.target.value); }} />
           </div>
+        </div>
+
+        <div class="form-field">
+          <label>Reason for quantity change <span class="hint">(optional, shown in the Store Log)</span></label>
+          <input type="text" placeholder="e.g. used some for repairs, restocked at the chandlery\u2026" value=${changeNote}
+                 onInput=${function (e) { setChangeNote(e.target.value); }} />
         </div>
 
         <div class="form-field">

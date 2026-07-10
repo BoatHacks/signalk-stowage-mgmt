@@ -1,5 +1,6 @@
 const { randomUUID } = require('crypto')
 const { runInTransaction } = require('../tx')
+const { logItemEvent } = require('../itemLog')
 
 module.exports = function registerItemRoutes (router, getDb) {
   function db () {
@@ -46,7 +47,7 @@ module.exports = function registerItemRoutes (router, getDb) {
   router.post('/items', (req, res) => {
     const {
       name, actual_quantity: actualQuantity, target_quantity: targetQuantity, notes,
-      location_id: locationId, category_ids: categoryIds
+      location_id: locationId, category_ids: categoryIds, note
     } = req.body || {}
     if (!name) return res.status(400).json({ error: 'name required' })
     if (locationId) {
@@ -60,12 +61,14 @@ module.exports = function registerItemRoutes (router, getDb) {
       }
     }
     const id = randomUUID()
+    const startingQuantity = actualQuantity || 1
     runInTransaction(db(), () => {
       db().prepare(
         'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run(id, name, actualQuantity || 1, targetQuantity ?? null, notes || null, locationId || null)
+      ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null)
       const link = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
       for (const catId of ids) link.run(id, catId)
+      logItemEvent(db(), { itemId: id, itemName: name, event: 'created', oldValue: 0, newValue: startingQuantity, note })
     })
     res.status(201).json(withCategories(db().prepare('SELECT * FROM items WHERE id = ?').get(id)))
   })
@@ -74,23 +77,42 @@ module.exports = function registerItemRoutes (router, getDb) {
     const item = getItemOr404(req.params.id, res)
     if (!item) return
     const body = req.body || {}
-    const { name, actual_quantity: actualQuantity } = body
+    const { name, actual_quantity: actualQuantity, note } = body
     const hasTargetQuantity = Object.prototype.hasOwnProperty.call(body, 'target_quantity')
     const hasNotes = Object.prototype.hasOwnProperty.call(body, 'notes')
-    db().prepare(
-      `UPDATE items SET
-        name = COALESCE(?, name),
-        actual_quantity = COALESCE(?, actual_quantity),
-        target_quantity = CASE WHEN ? = 1 THEN ? ELSE target_quantity END,
-        notes = CASE WHEN ? = 1 THEN ? ELSE notes END
-       WHERE id = ?`
-    ).run(
-      name ?? null,
-      actualQuantity ?? null,
-      hasTargetQuantity ? 1 : 0, hasTargetQuantity ? (body.target_quantity ?? null) : null,
-      hasNotes ? 1 : 0, hasNotes ? (body.notes ?? null) : null,
-      item.id
-    )
+    const newTargetQuantity = hasTargetQuantity ? (body.target_quantity ?? null) : null
+
+    runInTransaction(db(), () => {
+      db().prepare(
+        `UPDATE items SET
+          name = COALESCE(?, name),
+          actual_quantity = COALESCE(?, actual_quantity),
+          target_quantity = CASE WHEN ? = 1 THEN ? ELSE target_quantity END,
+          notes = CASE WHEN ? = 1 THEN ? ELSE notes END
+         WHERE id = ?`
+      ).run(
+        name ?? null,
+        actualQuantity ?? null,
+        hasTargetQuantity ? 1 : 0, newTargetQuantity,
+        hasNotes ? 1 : 0, hasNotes ? (body.notes ?? null) : null,
+        item.id
+      )
+
+      const logName = name || item.name
+      if (actualQuantity != null && actualQuantity !== item.actual_quantity) {
+        logItemEvent(db(), {
+          itemId: item.id, itemName: logName, event: 'actual_quantity',
+          oldValue: item.actual_quantity, newValue: actualQuantity, note
+        })
+      }
+      if (hasTargetQuantity && newTargetQuantity !== item.target_quantity) {
+        logItemEvent(db(), {
+          itemId: item.id, itemName: logName, event: 'target_quantity',
+          oldValue: item.target_quantity, newValue: newTargetQuantity, note
+        })
+      }
+    })
+
     res.json(withCategories(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 
@@ -141,7 +163,13 @@ module.exports = function registerItemRoutes (router, getDb) {
   router.delete('/items/:id', (req, res) => {
     const item = getItemOr404(req.params.id, res)
     if (!item) return
-    db().prepare('DELETE FROM items WHERE id = ?').run(item.id)
+    runInTransaction(db(), () => {
+      logItemEvent(db(), {
+        itemId: item.id, itemName: item.name, event: 'deleted',
+        oldValue: item.actual_quantity, newValue: 0, note: null
+      })
+      db().prepare('DELETE FROM items WHERE id = ?').run(item.id)
+    })
     res.status(204).end()
   })
 

@@ -148,6 +148,22 @@ go to **Server → App Store**, search for "Stowage Management", and click
   actual quantity, target quantity, and an edit button — nothing else, to
   keep restocking runs focused.
 
+**Store Log (tab):**
+- An audit trail of item creation, actual/target quantity changes, and
+  deletion — useful for questions like "how many rolls of toilet paper did
+  we use last month?" Moving an item between locations is not logged.
+- Preset buttons (Last Week/Month/Quarter/6 Months/Year) or manual date
+  pickers set the range shown.
+- **Inventory Movement** table: Added / Used / Net per item (item creation
+  and quantity increases count as Added; quantity decreases and deletions
+  count as Used), sorted by Used, descending.
+- **Changes in Target Quantity** table: a plain chronological list (target
+  quantity is a goal, not a consumed resource, so it isn't aggregated the
+  same way) — From, To, date, and the note if one was left.
+- Adding a note to a quantity change: only available from the Item
+  Properties dialog's Save action, not the quick inline quantity editor.
+- "Export as Markdown" produces both tables as one document.
+
 **Search:**
 - Type an item name into the search box at the top, click a result.
 - The app automatically switches to the Floorplan tab, loads the matching
@@ -197,6 +213,23 @@ uploaded, so in practice this table normally holds at most one row.
 | `location_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. `NULL` means "not stored anywhere" |
 | `thumbnail` | TEXT, nullable | Square-cropped photo as a `data:` URI (JPEG), or `NULL` |
 
+**`item_log`**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT, PK | |
+| `item_id` | TEXT | Not a foreign key — rows survive item deletion |
+| `item_name` | TEXT | Snapshotted at the time of the event, so history reads correctly after renames |
+| `event` | TEXT | `created`, `actual_quantity`, `target_quantity`, or `deleted` |
+| `old_value` / `new_value` | INTEGER, nullable | The quantity before/after. `NULL` for a target quantity that was unset |
+| `delta` | INTEGER | `new_value - old_value` |
+| `note` | TEXT, nullable | Optional, set via the Item Properties dialog |
+| `created_at` | TEXT | |
+
+A row is written whenever an item is created, its `actual_quantity` or
+`target_quantity` changes, or it's deleted (logged as using up whatever
+quantity remained). Moving an item between locations is **not** logged.
+
 **`categories`**
 
 | Column | Type | Notes |
@@ -241,14 +274,20 @@ an appropriate HTTP status code.
 | Method & path | Purpose |
 |---|---|
 | `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) |
-| `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids? }` |
-| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes }`. `target_quantity`/`notes` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged) |
+| `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids?, note? }`. `note` is recorded in the item log for the initial quantity, not stored on the item itself |
+| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note }`. `target_quantity`/`notes` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself |
 | `PATCH /items/:id/thumbnail` | Set/clear the photo. Body: `{ thumbnail }` — a `data:` URI string, or `null`/omitted to remove it |
-| `PATCH /items/:id/move` | Move to a different location. Body: `{ location_id }` (omit/null to unassign) |
+| `PATCH /items/:id/move` | Move to a different location. Body: `{ location_id }` (omit/null to unassign). Not logged in the item log |
 | `POST /items/:id/categories` | Add a category. Body: `{ category_id }` |
 | `DELETE /items/:id/categories/:categoryId` | Remove a category |
-| `DELETE /items/:id` | Delete the item |
+| `DELETE /items/:id` | Delete the item. Logs a `deleted` event using up whatever quantity remained |
 | `GET /items/:id/locate` | Walks the parent chain upward until it finds a mapped storage space; returns `{ item_id, path, floorplan_id, svg_element_id, storage_space }`, or 404 with the (unmapped) `path` if none is found |
+
+**Item Log**
+
+| Method & path | Purpose |
+|---|---|
+| `GET /item-log` | List log entries, oldest first. Optional `?start=` / `?end=` query params (inclusive dates, e.g. `2026-06-01`) filter the range; omit both for the full history |
 
 **Categories**
 
