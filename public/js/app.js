@@ -198,8 +198,9 @@ function App() {
     openExportModal: function (kind, payload) {
       var text;
       if (kind === 'shopping') text = buildShoppingListMarkdown(data);
-      else if (kind === 'storelog') text = buildStoreLogMarkdown(payload);
-      else text = buildInventoryMarkdown(data);
+      else if (kind === 'storelog-individual' || kind === 'storelog-aggregate' || kind === 'storelog-target') {
+        text = buildStoreLogMarkdown(kind, payload);
+      } else text = buildInventoryMarkdown(data);
       exportModalContentState[1](text);
     },
     closeExportModal: function () { exportModalContentState[1](null); },

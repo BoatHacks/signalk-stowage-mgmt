@@ -1114,3 +1114,15 @@ select {
   margin: 20px 0 8px;
   font-size: 15px;
 }
+
+.store-log-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.store-log-section-header .store-log-heading {
+  margin-top: 0;
+}

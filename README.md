@@ -153,16 +153,19 @@ go to **Server → App Store**, search for "Stowage Management", and click
   deletion — useful for questions like "how many rolls of toilet paper did
   we use last month?" Moving an item between locations is not logged.
 - Preset buttons (Last Week/Month/Quarter/6 Months/Year) or manual date
-  pickers set the range shown.
-- **Inventory Movement** table: Added / Used / Net per item (item creation
-  and quantity increases count as Added; quantity decreases and deletions
-  count as Used), sorted by Used, descending.
-- **Changes in Target Quantity** table: a plain chronological list (target
-  quantity is a goal, not a consumed resource, so it isn't aggregated the
-  same way) — From, To, date, and the note if one was left.
+  pickers set the range shown, shared across all three sections below.
+- **Individual Movements**: one row per movement event (item creation,
+  quantity increase/decrease, or deletion), newest first — item, Added or
+  Used amount, timestamp, and note.
+- **Aggregate Movements**: Added/Used totals per item across the whole
+  date range, sorted by Used, descending.
+- **Target Adjustments**: a plain chronological list (target quantity is a
+  goal, not a consumed resource, so it isn't aggregated) — From, To, date,
+  and the note if one was left.
 - Adding a note to a quantity change: only available from the Item
   Properties dialog's Save action, not the quick inline quantity editor.
-- "Export as Markdown" produces both tables as one document.
+- Each section has its own "Export as Markdown" button, producing just
+  that section's table as its own document.
 
 **Search:**
 - Type an item name into the search box at the top, click a result.
