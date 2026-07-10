@@ -1,4 +1,4 @@
-import { html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useEffect, useRef, useMemo } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { FloorplanSvg, fitFloorplanSvgIn } from './app-floorplan-modals.js';
 import { LocationNode } from './app-nodes.js';
@@ -30,7 +30,15 @@ export function FloorplanTab() {
     var el = containerRef.current && containerRef.current.querySelector('#' + CSS.escape(app.locateTarget.svgElementId));
     if (!el) return;
     el.classList.add('inv-blinking');
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try {
+      if (typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch (err) {
+      // Some embedded/older browsers accept scrollIntoView() but not the
+      // options-object form, or lack it altogether — the blink itself
+      // (class add/remove above and below) must not depend on this working.
+    }
     var timer = setTimeout(function () { el.classList.remove('inv-blinking'); }, 6000);
     return function () { clearTimeout(timer); el.classList.remove('inv-blinking'); };
   }, [app.locateTarget, content]);
@@ -42,9 +50,19 @@ export function FloorplanTab() {
   }, []);
 
   var floorplanId = content ? content.id : null;
-  var mappedIds = app.data.locations
+  // Stable string key so mappedIds's array reference only changes when the
+  // actual set of mapped areas changes — not on every unrelated re-render,
+  // which would otherwise retrigger FloorplanSvg's inject effect (since
+  // mappedIds is one of its dependencies) and wipe out an in-progress
+  // blink or other transient DOM state.
+  var mappedIdsKey = app.data.locations
     .filter(function (l) { return l.type === 'storage_space' && l.floorplan_id === floorplanId; })
-    .map(function (l) { return l.svg_element_id; });
+    .map(function (l) { return l.svg_element_id; })
+    .sort()
+    .join(',');
+  var mappedIds = useMemo(function () {
+    return mappedIdsKey ? mappedIdsKey.split(',') : [];
+  }, [mappedIdsKey]);
 
   function onAreaClick(elementId) {
     if (app.floorplanMode === 'edit') {

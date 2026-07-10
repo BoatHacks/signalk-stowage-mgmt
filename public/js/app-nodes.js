@@ -39,7 +39,7 @@ export function ItemChip(props) {
       <div class="item-row-main">
         <span>
           ${thumb}${item.name}
-          <${QuantityEditor} item=${item} prefix="\u00d7" className="qty" />
+          <${QuantityEditor} item=${item} className="qty" />
           ${item.target_quantity !== null && item.target_quantity !== undefined
             ? html`<span class="qty-target-inline"> / ${item.target_quantity}</span>`
             : null}

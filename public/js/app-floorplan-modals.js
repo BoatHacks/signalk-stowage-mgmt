@@ -1,4 +1,4 @@
-import { html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useEffect, useRef, useMemo } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { childLocations, descendantIds, pathToRoot, deriveNameFromSvgElementId } from './helpers.js';
 
@@ -175,9 +175,14 @@ export function MoveModal() {
     ? [move.entity.id].concat(descendantIds(app.data, move.entity.id))
     : [];
   var floorplan = floorplanContent;
-  var mappedIds = app.data.locations
+  var mappedIdsKey = app.data.locations
     .filter(function (l) { return l.type === 'storage_space' && floorplan && l.floorplan_id === floorplan.id && forbidden.indexOf(l.id) === -1; })
-    .map(function (l) { return l.svg_element_id; });
+    .map(function (l) { return l.svg_element_id; })
+    .sort()
+    .join(',');
+  var mappedIds = useMemo(function () {
+    return mappedIdsKey ? mappedIdsKey.split(',') : [];
+  }, [mappedIdsKey]);
 
   function spaceForElementId(elementId) {
     return app.data.locations.find(function (l) {
