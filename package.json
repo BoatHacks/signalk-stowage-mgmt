@@ -9,7 +9,8 @@
   ],
   "signalk-plugin-enabled-by-default": false,
   "signalk": {
-    "displayName": "Stowage Management"
+    "displayName": "Stowage Management",
+    "appIcon": "./assets/icons/icon-512.png"
   },
   "main": "plugin/index.js",
   "scripts": {
