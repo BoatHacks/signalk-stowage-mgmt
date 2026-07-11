@@ -61,7 +61,8 @@ export function OverviewTab() {
     var q = filter.toLowerCase();
     return r.name.toLowerCase().indexOf(q) !== -1 ||
       r.directLocation.toLowerCase().indexOf(q) !== -1 ||
-      r.fullPath.toLowerCase().indexOf(q) !== -1;
+      r.fullPath.toLowerCase().indexOf(q) !== -1 ||
+      (r.item.notes && r.item.notes.toLowerCase().indexOf(q) !== -1);
   });
 
   var sorted = filtered.slice().sort(function (a, b) {
