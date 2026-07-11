@@ -10,6 +10,42 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-11
+
+### Added
+
+- App icon for the Signal K App Store / Webapps list.
+- **Split items**: an item's stock can now be divided across multiple
+  locations at once (e.g. 5 of 8 oil filters in one storage space, 3 in
+  a container elsewhere), instead of every item living in exactly one
+  place. A "Split" action opens a dialog to allocate quantity across
+  locations; a split item renders as one chip per placement, each
+  draggable independently; a "Drop here to split" panel appears
+  alongside "Not Stored" while dragging; searching for or locating a
+  split item blinks every one of its mapped areas at once; and the
+  Store Log gains a fourth "Splits" section with its own markdown
+  export. An item's overall quantity becomes read-only elsewhere once
+  split — change it via the Split dialog instead.
+
+### Changed
+
+- Search (the header search box and the Overview table's filter field)
+  now also matches against item notes, not just the name — a
+  notes-only match shows a short snippet of surrounding text so it's
+  clear why that item came up.
+- The Item Properties and Split dialogs' primary action button moved
+  from the footer to the header, next to the close button.
+- The Overview table now shows split items informatively (e.g. "Split
+  (2 locations)", every placement's path) instead of a blank/no-location
+  row.
+
+### Fixed
+
+- A few more leftover HTML entities — numeric character references in
+  the quantity +/- stepper buttons, and two more in the Split dialog —
+  that rendered as literal text instead of being decoded, the same
+  underlying issue as the entities fixed in 0.6.0.
+
 ## [0.7.2] - 2026-07-10
 
 ### Changed
@@ -374,7 +410,8 @@ was renamed to `signalk-stowage-mgmt`.
   `signalk-stowage-mgmt`; translated the example floorplan's labels to
   English boat storage terms; updated repository metadata.
 
-[Unreleased]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.6.6...v0.7.0
