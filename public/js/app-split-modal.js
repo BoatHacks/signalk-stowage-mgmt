@@ -57,7 +57,7 @@ export function SplitModal () {
       <div class="modal">
         <div class="modal-header">
           <h2>Split "${item.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closeSplitModal}>&times;</button>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeSplitModal}>\u00d7</button>
         </div>
 
         <p class="hint">Current allocation:</p>
@@ -79,7 +79,7 @@ export function SplitModal () {
         <div class="form-field">
           <label>To</label>
           <select value=${to} onInput=${function (e) { setTo(e.target.value); }}>
-            <option value="__unset__" disabled>Choose a destination&hellip;</option>
+            <option value="__unset__" disabled>Choose a destination\u2026</option>
             ${(from !== null) ? html`<option value="__none__">No Location</option>` : null}
             ${otherLocations.map(function (l) {
               return html`<option key=${l.id} value=${l.id}>${pathToRoot(app.data, l.id)} [${l.type === 'storage_space' ? 'Storage Space' : 'Container'}]</option>`;
