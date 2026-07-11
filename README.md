@@ -166,6 +166,12 @@ go to **Server → App Store**, search for "Stowage Management", and click
   is below it. Each shown as a large-thumbnail chip with name, editable
   actual quantity, target quantity, and an edit button — nothing else, to
   keep restocking runs focused.
+- Its "Export as Markdown" button produces a shopping list grouped by
+  shop. To assign an item to a shop, put a line reading `source: <shop
+  name>` anywhere in that item's notes (e.g. `source: West Marine`) — it
+  can be on its own line alongside other notes text, and matching is
+  case-insensitive. Items without a `source:` line are grouped under "No
+  Shop Specified". Within each shop's group, items are sorted by category.
 
 **Store Log (tab):**
 - An audit trail of item creation, actual/target quantity changes, and
