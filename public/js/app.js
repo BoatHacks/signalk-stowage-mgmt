@@ -2,7 +2,7 @@ import { html, render, useState, useEffect, useRef, useCallback } from '../vendo
 import { api } from './api.js';
 import { AppCtx, Toast, POLL_INTERVAL_MS } from './app-core.js';
 import { SearchBox, LocateItemPopup, ThemeToggle } from './app-search.js';
-import { NotStoredPanel } from './app-nodes.js';
+import { NotStoredPanel, SplitDropPanel } from './app-nodes.js';
 import { InventoryTab } from './app-inventory-tab.js';
 import { FloorplanTab } from './app-floorplan-tab.js';
 import { CategoriesTab } from './app-categories-tab.js';
@@ -12,6 +12,7 @@ import { StoreLogTab, buildStoreLogMarkdown } from './app-storelog-tab.js';
 import { ItemPropertiesModal, CategoryModal, ExportModal } from './app-item-modals.js';
 import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
+import { SplitModal } from './app-split-modal.js';
 import { buildInventoryMarkdown, buildShoppingListMarkdown } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 
@@ -52,6 +53,7 @@ function App() {
   var photoModalItemState = useState(null);
   var categoryModalItemState = useState(null);
   var moveModalState = useState(null);
+  var splitModalState = useState(null);
   var locationAssignSvgElementIdState = useState(null);
   var exportModalContentState = useState(null);
   var locateTargetState = useState(null);
@@ -156,10 +158,12 @@ function App() {
     updateItem: function (id, body) { return act(function () { return api.updateItem(id, body); }); },
     setThumbnail: function (id, thumbnail) { return act(function () { return api.setThumbnail(id, thumbnail); }); },
     moveItemTo: function (id, locationId) { return act(function () { return api.moveItem(id, locationId); }); },
+    movePlacementTo: function (itemId, placementId, locationId) { return act(function () { return api.movePlacement(itemId, placementId, locationId); }); },
+    splitItem: function (itemId, body) { return act(function () { return api.splitItem(itemId, body); }); },
     addItemCategory: function (id, categoryId) { return act(function () { return api.addItemCategory(id, categoryId); }); },
     removeItemCategory: function (id, categoryId) { return act(function () { return api.removeItemCategory(id, categoryId); }); },
-    deleteItem: function (item) {
-      if (!confirm('Really delete "' + item.name + '"?')) return;
+    deleteItem: function (item, skipConfirm) {
+      if (!skipConfirm && !confirm('Really delete "' + item.name + '"?')) return;
       act(function () { return api.deleteItem(item.id); });
     },
 
@@ -190,6 +194,10 @@ function App() {
     openMoveModal: function (type, entity) { moveModalState[1]({ type: type, entity: entity }); },
     closeMoveModal: function () { moveModalState[1](null); },
 
+    splitModal: splitModalState[0],
+    openSplitModal: function (item, fromLocationId) { splitModalState[1]({ item: item, fromLocationId: fromLocationId }); },
+    closeSplitModal: function () { splitModalState[1](null); },
+
     locationAssignSvgElementId: locationAssignSvgElementIdState[0],
     openLocationAssignModal: function (svgElementId) { locationAssignSvgElementIdState[1](svgElementId); },
     closeLocationAssignModal: function () { locationAssignSvgElementIdState[1](null); },
@@ -198,7 +206,7 @@ function App() {
     openExportModal: function (kind, payload) {
       var text;
       if (kind === 'shopping') text = buildShoppingListMarkdown(data);
-      else if (kind === 'storelog-individual' || kind === 'storelog-aggregate' || kind === 'storelog-target') {
+      else if (kind === 'storelog-individual' || kind === 'storelog-aggregate' || kind === 'storelog-target' || kind === 'storelog-splits') {
         text = buildStoreLogMarkdown(kind, payload);
       } else text = buildInventoryMarkdown(data);
       exportModalContentState[1](text);
@@ -214,7 +222,10 @@ function App() {
     locateItem: function (item) {
       api.locateItem(item.id).then(function (result) {
         setActiveTab('floorplan');
-        locateTargetState[1]({ floorplanId: result.floorplan_id, svgElementId: result.svg_element_id });
+        var targets = result.split
+          ? result.matches.map(function (m) { return { floorplanId: m.floorplan_id, svgElementId: m.svg_element_id }; })
+          : [{ floorplanId: result.floorplan_id, svgElementId: result.svg_element_id }];
+        locateTargetState[1](targets);
         locatePopupItemState[1](item);
       }).catch(function (err) { showToast('"' + item.name + '": ' + err.message); });
     }
@@ -256,6 +267,7 @@ function App() {
       </main>
 
       <${NotStoredPanel} />
+      <${SplitDropPanel} />
       <${LocateItemPopup} />
       <${Toast} />
 
@@ -264,6 +276,7 @@ function App() {
       <${CategoryModal} />
       <${LocationAssignModal} />
       <${MoveModal} />
+      <${SplitModal} />
       <${ExportModal} />
     </${AppCtx.Provider}>
   `;

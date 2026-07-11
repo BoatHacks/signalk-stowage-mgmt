@@ -3,6 +3,7 @@ import {
   useState, useEffect, useRef, useContext
 } from '../vendor/preact-htm-standalone.js';
 import { ICONS } from './icons.js';
+import { isSplit } from './helpers.js';
 
 var POLL_INTERVAL_MS = 5000;
 var PHOTO_VIEWPORT_SIZE = 280;
@@ -65,6 +66,14 @@ function QuantityEditor(props) {
 
   if (!isEditing) {
     var label = (props.prefix || '') + '\u00d7' + item.actual_quantity;
+    if (isSplit(item)) {
+      return html`
+        <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
+              title="This item is split across multiple locations — use Split to change its quantity.">
+          ${label}
+        </span>
+      `;
+    }
     return html`
       <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
             title="Click to edit quantity"

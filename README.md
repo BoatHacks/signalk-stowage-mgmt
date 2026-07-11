@@ -73,6 +73,19 @@ go to **Server → App Store**, search for "Stowage Management", and click
   with no location — normally hidden, it appears automatically whenever
   something is orphaned or while a drag is in progress, and doubles as a
   drop target to detach things.
+- **Splitting an item's stock across locations:** click "Split" on any
+  item chip (works whether the item is already split or not), choose a
+  destination and quantity, and it appears at both places. A split item
+  renders as one chip per location, each showing that location's share —
+  drag a specific chip to move just that portion; use "Split" again to
+  redistribute further. Its overall quantity becomes read-only in the
+  Item Properties dialog (change it via Split instead); name, notes,
+  target quantity, photo, and categories stay item-level and editable as
+  normal regardless. While dragging any item, a floating "Drop here to
+  split" panel appears (alongside "Not Stored") — dropping onto it opens
+  the Split dialog for whatever you were carrying, defaulting the source
+  to wherever it was just dragged from. Searching for or locating a split
+  item blinks every one of its mapped areas on the floorplan at once.
 
 **Item properties (edit icon on any item):**
 - Name, actual quantity, target quantity (leave blank for "no target").

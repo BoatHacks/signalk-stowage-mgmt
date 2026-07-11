@@ -1126,3 +1126,45 @@ select {
 .store-log-section-header .store-log-heading {
   margin-top: 0;
 }
+
+/* ---------- split items ---------- */
+
+.split-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--category-badge-bg);
+  color: var(--category-badge-text);
+  vertical-align: middle;
+}
+
+.split-qty {
+  cursor: default;
+}
+
+.split-allocation-list {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  font-size: 13px;
+}
+.split-allocation-list li { margin-bottom: 2px; }
+
+.split-drop-panel {
+  top: auto;
+  bottom: 20px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--link);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+}

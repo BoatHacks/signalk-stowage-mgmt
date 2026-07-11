@@ -1,6 +1,6 @@
 import { html, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn, QuantityEditor } from './app-core.js';
-import { childLocations, itemsIn } from './helpers.js';
+import { childLocations, resolvedItemsIn, isSplit } from './helpers.js';
 
 // ---------- item chip ----------
 
@@ -10,6 +10,9 @@ export function ItemChip(props) {
   var draggingState = useState(false);
   var dragging = draggingState[0];
   var setDragging = draggingState[1];
+
+  var split = isSplit(item);
+  var isPlacementRow = item.placementId !== undefined && item.placementId !== null;
 
   var thumb = item.thumbnail
     ? html`<img class="item-thumb" src=${item.thumbnail} alt="" />`
@@ -25,6 +28,12 @@ export function ItemChip(props) {
     `;
   });
 
+  function deleteWholeItem () {
+    var warning = split ? ' This item is split across ' + item.placements.length + ' locations — deleting it removes all of them.' : '';
+    if (!confirm('Really delete "' + item.name + '"?' + warning)) return;
+    app.deleteItem(item, true);
+  }
+
   return html`
     <div class="item-row ${dragging ? 'dragging' : ''}"
          draggable="true"
@@ -32,6 +41,7 @@ export function ItemChip(props) {
            e.dataTransfer.effectAllowed = 'move';
            e.dataTransfer.setData('text/plain', item.id);
            e.dataTransfer.setData('application/x-drag-type', 'item');
+           e.dataTransfer.setData('application/x-placement-id', item.placementId || '');
            setDragging(true);
            app.setDragActive(true);
          }}
@@ -39,16 +49,25 @@ export function ItemChip(props) {
       <div class="item-row-main">
         <span>
           ${thumb}${item.name}
-          <${QuantityEditor} item=${item} className="qty" />
+          ${isPlacementRow
+            ? html`<span class="qty-display qty split-qty" title="This item is split across multiple locations — use Split to change this.">\u00d7${item.actual_quantity}</span>`
+            : html`<${QuantityEditor} item=${item} className="qty" />`}
           ${item.target_quantity !== null && item.target_quantity !== undefined
             ? html`<span class="qty-target-inline"> / ${item.target_quantity}</span>`
             : null}
+          ${split ? html`<span class="split-badge" title=${item.placements.length + ' locations'}>split \u00d7${item.placements.length}</span>` : null}
         </span>
         <span>
           <${IconBtn} icon="edit" title="Edit" onClick=${function () { app.openPropertiesModal(item); }} />
           <${IconBtn} icon="photo" title="Photo" onClick=${function () { app.openPhotoModal(item); }} />
-          <${IconBtn} icon="move" title="Move" onClick=${function () { app.openMoveModal('item', item); }} />
-          <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${function () { app.deleteItem(item); }} />
+          <button type="button" title="Split this item across another location"
+                  onClick=${function () { app.openSplitModal(item, isPlacementRow ? (item.placements.find(function (p) { return p.id === item.placementId; }) || {}).location_id : item.location_id); }}>Split</button>
+          <${IconBtn} icon="move" title="Move"
+                      onClick=${function () {
+                        if (isPlacementRow) app.openMoveModal('placement', item);
+                        else app.openMoveModal('item', item);
+                      }} />
+          <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${deleteWholeItem} />
         </span>
       </div>
       ${categoryBadges.length ? html`<div class="item-categories">${categoryBadges}<button type="button" class="category-add-btn" onClick=${function () { app.openCategoryModal(item); }}>+</button></div>` : html`<div class="item-categories"><button type="button" class="category-add-btn" onClick=${function () { app.openCategoryModal(item); }}>+ Category</button></div>`}
@@ -69,7 +88,7 @@ export function LocationNode(props) {
   var setIsDropTarget = dropTargetState[1];
 
   var children = childLocations(app.data, loc.id);
-  var items = itemsIn(app.data, loc.id);
+  var items = resolvedItemsIn(app.data, loc.id);
   var isContainer = loc.type === 'container';
   var mapped = loc.type === 'storage_space' && loc.svg_element_id;
 
@@ -78,10 +97,13 @@ export function LocationNode(props) {
     setIsDropTarget(false);
     var dragType = e.dataTransfer.getData('application/x-drag-type');
     var draggedId = e.dataTransfer.getData('text/plain');
+    var placementId = e.dataTransfer.getData('application/x-placement-id');
     if (!draggedId) return;
     if (dragType === 'container') {
       if (draggedId === loc.id) return;
       app.moveContainer(draggedId, loc.id);
+    } else if (placementId) {
+      app.movePlacementTo(draggedId, placementId, loc.id);
     } else {
       app.moveItemTo(draggedId, loc.id);
     }
@@ -117,7 +139,7 @@ export function LocationNode(props) {
       ${(children.length || items.length) ? html`
         <div class="children">
           ${children.map(function (child) { return html`<${LocationNode} loc=${child} key=${child.id} />`; })}
-          ${items.map(function (item) { return html`<${ItemChip} item=${item} key=${item.id} />`; })}
+          ${items.map(function (item) { return html`<${ItemChip} item=${item} key=${item.id + ':' + (item.placementId || '')} />`; })}
         </div>
       ` : null}
     </div>
@@ -129,7 +151,7 @@ export function LocationNode(props) {
 export function NotStoredPanel() {
   var app = useApp();
   var orphanedContainers = childLocations(app.data, null).filter(function (l) { return l.type === 'container'; });
-  var unassignedItems = itemsIn(app.data, null);
+  var unassignedItems = resolvedItemsIn(app.data, null);
   var hasOrphans = orphanedContainers.length > 0 || unassignedItems.length > 0;
   var visible = app.dragActive || hasOrphans;
   var hiddenForTab = app.activeTab === 'overview' || app.activeTab === 'categories' || app.activeTab === 'understocked' || app.activeTab === 'storelog';
@@ -143,8 +165,10 @@ export function NotStoredPanel() {
     setIsDropTarget(false);
     var dragType = e.dataTransfer.getData('application/x-drag-type');
     var draggedId = e.dataTransfer.getData('text/plain');
+    var placementId = e.dataTransfer.getData('application/x-placement-id');
     if (!draggedId) return;
     if (dragType === 'container') app.moveContainer(draggedId, null);
+    else if (placementId) app.movePlacementTo(draggedId, placementId, null);
     else app.moveItemTo(draggedId, null);
   }
 
@@ -163,10 +187,51 @@ export function NotStoredPanel() {
       ${orphanedContainers.map(function (loc) { return html`<${LocationNode} loc=${loc} key=${loc.id} />`; })}
       ${unassignedItems.length ? html`
         <div class="children">
-          ${unassignedItems.map(function (item) { return html`<${ItemChip} item=${item} key=${item.id} />`; })}
+          ${unassignedItems.map(function (item) { return html`<${ItemChip} item=${item} key=${item.id + ':' + (item.placementId || '')} />`; })}
         </div>
       ` : null}
       ${!hasOrphans ? html`<p class="hint">Nothing unstored right now.</p>` : null}
+    </div>
+  `;
+}
+
+// ---------- "Drop here to split" panel ----------
+
+export function SplitDropPanel() {
+  var app = useApp();
+  var hiddenForTab = app.activeTab === 'overview' || app.activeTab === 'categories' || app.activeTab === 'understocked' || app.activeTab === 'storelog';
+
+  var dropTargetState = useState(false);
+  var isDropTarget = dropTargetState[0];
+  var setIsDropTarget = dropTargetState[1];
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setIsDropTarget(false);
+    var dragType = e.dataTransfer.getData('application/x-drag-type');
+    var draggedId = e.dataTransfer.getData('text/plain');
+    var placementId = e.dataTransfer.getData('application/x-placement-id');
+    if (dragType !== 'item' || !draggedId) return;
+    var item = app.data.items.find(function (i) { return i.id === draggedId; });
+    if (!item) return;
+    var fromLocationId = placementId
+      ? ((item.placements.find(function (p) { return p.id === placementId; }) || {}).location_id || null)
+      : (item.location_id || null);
+    app.openSplitModal(item, fromLocationId);
+  }
+
+  if (hiddenForTab || !app.dragActive) return null;
+
+  return html`
+    <div class="orphaned-panel split-drop-panel">
+      <div class="orphaned-panel-title">Split</div>
+      <div class="node-header ${isDropTarget ? 'drop-target' : ''}"
+           onDragEnter=${function (e) { e.preventDefault(); }}
+           onDragOver=${function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setIsDropTarget(true); }}
+           onDragLeave=${function () { setIsDropTarget(false); }}
+           onDrop=${handleDrop}>
+        <span class="node-title">Drop here to split</span>
+      </div>
     </div>
   `;
 }
