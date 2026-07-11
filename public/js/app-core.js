@@ -94,9 +94,9 @@ function QuantityEditor(props) {
              onBlur=${commit} />
       <span class="qty-steppers">
         <button type="button" class="qty-step qty-up" onMouseDown=${function (e) { e.preventDefault(); }}
-                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) + 1)); }}>&#9650;</button>
+                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) + 1)); }}>\u25b2</button>
         <button type="button" class="qty-step qty-down" onMouseDown=${function (e) { e.preventDefault(); }}
-                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) - 1)); }}>&#9660;</button>
+                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) - 1)); }}>\u25bc</button>
       </span>
     </span>
   `;

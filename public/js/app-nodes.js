@@ -60,8 +60,8 @@ export function ItemChip(props) {
         <span>
           <${IconBtn} icon="edit" title="Edit" onClick=${function () { app.openPropertiesModal(item); }} />
           <${IconBtn} icon="photo" title="Photo" onClick=${function () { app.openPhotoModal(item); }} />
-          <button type="button" title="Split this item across another location"
-                  onClick=${function () { app.openSplitModal(item, isPlacementRow ? (item.placements.find(function (p) { return p.id === item.placementId; }) || {}).location_id : item.location_id); }}>Split</button>
+          <${IconBtn} icon="split" title="Split this item across another location"
+                      onClick=${function () { app.openSplitModal(item, isPlacementRow ? (item.placements.find(function (p) { return p.id === item.placementId; }) || {}).location_id : item.location_id); }} />
           <${IconBtn} icon="move" title="Move"
                       onClick=${function () {
                         if (isPlacementRow) app.openMoveModal('placement', item);
