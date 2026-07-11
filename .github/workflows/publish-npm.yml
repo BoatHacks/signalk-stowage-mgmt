@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write # required so GitHub can issue an OIDC token for npm trusted publishing
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,10 +29,18 @@ jobs:
             exit 1
           fi
 
+      # Trusted publishing needs npm 11.5.1+; Node 20's bundled npm predates that.
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm install --omit=dev
 
+      # No NODE_AUTH_TOKEN / NPM_TOKEN needed: npm exchanges the OIDC token
+      # from id-token: write above for a short-lived publish credential,
+      # once this repo + workflow is configured as a Trusted Publisher on
+      # the package's npm settings page. --provenance is redundant with
+      # trusted publishing in principle (provenance attestation happens
+      # automatically) but kept explicit since some setups have needed it.
       - name: Publish to npm
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance
