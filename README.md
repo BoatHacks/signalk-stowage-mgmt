@@ -210,11 +210,28 @@ uploaded, so in practice this table normally holds at most one row.
 |---|---|---|
 | `id` | TEXT, PK | |
 | `name` | TEXT | |
-| `actual_quantity` | INTEGER, default 1 | How many you actually have |
+| `actual_quantity` | INTEGER, default 1 | How many you actually have. For a split item (see `item_placements` below), this is the sum of its placements' quantities and can only change via `POST /items/:id/split` |
 | `target_quantity` | INTEGER, nullable | Desired stock level; `NULL` means "no target set" and excludes the item from the Understocked page regardless of `actual_quantity` |
 | `notes` | TEXT, nullable | Free-text, rendered as markdown in the UI. (Earlier versions had a separate `description` column; it was merged into `notes` and dropped.) |
-| `location_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. `NULL` means "not stored anywhere" |
+| `location_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. `NULL` means "not stored anywhere" **or** "this item is split across locations" — check `item_placements` to tell which |
 | `thumbnail` | TEXT, nullable | Square-cropped photo as a `data:` URI (JPEG), or `NULL` |
+
+**`item_placements`**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT, PK | |
+| `item_id` | TEXT, FK → `items.id` | `ON DELETE CASCADE` |
+| `location_id` | TEXT, FK → `locations.id`, nullable | `ON DELETE SET NULL`. `NULL` means this portion is unassigned ("no location") |
+| `quantity` | INTEGER | |
+
+An item has **no** rows here in the normal case — its stock lives entirely
+in `items.location_id`/`actual_quantity`. Rows only appear once an item has
+been split across two or more locations via `POST /items/:id/split`, at
+which point `items.location_id` becomes `NULL` and `items.actual_quantity`
+tracks the sum. If a split later collapses back down to a single location
+(e.g. moving everything back together), the placement rows are removed and
+the item reverts to the plain representation automatically.
 
 **`item_log`**
 
@@ -223,15 +240,21 @@ uploaded, so in practice this table normally holds at most one row.
 | `id` | TEXT, PK | |
 | `item_id` | TEXT | Not a foreign key — rows survive item deletion |
 | `item_name` | TEXT | Snapshotted at the time of the event, so history reads correctly after renames |
-| `event` | TEXT | `created`, `actual_quantity`, `target_quantity`, or `deleted` |
-| `old_value` / `new_value` | INTEGER, nullable | The quantity before/after. `NULL` for a target quantity that was unset |
-| `delta` | INTEGER | `new_value - old_value` |
-| `note` | TEXT, nullable | Optional, set via the Item Properties dialog |
+| `event` | TEXT | `created`, `actual_quantity`, `target_quantity`, `deleted`, or `split` |
+| `old_value` / `new_value` | INTEGER, nullable | The quantity before/after. `NULL` for a target quantity that was unset, or for a `split` event (see `from_location_id` etc. below instead) |
+| `delta` | INTEGER | `new_value - old_value`. Always `0` for a `split` event, since splitting reallocates existing stock rather than adding or removing it |
+| `note` | TEXT, nullable | Optional, set via the Item Properties dialog (quantity changes) or the Split dialog (splits) |
+| `from_location_id` / `from_location_name` | TEXT, nullable | Set only for `split` events. Name is snapshotted, same reasoning as `item_name`. `NULL` means "no location" |
+| `to_location_id` / `to_location_name` | TEXT, nullable | Set only for `split` events, same conventions as `from_location_id` |
+| `quantity` | INTEGER, nullable | Set only for `split` events — how many units moved |
 | `created_at` | TEXT | |
 
 A row is written whenever an item is created, its `actual_quantity` or
-`target_quantity` changes, or it's deleted (logged as using up whatever
-quantity remained). Moving an item between locations is **not** logged.
+`target_quantity` changes, it's deleted (logged as using up whatever
+quantity remained), or its stock is split across locations via
+`POST /items/:id/split`. Moving an item (or one placement of a split item)
+between locations is **not** logged — only the act of splitting is.
+
 
 **`categories`**
 
@@ -276,15 +299,18 @@ an appropriate HTTP status code.
 
 | Method & path | Purpose |
 |---|---|
-| `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) |
+| `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) and a `placements` array (empty unless split — see below) |
 | `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids?, note? }`. `note` is recorded in the item log for the initial quantity, not stored on the item itself |
-| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note }`. `target_quantity`/`notes` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself |
+| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note }`. `target_quantity`/`notes` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. **`actual_quantity` is rejected with 400 if the item is split** — use `POST /items/:id/split` instead |
 | `PATCH /items/:id/thumbnail` | Set/clear the photo. Body: `{ thumbnail }` — a `data:` URI string, or `null`/omitted to remove it |
-| `PATCH /items/:id/move` | Move to a different location. Body: `{ location_id }` (omit/null to unassign). Not logged in the item log |
+| `PATCH /items/:id/move` | Move a whole (unsplit) item to a different location. Body: `{ location_id }` (omit/null to unassign). Not logged. **Rejected with 400 if the item is split** — move a specific placement via the endpoint below instead |
+| `GET /items/:id/placements` | List an item's placements (`[{ id, location_id, location_name, quantity }]`). Empty array means it isn't split |
+| `PATCH /items/:id/placements/:placementId/move` | Move one placement of a split item to a different location. Body: `{ location_id }` (omit/null for "no location"). Not logged, same as an ordinary move |
+| `POST /items/:id/split` | Move `quantity` units of an item from `from_location_id` to `to_location_id` (both nullable, for "no location"), splitting the item across locations if it wasn't already. If not yet split, `from_location_id` must match the item's current `location_id`. If a split collapses everything back into one location, the item automatically reverts to the plain (unsplit) representation. Body: `{ from_location_id?, to_location_id?, quantity, note? }`. Always logged as a `split` event |
 | `POST /items/:id/categories` | Add a category. Body: `{ category_id }` |
 | `DELETE /items/:id/categories/:categoryId` | Remove a category |
 | `DELETE /items/:id` | Delete the item. Logs a `deleted` event using up whatever quantity remained |
-| `GET /items/:id/locate` | Walks the parent chain upward until it finds a mapped storage space; returns `{ item_id, path, floorplan_id, svg_element_id, storage_space }`, or 404 with the (unmapped) `path` if none is found |
+| `GET /items/:id/locate` | For a normal item: walks the parent chain upward until it finds a mapped storage space; returns `{ item_id, path, floorplan_id, svg_element_id, storage_space }`, or 404 with the (unmapped) `path` if none is found. For a **split** item: returns `{ item_id, split: true, matches: [...] }` — one entry per placement that resolves to a mapped storage space (placements with no mapped area are silently skipped; 404 only if none resolve) |
 
 **Item Log**
 

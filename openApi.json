@@ -437,7 +437,7 @@
           "Items"
         ],
         "summary": "Update item properties",
-        "description": "Partial update. target_quantity and notes support an explicit null to clear them, distinct from omitting the key (which leaves the current value unchanged).",
+        "description": "Partial update. target_quantity and notes support an explicit null to clear them, distinct from omitting the key (which leaves the current value unchanged). If the item is split across locations, actual_quantity cannot be set here \u2014 use POST /items/:id/split instead; name/notes/target_quantity remain editable normally.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ItemId"
@@ -642,7 +642,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Moves a whole (unsplit) item to a different location. Rejected with 400 if the item is currently split across locations \u2014 move a specific placement via PATCH /items/:id/placements/:placementId/move instead."
       }
     },
     "/items/{id}/categories": {
@@ -1215,6 +1216,191 @@
           }
         }
       }
+    },
+    "/items/{id}/placements": {
+      "get": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "List an item's placements",
+        "description": "Empty array means the item is not split.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ItemId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Placements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemPlacement"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/{id}/placements/{placementId}/move": {
+      "patch": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "Move one placement of a split item",
+        "description": "Not logged, same as an ordinary item move.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ItemId"
+          },
+          {
+            "name": "placementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location_id": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "location_id does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Item or placement not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/items/{id}/split": {
+      "post": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "Split an item's stock across locations",
+        "description": "Moves `quantity` units from from_location_id to to_location_id, splitting the item across locations if it wasn't already split. from/to may be omitted/null for \"no location\". If the item wasn't split yet, from_location_id must match its current location_id. If splitting collapses the item back down to a single location (e.g. moving everything back together), it automatically reverts to the plain (unsplit) representation. Always logged as a 'split' event, regardless of the resulting state.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ItemId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "quantity"
+                ],
+                "properties": {
+                  "from_location_id": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "to_location_id": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated item, including its new placements array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid quantity, same from/to, location doesn't exist, from_location_id doesn't match where the item currently is, or insufficient quantity at from_location_id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1327,6 +1513,13 @@
             "items": {
               "$ref": "#/components/schemas/CategoryRef"
             }
+          },
+          "placements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemPlacement"
+            },
+            "description": "Empty for a normal item. Non-empty means this item's stock is split across multiple locations \u2014 in that case actual_quantity is the sum of placement quantities, location_id is null, and actual_quantity can only be changed via POST /items/:id/split."
           }
         }
       },
@@ -1395,7 +1588,8 @@
               "created",
               "actual_quantity",
               "target_quantity",
-              "deleted"
+              "deleted",
+              "split"
             ]
           },
           "old_value": {
@@ -1417,6 +1611,50 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "from_location_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set only for 'split' events"
+          },
+          "from_location_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Snapshotted, set only for 'split' events"
+          },
+          "to_location_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set only for 'split' events"
+          },
+          "to_location_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Snapshotted, set only for 'split' events"
+          },
+          "quantity": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Units moved in a 'split' event"
+          }
+        }
+      },
+      "ItemPlacement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "location_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "location_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer"
           }
         }
       }
