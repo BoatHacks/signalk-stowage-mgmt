@@ -191,7 +191,10 @@ export function MoveModal() {
   }
 
   function performMove(targetId, targetName) {
-    var action = move.type === 'item' ? app.moveItemTo(move.entity.id, targetId) : app.moveContainer(move.entity.id, targetId);
+    var action;
+    if (move.type === 'item') action = app.moveItemTo(move.entity.id, targetId);
+    else if (move.type === 'placement') action = app.movePlacementTo(move.entity.id, move.entity.placementId, targetId);
+    else action = app.moveContainer(move.entity.id, targetId);
     action.then(function () {
       app.showToast('Moved "' + move.entity.name + '" to ' + targetName + '.');
       app.closeMoveModal();
@@ -249,8 +252,8 @@ export function MoveModal() {
         ${fallbackTargets.length ? html`
           <div class="orphaned-panel-title">Other targets</div>
           <div class="category-chip-list">
-            <button type="button" class="category-chip" onClick=${function () { performMove(null, move.type === 'item' ? 'No Location' : 'Top Level'); }}>
-              ${move.type === 'item' ? 'No Location' : 'Top Level'}
+            <button type="button" class="category-chip" onClick=${function () { performMove(null, move.type !== 'container' ? 'No Location' : 'Top Level'); }}>
+              ${move.type !== 'container' ? 'No Location' : 'Top Level'}
             </button>
             ${fallbackTargets.map(function (loc) {
               return html`

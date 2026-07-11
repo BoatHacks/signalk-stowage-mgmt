@@ -1,6 +1,18 @@
 import { html, useState, useMemo } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
-import { pathToRoot } from './helpers.js';
+import { pathToRoot, isSplit } from './helpers.js';
+
+// True if this location, or any of its storage-space ancestors, is mapped
+// to the current floorplan.
+function isLocationOnFloorplan (data, locationId, floorplanId) {
+  if (!locationId || !floorplanId) return false;
+  var cur = data.locations.find(function (l) { return l.id === locationId; });
+  while (cur) {
+    if (cur.type === 'storage_space' && cur.floorplan_id === floorplanId && cur.svg_element_id) return true;
+    cur = cur.parent_id ? data.locations.find(function (l) { return l.id === cur.parent_id; }) : null;
+  }
+  return false;
+}
 
 export function OverviewTab() {
   var app = useApp();
@@ -10,28 +22,34 @@ export function OverviewTab() {
   var sort = sortState[0], setSort = sortState[1];
 
   var rows = useMemo(function () {
+    var floorplanId = app.data.floorplans.length ? app.data.floorplans[0].id : null;
     return app.data.items.map(function (item) {
-      var directLoc = item.location_id ? app.data.locations.find(function (l) { return l.id === item.location_id; }) : null;
       var categoryNames = (item.categories || []).map(function (c) { return c.name; }).join(', ');
-      var floorplanId = app.data.floorplans.length ? app.data.floorplans[0].id : null;
-      var mapped = directLoc && directLoc.type === 'storage_space' && directLoc.floorplan_id === floorplanId && directLoc.svg_element_id;
-      // Storage-space ancestor walk, to also catch items nested in containers
-      // inside a mapped storage space.
-      if (!mapped && item.location_id) {
-        var cur = directLoc;
-        while (cur) {
-          if (cur.type === 'storage_space' && cur.floorplan_id === floorplanId && cur.svg_element_id) { mapped = true; break; }
-          cur = cur.parent_id ? app.data.locations.find(function (l) { return l.id === cur.parent_id; }) : null;
-        }
+      var directLocation, directType, fullPath, mapped;
+
+      if (isSplit(item)) {
+        directLocation = 'Split (' + item.placements.length + ' locations)';
+        directType = '';
+        fullPath = item.placements.map(function (p) {
+          return p.location_id ? pathToRoot(app.data, p.location_id) : 'no location';
+        }).join('; ');
+        mapped = item.placements.some(function (p) { return isLocationOnFloorplan(app.data, p.location_id, floorplanId); });
+      } else {
+        var directLoc = item.location_id ? app.data.locations.find(function (l) { return l.id === item.location_id; }) : null;
+        directLocation = directLoc ? directLoc.name : '\u2014';
+        directType = directLoc ? (directLoc.type === 'storage_space' ? 'Storage Space' : 'Container') : '';
+        fullPath = item.location_id ? pathToRoot(app.data, item.location_id) : 'no location';
+        mapped = isLocationOnFloorplan(app.data, item.location_id, floorplanId);
       }
+
       return {
         item: item,
         name: item.name,
         actualQuantity: item.actual_quantity,
         thumbnail: item.thumbnail || null,
-        directLocation: directLoc ? directLoc.name : '\u2014',
-        directType: directLoc ? (directLoc.type === 'storage_space' ? 'Storage Space' : 'Container') : '',
-        fullPath: item.location_id ? pathToRoot(app.data, item.location_id) : 'no location',
+        directLocation: directLocation,
+        directType: directType,
+        fullPath: fullPath,
         categoryNames: categoryNames || '\u2014',
         onFloorplan: !!mapped
       };
@@ -43,7 +61,8 @@ export function OverviewTab() {
     var q = filter.toLowerCase();
     return r.name.toLowerCase().indexOf(q) !== -1 ||
       r.directLocation.toLowerCase().indexOf(q) !== -1 ||
-      r.fullPath.toLowerCase().indexOf(q) !== -1;
+      r.fullPath.toLowerCase().indexOf(q) !== -1 ||
+      (r.item.notes && r.item.notes.toLowerCase().indexOf(q) !== -1);
   });
 
   var sorted = filtered.slice().sort(function (a, b) {

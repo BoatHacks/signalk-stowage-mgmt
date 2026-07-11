@@ -3,6 +3,7 @@ import {
   useState, useEffect, useRef, useContext
 } from '../vendor/preact-htm-standalone.js';
 import { ICONS } from './icons.js';
+import { isSplit } from './helpers.js';
 
 var POLL_INTERVAL_MS = 5000;
 var PHOTO_VIEWPORT_SIZE = 280;
@@ -65,6 +66,14 @@ function QuantityEditor(props) {
 
   if (!isEditing) {
     var label = (props.prefix || '') + '\u00d7' + item.actual_quantity;
+    if (isSplit(item)) {
+      return html`
+        <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
+              title="This item is split across multiple locations — use Split to change its quantity.">
+          ${label}
+        </span>
+      `;
+    }
     return html`
       <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
             title="Click to edit quantity"
@@ -85,9 +94,9 @@ function QuantityEditor(props) {
              onBlur=${commit} />
       <span class="qty-steppers">
         <button type="button" class="qty-step qty-up" onMouseDown=${function (e) { e.preventDefault(); }}
-                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) + 1)); }}>&#9650;</button>
+                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) + 1)); }}>\u25b2</button>
         <button type="button" class="qty-step qty-down" onMouseDown=${function (e) { e.preventDefault(); }}
-                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) - 1)); }}>&#9660;</button>
+                onClick=${function (e) { e.stopPropagation(); setValue(Math.max(0, (parseInt(value, 10) || 0) - 1)); }}>\u25bc</button>
       </span>
     </span>
   `;

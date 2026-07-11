@@ -1,6 +1,7 @@
 import { html, useState, useEffect } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
 import { renderMarkdown } from './markdown.js';
+import { isSplit } from './helpers.js';
 
 // ---------- item properties modal ----------
 
@@ -39,11 +40,11 @@ export function ItemPropertiesModal() {
     if (!trimmedName) return app.showToast('Name is required.');
     var body = {
       name: trimmedName,
-      actual_quantity: Math.max(0, parseInt(actualQty, 10) || 0),
       target_quantity: targetQty === '' ? null : Math.max(0, parseInt(targetQty, 10) || 0),
       notes: notes || null,
       note: changeNote || null
     };
+    if (!isSplit(item)) body.actual_quantity = Math.max(0, parseInt(actualQty, 10) || 0);
     app.updateItem(item.id, body).then(app.closePropertiesModal).catch(function () {});
   }
 
@@ -52,7 +53,10 @@ export function ItemPropertiesModal() {
       <div class="modal modal-wide">
         <div class="modal-header">
           <h2>Properties for "${item.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closePropertiesModal}>×</button>
+          <div class="modal-header-actions">
+            <button type="button" class="primary-btn" onClick=${save}>Save</button>
+            <button class="modal-close" aria-label="Close" onClick=${app.closePropertiesModal}>×</button>
+          </div>
         </div>
 
         <div class="form-field">
@@ -68,7 +72,14 @@ export function ItemPropertiesModal() {
         <div class="form-field-row">
           <div class="form-field">
             <label>Actual Quantity</label>
-            <input type="number" min="0" step="1" value=${actualQty} onInput=${function (e) { setActualQty(e.target.value); }} />
+            ${isSplit(item) ? html`
+              <input type="text" readonly value=${'\u00d7' + item.actual_quantity + ' (split across ' + item.placements.length + ' locations)'} />
+              <span class="hint">Split items' quantity can only be changed via the Split dialog.
+                <button type="button" class="link-btn" onClick=${function () { app.closePropertiesModal(); app.openSplitModal(item, item.placements[0].location_id); }}>Open Split dialog</button>
+              </span>
+            ` : html`
+              <input type="number" min="0" step="1" value=${actualQty} onInput=${function (e) { setActualQty(e.target.value); }} />
+            `}
           </div>
           <div class="form-field">
             <label>Target Quantity</label>
@@ -94,10 +105,6 @@ export function ItemPropertiesModal() {
             <div class="notes-preview-label">Preview</div>
           ` : null}
           <div class="notes-preview" dangerouslySetInnerHTML=${{ __html: renderMarkdown(notes) }}></div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="primary-btn" onClick=${save}>Save</button>
         </div>
       </div>
     </div>

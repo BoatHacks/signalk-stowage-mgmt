@@ -23,24 +23,35 @@ export function FloorplanTab() {
     return function () { cancelled = true; };
   }, [summary ? summary.id : null]);
 
-  // Blink the target area (and keep the item chip popup up) whenever a
-  // locate request comes in, once the floorplan content is actually loaded.
+  // Blink every matching target area (and keep the item chip popup up)
+  // whenever a locate request comes in, once the floorplan content is
+  // actually loaded. Split items can have more than one match — all of
+  // them blink together.
   useEffect(function () {
-    if (!app.locateTarget || !content || app.locateTarget.floorplanId !== content.id) return;
-    var el = containerRef.current && containerRef.current.querySelector('#' + CSS.escape(app.locateTarget.svgElementId));
-    if (!el) return;
-    el.classList.add('inv-blinking');
+    if (!app.locateTarget || !app.locateTarget.length || !content) return;
+    var targets = app.locateTarget.filter(function (t) { return t.floorplanId === content.id; });
+    if (!targets.length) return;
+    var elements = targets
+      .map(function (t) { return containerRef.current && containerRef.current.querySelector('#' + CSS.escape(t.svgElementId)); })
+      .filter(Boolean);
+    if (!elements.length) return;
+    elements.forEach(function (el) { el.classList.add('inv-blinking'); });
     try {
-      if (typeof el.scrollIntoView === 'function') {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof elements[0].scrollIntoView === 'function') {
+        elements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } catch (err) {
       // Some embedded/older browsers accept scrollIntoView() but not the
       // options-object form, or lack it altogether — the blink itself
       // (class add/remove above and below) must not depend on this working.
     }
-    var timer = setTimeout(function () { el.classList.remove('inv-blinking'); }, 6000);
-    return function () { clearTimeout(timer); el.classList.remove('inv-blinking'); };
+    var timer = setTimeout(function () {
+      elements.forEach(function (el) { el.classList.remove('inv-blinking'); });
+    }, 6000);
+    return function () {
+      clearTimeout(timer);
+      elements.forEach(function (el) { el.classList.remove('inv-blinking'); });
+    };
   }, [app.locateTarget, content]);
 
   useEffect(function () {

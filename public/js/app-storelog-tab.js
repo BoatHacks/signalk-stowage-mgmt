@@ -53,6 +53,11 @@ export function StoreLogTab () {
       .slice()
       .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; });
   }, [rows]);
+  var splits = useMemo(function () {
+    return rows.filter(function (r) { return r.event === 'split'; })
+      .slice()
+      .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; });
+  }, [rows]);
 
   return html`
     <section class="tab-panel active">
@@ -125,6 +130,29 @@ export function StoreLogTab () {
                   <td>${r.item_name}</td>
                   <td>${r.old_value === null ? '\u2014' : r.old_value}</td>
                   <td>${r.new_value === null ? '\u2014' : r.new_value}</td>
+                  <td>${new Date(r.created_at).toLocaleString()}</td>
+                  <td>${r.note || ''}</td>
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+
+        <div class="store-log-section-header">
+          <h3 class="store-log-heading">Splits</h3>
+          <button type="button" onClick=${function () { app.openExportModal('storelog-splits', { start: start, end: end, rows: splits }); }}>Export as Markdown</button>
+        </div>
+        <table class="overview-table">
+          <thead><tr><th>Item</th><th>From</th><th>To</th><th>Quantity</th><th>Date</th><th>Note</th></tr></thead>
+          <tbody>
+            ${!splits.length ? html`<tr class="empty-row"><td colspan="6">No splits in this date range.</td></tr>` : null}
+            ${splits.map(function (r) {
+              return html`
+                <tr key=${r.id}>
+                  <td>${r.item_name}</td>
+                  <td>${r.from_location_name || 'No Location'}</td>
+                  <td>${r.to_location_name || 'No Location'}</td>
+                  <td>${r.quantity}</td>
                   <td>${new Date(r.created_at).toLocaleString()}</td>
                   <td>${r.note || ''}</td>
                 </tr>
@@ -208,6 +236,23 @@ export function buildStoreLogMarkdown (kind, data) {
       lines2.push('');
     }
     return lines2.join('\n').trim() + '\n';
+  }
+
+  if (kind === 'storelog-splits') {
+    var lines4 = ['# Splits', '', fmtDate(data.start, data.end), ''];
+    if (!data.rows.length) {
+      lines4.push('No splits in this date range.', '');
+    } else {
+      lines4.push('| Item | From | To | Quantity | Date | Note |', '| --- | --- | --- | --- | --- | --- |');
+      data.rows.forEach(function (r) {
+        lines4.push(
+          '| ' + r.item_name + ' | ' + (r.from_location_name || 'No Location') + ' | ' + (r.to_location_name || 'No Location') +
+          ' | ' + r.quantity + ' | ' + new Date(r.created_at).toLocaleString() + ' | ' + (r.note || '') + ' |'
+        );
+      });
+      lines4.push('');
+    }
+    return lines4.join('\n').trim() + '\n';
   }
 
   // storelog-target
