@@ -181,11 +181,15 @@ go to **Server → App Store**, search for "Stowage Management", and click
   that section's table as its own document.
 
 **Search:**
-- Type an item name into the search box at the top, click a result.
+- Type into the search box at the top, click a result. Matches against
+  both the item's name and its notes — a match found only in notes shows
+  a short snippet of surrounding text under the result so you can see why
+  it matched.
 - The app automatically switches to the Floorplan tab, loads the matching
   plan, and makes the corresponding area blink for 6 seconds — even if the
   item is nested several containers deep (the app walks up the parent
-  chain until it finds a mapped storage space).
+  chain until it finds a mapped storage space). For an item split across
+  locations, every mapped area blinks at once.
 
 ## Data model
 

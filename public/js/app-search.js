@@ -9,8 +9,17 @@ export function SearchBox() {
   var openState = useState(false);
   var open = openState[0], setOpen = openState[1];
 
-  var results = query.trim()
-    ? app.data.items.filter(function (i) { return i.name.toLowerCase().indexOf(query.trim().toLowerCase()) !== -1; }).slice(0, 8)
+  var q = query.trim().toLowerCase();
+  var results = q
+    ? app.data.items
+        .map(function (item) {
+          var nameMatch = item.name.toLowerCase().indexOf(q) !== -1;
+          var notesIndex = item.notes ? item.notes.toLowerCase().indexOf(q) : -1;
+          if (!nameMatch && notesIndex === -1) return null;
+          return { item: item, noteSnippet: (!nameMatch && notesIndex !== -1) ? noteSnippetAround(item.notes, notesIndex, q.length) : null };
+        })
+        .filter(Boolean)
+        .slice(0, 8)
     : [];
 
   function pick(item) {
@@ -27,12 +36,27 @@ export function SearchBox() {
              onBlur=${function () { setTimeout(function () { setOpen(false); }, 150); }} />
       <div class=${'search-results' + (open && query.trim() ? ' open' : '')}>
         ${!results.length ? html`<div class="search-result">No results</div>` : null}
-        ${results.map(function (item) {
-          return html`<div class="search-result" key=${item.id} onMouseDown=${function () { pick(item); }}>${item.name}</div>`;
+        ${results.map(function (r) {
+          return html`
+            <div class="search-result" key=${r.item.id} onMouseDown=${function () { pick(r.item); }}>
+              <div>${r.item.name}</div>
+              ${r.noteSnippet ? html`<div class="search-result-snippet">${r.noteSnippet}</div>` : null}
+            </div>
+          `;
         })}
       </div>
     </div>
   `;
+}
+
+// Builds a short "...text around the match..." snippet from an item's
+// notes, for search results that matched on notes rather than name.
+function noteSnippetAround (notes, matchIndex, matchLength) {
+  var radius = 40;
+  var start = Math.max(0, matchIndex - radius);
+  var end = Math.min(notes.length, matchIndex + matchLength + radius);
+  var snippet = notes.slice(start, end).replace(/\s+/g, ' ').trim();
+  return (start > 0 ? '\u2026' : '') + snippet + (end < notes.length ? '\u2026' : '');
 }
 
 export function LocateItemPopup() {
