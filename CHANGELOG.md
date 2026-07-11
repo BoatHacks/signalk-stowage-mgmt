@@ -10,6 +10,18 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-11
+
+### Fixed
+
+- Split items' quantity was entirely read-only outside the Split
+  dialog. A split item's per-location chip now supports inline
+  quantity editing, exactly like a normal item's, scoped to that one
+  placement — the item's overall quantity (always the sum of its
+  placements) updates automatically. Item Properties and the
+  Understocked page remain read-only for split items, since neither
+  has a single location to attribute a change to.
+
 ## [0.8.0] - 2026-07-11
 
 ### Added
@@ -410,7 +422,8 @@ was renamed to `signalk-stowage-mgmt`.
   `signalk-stowage-mgmt`; translated the example floorplan's labels to
   English boat storage terms; updated repository metadata.
 
-[Unreleased]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.0...v0.7.1
