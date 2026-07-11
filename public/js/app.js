@@ -159,6 +159,7 @@ function App() {
     setThumbnail: function (id, thumbnail) { return act(function () { return api.setThumbnail(id, thumbnail); }); },
     moveItemTo: function (id, locationId) { return act(function () { return api.moveItem(id, locationId); }); },
     movePlacementTo: function (itemId, placementId, locationId) { return act(function () { return api.movePlacement(itemId, placementId, locationId); }); },
+    setPlacementQuantity: function (itemId, placementId, quantity, note) { return act(function () { return api.setPlacementQuantity(itemId, placementId, quantity, note); }); },
     splitItem: function (itemId, body) { return act(function () { return api.splitItem(itemId, body); }); },
     addItemCategory: function (id, categoryId) { return act(function () { return api.addItemCategory(id, categoryId); }); },
     removeItemCategory: function (id, categoryId) { return act(function () { return api.removeItemCategory(id, categoryId); }); },

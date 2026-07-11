@@ -61,12 +61,16 @@ function QuantityEditor(props) {
     var v = Math.max(0, parseInt(value, 10) || 0);
     setEditing(false);
     if (v === item.actual_quantity) return;
-    app.updateItem(item.id, { actual_quantity: v }).catch(function () {});
+    if (props.placementId) {
+      app.setPlacementQuantity(item.id, props.placementId, v, null).catch(function () {});
+    } else {
+      app.updateItem(item.id, { actual_quantity: v }).catch(function () {});
+    }
   }
 
   if (!isEditing) {
     var label = (props.prefix || '') + '\u00d7' + item.actual_quantity;
-    if (isSplit(item)) {
+    if (isSplit(item) && !props.placementId) {
       return html`
         <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
               title="This item is split across multiple locations — use Split to change its quantity.">

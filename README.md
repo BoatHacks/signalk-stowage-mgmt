@@ -76,16 +76,22 @@ go to **Server → App Store**, search for "Stowage Management", and click
 - **Splitting an item's stock across locations:** click "Split" on any
   item chip (works whether the item is already split or not), choose a
   destination and quantity, and it appears at both places. A split item
-  renders as one chip per location, each showing that location's share —
-  drag a specific chip to move just that portion; use "Split" again to
-  redistribute further. Its overall quantity becomes read-only in the
-  Item Properties dialog (change it via Split instead); name, notes,
-  target quantity, photo, and categories stay item-level and editable as
-  normal regardless. While dragging any item, a floating "Drop here to
-  split" panel appears (alongside "Not Stored") — dropping onto it opens
-  the Split dialog for whatever you were carrying, defaulting the source
-  to wherever it was just dragged from. Searching for or locating a split
-  item blinks every one of its mapped areas on the floorplan at once.
+  renders as one chip per location, each showing that location's own
+  quantity — editable inline just like a normal item's (setting it to 0
+  removes that placement; if only one location is left, the item
+  automatically reverts to being a plain, unsplit item); drag a specific
+  chip to move just that portion; use "Split" again to redistribute
+  further. The item's overall quantity is always the sum of its
+  placements, and is read-only in the Item Properties dialog (and on the
+  Understocked page, since there's no single location to attribute a
+  change to) — edit it via a placement chip or the Split dialog instead;
+  name, notes, target quantity, photo, and categories stay item-level and
+  editable as normal regardless. While dragging any item, a floating
+  "Drop here to split" panel appears (alongside "Not Stored") — dropping
+  onto it opens the Split dialog for whatever you were carrying,
+  defaulting the source to wherever it was just dragged from. Searching
+  for or locating a split item blinks every one of its mapped areas on
+  the floorplan at once.
 
 **Item properties (edit icon on any item):**
 - Name, actual quantity, target quantity (leave blank for "no target").
@@ -227,7 +233,7 @@ uploaded, so in practice this table normally holds at most one row.
 |---|---|---|
 | `id` | TEXT, PK | |
 | `name` | TEXT | |
-| `actual_quantity` | INTEGER, default 1 | How many you actually have. For a split item (see `item_placements` below), this is the sum of its placements' quantities and can only change via `POST /items/:id/split` |
+| `actual_quantity` | INTEGER, default 1 | How many you actually have. For a split item (see `item_placements` below), this is the sum of its placements' quantities and can only change via `POST /items/:id/split` (reallocating between locations) or `PATCH /items/:id/placements/:placementId` (changing one placement's quantity directly) |
 | `target_quantity` | INTEGER, nullable | Desired stock level; `NULL` means "no target set" and excludes the item from the Understocked page regardless of `actual_quantity` |
 | `notes` | TEXT, nullable | Free-text, rendered as markdown in the UI. (Earlier versions had a separate `description` column; it was merged into `notes` and dropped.) |
 | `location_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. `NULL` means "not stored anywhere" **or** "this item is split across locations" — check `item_placements` to tell which |
@@ -318,11 +324,12 @@ an appropriate HTTP status code.
 |---|---|
 | `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) and a `placements` array (empty unless split — see below) |
 | `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids?, note? }`. `note` is recorded in the item log for the initial quantity, not stored on the item itself |
-| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note }`. `target_quantity`/`notes` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. **`actual_quantity` is rejected with 400 if the item is split** — use `POST /items/:id/split` instead |
+| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note }`. `target_quantity`/`notes` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. **`actual_quantity` is rejected with 400 if the item is split** — use `PATCH /items/:id/placements/:placementId` (change one placement's quantity) or `POST /items/:id/split` (reallocate between locations) instead |
 | `PATCH /items/:id/thumbnail` | Set/clear the photo. Body: `{ thumbnail }` — a `data:` URI string, or `null`/omitted to remove it |
 | `PATCH /items/:id/move` | Move a whole (unsplit) item to a different location. Body: `{ location_id }` (omit/null to unassign). Not logged. **Rejected with 400 if the item is split** — move a specific placement via the endpoint below instead |
 | `GET /items/:id/placements` | List an item's placements (`[{ id, location_id, location_name, quantity }]`). Empty array means it isn't split |
 | `PATCH /items/:id/placements/:placementId/move` | Move one placement of a split item to a different location. Body: `{ location_id }` (omit/null for "no location"). Not logged, same as an ordinary move |
+| `PATCH /items/:id/placements/:placementId` | Set one placement's quantity directly — the split-item equivalent of editing `actual_quantity`. Body: `{ quantity, note? }`. Logged as an ordinary `actual_quantity` event (not `split`), since this is a real stock change, not a reallocation. Setting a placement to `0` removes it; if that leaves only one placement, the item automatically reverts to the plain (unsplit) representation |
 | `POST /items/:id/split` | Move `quantity` units of an item from `from_location_id` to `to_location_id` (both nullable, for "no location"), splitting the item across locations if it wasn't already. If not yet split, `from_location_id` must match the item's current `location_id`. If a split collapses everything back into one location, the item automatically reverts to the plain (unsplit) representation. Body: `{ from_location_id?, to_location_id?, quantity, note? }`. Always logged as a `split` event |
 | `POST /items/:id/categories` | Add a category. Body: `{ category_id }` |
 | `DELETE /items/:id/categories/:categoryId` | Remove a category |

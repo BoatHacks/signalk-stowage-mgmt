@@ -237,6 +237,44 @@ module.exports = function registerItemRoutes (router, getDb) {
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 
+  // Sets one placement's quantity directly — the split-item equivalent of
+  // PATCH /items/:id { actual_quantity }. The item's overall actual_quantity
+  // is kept in sync (it's always the sum of its placements) and the change
+  // is logged as an ordinary 'actual_quantity' event, exactly like editing a
+  // normal item's quantity — this is a real stock change (found/used more),
+  // not a reallocation between locations, so it deliberately isn't a 'split'
+  // event. Setting a placement to 0 removes it; if that leaves only one
+  // placement, the item automatically reverts to the plain representation.
+  router.patch('/items/:id/placements/:placementId', (req, res) => {
+    const item = getItemOr404(req.params.id, res)
+    if (!item) return
+    const placement = db().prepare('SELECT * FROM item_placements WHERE id = ? AND item_id = ?').get(req.params.placementId, item.id)
+    if (!placement) return res.status(404).json({ error: 'placement not found' })
+    const { quantity, note } = req.body || {}
+    const newQuantity = parseInt(quantity, 10)
+    if (!Number.isInteger(newQuantity) || newQuantity < 0) {
+      return res.status(400).json({ error: 'quantity must be a non-negative integer' })
+    }
+
+    const oldTotal = item.actual_quantity
+    const newTotal = oldTotal + (newQuantity - placement.quantity)
+
+    runInTransaction(db(), () => {
+      if (newQuantity === 0) {
+        db().prepare('DELETE FROM item_placements WHERE id = ?').run(placement.id)
+      } else {
+        db().prepare('UPDATE item_placements SET quantity = ? WHERE id = ?').run(newQuantity, placement.id)
+      }
+      db().prepare('UPDATE items SET actual_quantity = ? WHERE id = ?').run(newTotal, item.id)
+      collapseIfSingleLocation(item.id)
+      if (newTotal !== oldTotal) {
+        logItemEvent(db(), { itemId: item.id, itemName: item.name, event: 'actual_quantity', oldValue: oldTotal, newValue: newTotal, note })
+      }
+    })
+
+    res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
+  })
+
   router.get('/items/:id/placements', (req, res) => {
     const item = getItemOr404(req.params.id, res)
     if (!item) return

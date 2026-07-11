@@ -57,6 +57,9 @@ export const api = {
   movePlacement: function (itemId, placementId, locationId) {
     return patch('/items/' + itemId + '/placements/' + placementId + '/move', { location_id: locationId });
   },
+  setPlacementQuantity: function (itemId, placementId, quantity, note) {
+    return patch('/items/' + itemId + '/placements/' + placementId, { quantity: quantity, note: note });
+  },
   splitItem: function (id, body) { return post('/items/' + id + '/split', body); },
   addItemCategory: function (id, categoryId) { return post('/items/' + id + '/categories', { category_id: categoryId }); },
   removeItemCategory: function (id, categoryId) { return del('/items/' + id + '/categories/' + categoryId); },

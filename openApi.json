@@ -1401,6 +1401,83 @@
           }
         }
       }
+    },
+    "/items/{id}/placements/{placementId}": {
+      "patch": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "Set one placement's quantity directly",
+        "description": "The split-item equivalent of PATCH /items/:id { actual_quantity }. The item's overall actual_quantity is kept in sync (it's always the sum of its placements) and the change is logged as an ordinary 'actual_quantity' event, exactly like editing a normal item's quantity \u2014 this is a real stock change, not a reallocation between locations, so it is deliberately not a 'split' event. Setting a placement to 0 removes it; if that leaves only one placement, the item automatically reverts to the plain (unsplit) representation.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ItemId"
+          },
+          {
+            "name": "placementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "quantity"
+                ],
+                "properties": {
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated item, including its new placements array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "quantity is not a non-negative integer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Item or placement not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

@@ -1164,10 +1164,6 @@ select {
   vertical-align: middle;
 }
 
-.split-qty {
-  cursor: default;
-}
-
 .split-allocation-list {
   margin: 0 0 14px;
   padding-left: 20px;
