@@ -38,7 +38,7 @@ jobs:
 
       # Trusted publishing needs npm 11.5.1+; Node 20's bundled npm predates that.
       - name: Update npm
-        run: npm install -g npm@latest
+        run: sudo npm install -g npm@latest
 
       - name: Install dependencies
         run: npm install --omit=dev
