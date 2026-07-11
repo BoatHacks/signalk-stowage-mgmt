@@ -53,7 +53,10 @@ export function ItemPropertiesModal() {
       <div class="modal modal-wide">
         <div class="modal-header">
           <h2>Properties for "${item.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closePropertiesModal}>×</button>
+          <div class="modal-header-actions">
+            <button type="button" class="primary-btn" onClick=${save}>Save</button>
+            <button class="modal-close" aria-label="Close" onClick=${app.closePropertiesModal}>×</button>
+          </div>
         </div>
 
         <div class="form-field">
@@ -102,10 +105,6 @@ export function ItemPropertiesModal() {
             <div class="notes-preview-label">Preview</div>
           ` : null}
           <div class="notes-preview" dangerouslySetInnerHTML=${{ __html: renderMarkdown(notes) }}></div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="primary-btn" onClick=${save}>Save</button>
         </div>
       </div>
     </div>

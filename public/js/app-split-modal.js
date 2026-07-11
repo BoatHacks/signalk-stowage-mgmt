@@ -57,7 +57,10 @@ export function SplitModal () {
       <div class="modal">
         <div class="modal-header">
           <h2>Split "${item.name}"</h2>
-          <button class="modal-close" aria-label="Close" onClick=${app.closeSplitModal}>\u00d7</button>
+          <div class="modal-header-actions">
+            <button type="button" class="primary-btn" onClick=${submit}>Split</button>
+            <button class="modal-close" aria-label="Close" onClick=${app.closeSplitModal}>\u00d7</button>
+          </div>
         </div>
 
         <p class="hint">Current allocation:</p>
@@ -99,10 +102,6 @@ export function SplitModal () {
           <label>Reason for split <span class="hint">(optional, shown in the Store Log)</span></label>
           <input type="text" placeholder="e.g. keeping spares near the engine room too" value=${note}
                  onInput=${function (e) { setNote(e.target.value); }} />
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="primary-btn" onClick=${submit}>Split</button>
         </div>
       </div>
     </div>
