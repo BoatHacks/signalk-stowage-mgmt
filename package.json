@@ -10,7 +10,8 @@
   "signalk-plugin-enabled-by-default": false,
   "signalk": {
     "displayName": "Stowage Management",
-    "appIcon": "./assets/icons/icon-512.png"
+    "appIcon": "./assets/icons/icon-512.png",
+    "recommends": ["signalk-maintenance-tracker"]
   },
   "main": "plugin/index.js",
   "scripts": {
