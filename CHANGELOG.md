@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-07-12
+
 ### Added
 
 - File attachments for items (issue #15): upload manuals, spec
