@@ -1,7 +1,7 @@
 {
   "name": "signalk-stowage-mgmt",
   "version": "0.8.4",
-  "description": "SignalK Stowage Management: organize items into containers and storage spaces, and locate them on an SVG floorplan.",
+  "description": "Organize items into containers and storage spaces, locate them, track item consumption, and lots more.",
   "keywords": [
     "signalk-node-server-plugin",
     "signalk-webapp",
