@@ -58,6 +58,7 @@ export function StoreLogTab () {
       .slice()
       .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; });
   }, [rows]);
+  var predictions = useMemo(function () { return buildPredictionRows(rows, app.data.items, start, end); }, [rows, app.data.items, start, end]);
 
   return html`
     <section class="tab-panel active">
@@ -160,6 +161,29 @@ export function StoreLogTab () {
             })}
           </tbody>
         </table>
+
+        <div class="store-log-section-header">
+          <h3 class="store-log-heading">Predicted Runway</h3>
+          <button type="button" onClick=${function () { app.openExportModal('storelog-predictions', { start: start, end: end, rows: predictions }); }}>Export as Markdown</button>
+        </div>
+        <p class="hint">Based on consumption in the date range above. Needs at least 3 separate uses in that range to estimate a rate; items without enough history aren't shown.</p>
+        <table class="overview-table">
+          <thead><tr><th>Item</th><th>Current Stock</th><th>Consumed (range)</th><th>Days Remaining</th><th>Runs Out Around</th></tr></thead>
+          <tbody>
+            ${!predictions.length ? html`<tr class="empty-row"><td colspan="5">Not enough usage history in this date range to predict anything.</td></tr>` : null}
+            ${predictions.map(function (p) {
+              return html`
+                <tr key=${p.itemId}>
+                  <td>${p.itemName}</td>
+                  <td>${p.currentStock}</td>
+                  <td>${p.consumedInRange}</td>
+                  <td>~${Math.round(p.daysRemaining)}</td>
+                  <td>${p.projectedDate}</td>
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
       `}
     </section>
   `;
@@ -200,6 +224,57 @@ function buildAggregateRows (rows) {
   });
 
   return order.map(function (id) { return byItem[id]; }).sort(function (a, b) { return b.used - a.used; });
+}
+
+// Per-item consumption-rate projection over the selected date range.
+// Requires at least 3 separate consumption events in range (actual_quantity
+// decreases, or a deletion using up whatever remained) before predicting
+// anything — a single/couple data points is too noisy to be worth showing.
+// Restocking doesn't affect the rate, only the current-stock starting
+// point (already accurate via the item's own actual_quantity).
+function buildPredictionRows (rows, items, start, end) {
+  var MIN_EVENTS = 3;
+  var msPerDay = 24 * 60 * 60 * 1000;
+  var daysInRange = Math.max(1, Math.round((new Date(end) - new Date(start)) / msPerDay) + 1);
+
+  var byItem = {};
+  rows.forEach(function (r) {
+    var consumed;
+    if (r.event === 'deleted') consumed = Math.abs(r.delta);
+    else if (r.event === 'actual_quantity' && r.delta < 0) consumed = Math.abs(r.delta);
+    else return;
+    if (!byItem[r.item_id]) byItem[r.item_id] = { itemName: r.item_name, count: 0, totalConsumed: 0 };
+    byItem[r.item_id].count += 1;
+    byItem[r.item_id].totalConsumed += consumed;
+    byItem[r.item_id].itemName = r.item_name;
+  });
+
+  var itemsById = {};
+  items.forEach(function (i) { itemsById[i.id] = i; });
+
+  var result = [];
+  Object.keys(byItem).forEach(function (itemId) {
+    var entry = byItem[itemId];
+    if (entry.count < MIN_EVENTS) return;
+    var currentItem = itemsById[itemId];
+    if (!currentItem) return; // item no longer exists, nothing to project
+    var rate = entry.totalConsumed / daysInRange;
+    if (rate <= 0) return;
+    var currentStock = currentItem.actual_quantity;
+    var daysRemaining = currentStock / rate;
+    var projected = new Date();
+    projected.setDate(projected.getDate() + Math.round(daysRemaining));
+    result.push({
+      itemId: itemId,
+      itemName: entry.itemName,
+      currentStock: currentStock,
+      consumedInRange: entry.totalConsumed,
+      daysRemaining: daysRemaining,
+      projectedDate: projected.toISOString().slice(0, 10)
+    });
+  });
+
+  return result.sort(function (a, b) { return a.daysRemaining - b.daysRemaining; });
 }
 
 function fmtDate (start, end) {
@@ -253,6 +328,20 @@ export function buildStoreLogMarkdown (kind, data) {
       lines4.push('');
     }
     return lines4.join('\n').trim() + '\n';
+  }
+
+  if (kind === 'storelog-predictions') {
+    var lines5 = ['# Predicted Runway', '', fmtDate(data.start, data.end), ''];
+    if (!data.rows.length) {
+      lines5.push('Not enough usage history in this date range to predict anything.', '');
+    } else {
+      lines5.push('| Item | Current Stock | Consumed (range) | Days Remaining | Runs Out Around |', '| --- | --- | --- | --- | --- |');
+      data.rows.forEach(function (p) {
+        lines5.push('| ' + p.itemName + ' | ' + p.currentStock + ' | ' + p.consumedInRange + ' | ~' + Math.round(p.daysRemaining) + ' | ' + p.projectedDate + ' |');
+      });
+      lines5.push('');
+    }
+    return lines5.join('\n').trim() + '\n';
   }
 
   // storelog-target

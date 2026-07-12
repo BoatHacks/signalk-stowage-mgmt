@@ -176,11 +176,12 @@ go to **Server → App Store**, search for "Stowage Management", and click
 - "Export as Markdown" produces the same list as a table.
 
 **Store Log (tab):**
-- An audit trail of item creation, actual/target quantity changes, and
-  deletion — useful for questions like "how many rolls of toilet paper did
-  we use last month?" Moving an item between locations is not logged.
+- An audit trail of item creation, actual/target quantity changes,
+  deletion, and splits — useful for questions like "how many rolls of
+  toilet paper did we use last month?" Moving an item (or one placement
+  of a split item) between locations is not logged.
 - Preset buttons (Last Week/Month/Quarter/6 Months/Year) or manual date
-  pickers set the range shown, shared across all three sections below.
+  pickers set the range shown, shared across all five sections below.
 - **Individual Movements**: one row per movement event (item creation,
   quantity increase/decrease, or deletion), newest first — item, Added or
   Used amount, timestamp, and note.
@@ -189,6 +190,17 @@ go to **Server → App Store**, search for "Stowage Management", and click
 - **Target Adjustments**: a plain chronological list (target quantity is a
   goal, not a consumed resource, so it isn't aggregated) — From, To, date,
   and the note if one was left.
+- **Splits**: a chronological list of split actions — Item, From, To,
+  Quantity, date, and the note if one was left. Ordinary moves (including
+  moving a single placement of a split item) aren't split actions and
+  don't appear here.
+- **Predicted Runway**: for items with at least 3 separate consumption
+  events within the selected date range, projects a consumption rate
+  (total consumed ÷ days in range) and estimates days remaining and an
+  approximate run-out date from the item's current stock. Items with
+  fewer than 3 qualifying events in the range aren't shown — not enough
+  data to estimate a rate. Sorted soonest-to-run-out first. Restocking
+  doesn't affect the rate, only the current-stock starting point.
 - Adding a note to a quantity change: only available from the Item
   Properties dialog's Save action, not the quick inline quantity editor.
 - Each section has its own "Export as Markdown" button, producing just

@@ -210,7 +210,7 @@ function App() {
       var text;
       if (kind === 'shopping') text = buildShoppingListMarkdown(data);
       else if (kind === 'expiring') text = buildExpiringMarkdown(data);
-      else if (kind === 'storelog-individual' || kind === 'storelog-aggregate' || kind === 'storelog-target' || kind === 'storelog-splits') {
+      else if (kind === 'storelog-individual' || kind === 'storelog-aggregate' || kind === 'storelog-target' || kind === 'storelog-splits' || kind === 'storelog-predictions') {
         text = buildStoreLogMarkdown(kind, payload);
       } else text = buildInventoryMarkdown(data);
       exportModalContentState[1](text);
