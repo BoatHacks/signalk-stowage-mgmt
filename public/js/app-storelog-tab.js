@@ -19,6 +19,29 @@ var PRESETS = [
   { label: 'Last Year', days: 365 }
 ];
 
+// A collapsible section — collapsed by default. The "Export as Markdown"
+// button stays visible either way, so exporting never requires expanding.
+function StoreLogSection (props) {
+  var expandedState = useState(false);
+  var expanded = expandedState[0], setExpanded = expandedState[1];
+
+  return html`
+    <div class="store-log-section">
+      <div class="store-log-section-header">
+        <div class="store-log-section-toggle" onClick=${function () { setExpanded(!expanded); }}>
+          <span class="fold-arrow">${expanded ? '\u25be' : '\u25b8'}</span>
+          <h3 class="store-log-heading">${props.title}</h3>
+        </div>
+        <button type="button" onClick=${props.onExport}>Export as Markdown</button>
+      </div>
+      ${expanded ? html`
+        ${props.hint ? html`<p class="hint">${props.hint}</p>` : null}
+        ${props.children}
+      ` : null}
+    </div>
+  `;
+}
+
 export function StoreLogTab () {
   var app = useApp();
   var startState = useState(isoDate(daysAgo(30)));
@@ -75,115 +98,110 @@ export function StoreLogTab () {
       </div>
 
       ${loading ? html`<p class="hint">Loading\u2026</p>` : html`
-        <div class="store-log-section-header">
-          <h3 class="store-log-heading">Individual Movements</h3>
-          <button type="button" onClick=${function () { app.openExportModal('storelog-individual', { start: start, end: end, rows: individual }); }}>Export as Markdown</button>
-        </div>
-        <table class="overview-table">
-          <thead><tr><th>Item</th><th>Added</th><th>Used</th><th>Timestamp</th><th>Note</th></tr></thead>
-          <tbody>
-            ${!individual.length ? html`<tr class="empty-row"><td colspan="5">No inventory changes in this date range.</td></tr>` : null}
-            ${individual.map(function (m) {
-              return html`
-                <tr key=${m.id}>
-                  <td>${m.itemName}</td>
-                  <td>${m.added || ''}</td>
-                  <td>${m.used || ''}</td>
-                  <td>${new Date(m.createdAt).toLocaleString()}</td>
-                  <td>${m.note || ''}</td>
-                </tr>
-              `;
-            })}
-          </tbody>
-        </table>
+        <${StoreLogSection} title="Individual Movements"
+                             onExport=${function () { app.openExportModal('storelog-individual', { start: start, end: end, rows: individual }); }}>
+          <table class="overview-table">
+            <thead><tr><th>Item</th><th>Added</th><th>Used</th><th>Timestamp</th><th>Note</th></tr></thead>
+            <tbody>
+              ${!individual.length ? html`<tr class="empty-row"><td colspan="5">No inventory changes in this date range.</td></tr>` : null}
+              ${individual.map(function (m) {
+                return html`
+                  <tr key=${m.id}>
+                    <td>${m.itemName}</td>
+                    <td>${m.added || ''}</td>
+                    <td>${m.used || ''}</td>
+                    <td>${new Date(m.createdAt).toLocaleString()}</td>
+                    <td>${m.note || ''}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </${StoreLogSection}>
 
-        <div class="store-log-section-header">
-          <h3 class="store-log-heading">Aggregate Movements</h3>
-          <button type="button" onClick=${function () { app.openExportModal('storelog-aggregate', { start: start, end: end, rows: aggregate }); }}>Export as Markdown</button>
-        </div>
-        <table class="overview-table">
-          <thead><tr><th>Item</th><th>Added</th><th>Used</th></tr></thead>
-          <tbody>
-            ${!aggregate.length ? html`<tr class="empty-row"><td colspan="3">No inventory changes in this date range.</td></tr>` : null}
-            ${aggregate.map(function (a) {
-              return html`
-                <tr key=${a.itemId}>
-                  <td>${a.itemName}</td>
-                  <td>${a.added}</td>
-                  <td>${a.used}</td>
-                </tr>
-              `;
-            })}
-          </tbody>
-        </table>
+        <${StoreLogSection} title="Aggregate Movements"
+                             onExport=${function () { app.openExportModal('storelog-aggregate', { start: start, end: end, rows: aggregate }); }}>
+          <table class="overview-table">
+            <thead><tr><th>Item</th><th>Added</th><th>Used</th></tr></thead>
+            <tbody>
+              ${!aggregate.length ? html`<tr class="empty-row"><td colspan="3">No inventory changes in this date range.</td></tr>` : null}
+              ${aggregate.map(function (a) {
+                return html`
+                  <tr key=${a.itemId}>
+                    <td>${a.itemName}</td>
+                    <td>${a.added}</td>
+                    <td>${a.used}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </${StoreLogSection}>
 
-        <div class="store-log-section-header">
-          <h3 class="store-log-heading">Target Adjustments</h3>
-          <button type="button" onClick=${function () { app.openExportModal('storelog-target', { start: start, end: end, rows: targetAdjustments }); }}>Export as Markdown</button>
-        </div>
-        <table class="overview-table">
-          <thead><tr><th>Item</th><th>From</th><th>To</th><th>Date</th><th>Note</th></tr></thead>
-          <tbody>
-            ${!targetAdjustments.length ? html`<tr class="empty-row"><td colspan="5">No target quantity changes in this date range.</td></tr>` : null}
-            ${targetAdjustments.map(function (r) {
-              return html`
-                <tr key=${r.id}>
-                  <td>${r.item_name}</td>
-                  <td>${r.old_value === null ? '\u2014' : r.old_value}</td>
-                  <td>${r.new_value === null ? '\u2014' : r.new_value}</td>
-                  <td>${new Date(r.created_at).toLocaleString()}</td>
-                  <td>${r.note || ''}</td>
-                </tr>
-              `;
-            })}
-          </tbody>
-        </table>
+        <${StoreLogSection} title="Target Adjustments"
+                             onExport=${function () { app.openExportModal('storelog-target', { start: start, end: end, rows: targetAdjustments }); }}>
+          <table class="overview-table">
+            <thead><tr><th>Item</th><th>From</th><th>To</th><th>Date</th><th>Note</th></tr></thead>
+            <tbody>
+              ${!targetAdjustments.length ? html`<tr class="empty-row"><td colspan="5">No target quantity changes in this date range.</td></tr>` : null}
+              ${targetAdjustments.map(function (r) {
+                return html`
+                  <tr key=${r.id}>
+                    <td>${r.item_name}</td>
+                    <td>${r.old_value === null ? '\u2014' : r.old_value}</td>
+                    <td>${r.new_value === null ? '\u2014' : r.new_value}</td>
+                    <td>${new Date(r.created_at).toLocaleString()}</td>
+                    <td>${r.note || ''}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </${StoreLogSection}>
 
-        <div class="store-log-section-header">
-          <h3 class="store-log-heading">Splits</h3>
-          <button type="button" onClick=${function () { app.openExportModal('storelog-splits', { start: start, end: end, rows: splits }); }}>Export as Markdown</button>
-        </div>
-        <table class="overview-table">
-          <thead><tr><th>Item</th><th>From</th><th>To</th><th>Quantity</th><th>Date</th><th>Note</th></tr></thead>
-          <tbody>
-            ${!splits.length ? html`<tr class="empty-row"><td colspan="6">No splits in this date range.</td></tr>` : null}
-            ${splits.map(function (r) {
-              return html`
-                <tr key=${r.id}>
-                  <td>${r.item_name}</td>
-                  <td>${r.from_location_name || 'No Location'}</td>
-                  <td>${r.to_location_name || 'No Location'}</td>
-                  <td>${r.quantity}</td>
-                  <td>${new Date(r.created_at).toLocaleString()}</td>
-                  <td>${r.note || ''}</td>
-                </tr>
-              `;
-            })}
-          </tbody>
-        </table>
+        <${StoreLogSection} title="Splits"
+                             onExport=${function () { app.openExportModal('storelog-splits', { start: start, end: end, rows: splits }); }}>
+          <table class="overview-table">
+            <thead><tr><th>Item</th><th>From</th><th>To</th><th>Quantity</th><th>Date</th><th>Note</th></tr></thead>
+            <tbody>
+              ${!splits.length ? html`<tr class="empty-row"><td colspan="6">No splits in this date range.</td></tr>` : null}
+              ${splits.map(function (r) {
+                return html`
+                  <tr key=${r.id}>
+                    <td>${r.item_name}</td>
+                    <td>${r.from_location_name || 'No Location'}</td>
+                    <td>${r.to_location_name || 'No Location'}</td>
+                    <td>${r.quantity}</td>
+                    <td>${new Date(r.created_at).toLocaleString()}</td>
+                    <td>${r.note || ''}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </${StoreLogSection}>
 
-        <div class="store-log-section-header">
-          <h3 class="store-log-heading">Predicted Runway</h3>
-          <button type="button" onClick=${function () { app.openExportModal('storelog-predictions', { start: start, end: end, rows: predictions }); }}>Export as Markdown</button>
-        </div>
-        <p class="hint">Based on consumption in the date range above. Needs at least 3 separate uses in that range to estimate a rate; items without enough history aren't shown.</p>
-        <table class="overview-table">
-          <thead><tr><th>Item</th><th>Current Stock</th><th>Consumed (range)</th><th>Days Remaining</th><th>Runs Out Around</th></tr></thead>
-          <tbody>
-            ${!predictions.length ? html`<tr class="empty-row"><td colspan="5">Not enough usage history in this date range to predict anything.</td></tr>` : null}
-            ${predictions.map(function (p) {
-              return html`
-                <tr key=${p.itemId}>
-                  <td>${p.itemName}</td>
-                  <td>${p.currentStock}</td>
-                  <td>${p.consumedInRange}</td>
-                  <td>~${Math.round(p.daysRemaining)}</td>
-                  <td>${p.projectedDate}</td>
-                </tr>
-              `;
-            })}
-          </tbody>
-        </table>
+        <${StoreLogSection} title="Predicted Runway"
+                             hint="Based on consumption in the date range above. Needs at least 3 separate uses in that range to estimate a rate; items without enough history aren't shown."
+                             onExport=${function () { app.openExportModal('storelog-predictions', { start: start, end: end, rows: predictions }); }}>
+          <table class="overview-table">
+            <thead><tr><th>Item</th><th>Current Stock</th><th>Consumed (range)</th><th>Days Remaining</th><th>Runs Out Around</th></tr></thead>
+            <tbody>
+              ${!predictions.length ? html`<tr class="empty-row"><td colspan="5">Not enough usage history in this date range to predict anything.</td></tr>` : null}
+              ${predictions.map(function (p) {
+                return html`
+                  <tr key=${p.itemId}>
+                    <td>${p.itemName}</td>
+                    <td>${p.currentStock}</td>
+                    <td>${p.consumedInRange}</td>
+                    <td>~${Math.round(p.daysRemaining)}</td>
+                    <td>${p.projectedDate}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </${StoreLogSection}>
       `}
     </section>
   `;

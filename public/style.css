@@ -1151,6 +1151,14 @@ select {
   margin-top: 0;
 }
 
+.store-log-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
 /* ---------- split items ---------- */
 
 .split-badge {
