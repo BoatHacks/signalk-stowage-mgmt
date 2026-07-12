@@ -10,6 +10,30 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-07-12
+
+### Added
+
+- Expiration date tracking: an optional date per item, a new
+  "Expiring" tab (items expiring within 14 days or already expired,
+  soonest/most-overdue first), and its own markdown export. Not
+  tracked in the Store Log.
+- Consumption rate prediction: a 5th Store Log section ("Predicted
+  Runway") projecting a consumption rate from items with at least 3
+  separate usage events in the selected date range, estimating days
+  remaining and an approximate run-out date.
+- `GET /items/:id` — single-item fetch.
+- `GET /items?q=<text>` — case-insensitive substring search against
+  item name (not notes), for autocomplete/picker use cases. Returns
+  all matches, unbounded.
+- `ROADMAP.md`, to track future ideas without losing them.
+
+### Changed
+
+- README: documented the `source: <shop name>` notes convention that
+  groups the Understocked page's shopping list export by shop
+  (implemented earlier, but never documented).
+
 ## [0.8.1] - 2026-07-11
 
 ### Fixed
@@ -422,7 +446,8 @@ was renamed to `signalk-stowage-mgmt`.
   `signalk-stowage-mgmt`; translated the example floorplan's labels to
   English boat storage terms; updated repository metadata.
 
-[Unreleased]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/BoatHacks/signalk-stowage-mgmt/compare/v0.7.1...v0.7.2
