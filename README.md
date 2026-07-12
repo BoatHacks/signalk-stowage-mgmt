@@ -343,7 +343,8 @@ an appropriate HTTP status code.
 
 | Method & path | Purpose |
 |---|---|
-| `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) and a `placements` array (empty unless split — see below) |
+| `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) and a `placements` array (empty unless split — see below). Optional `?q=<text>` filters to items whose **name** contains the text (case-insensitive substring match; notes aren't searched). Returns every match, unbounded |
+| `GET /items/:id` | Get a single item, same shape as an entry in the list above |
 | `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids?, note?, expires_at? }`. `note` is recorded in the item log for the initial quantity, not stored on the item itself |
 | `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note, expires_at }`. `target_quantity`/`notes`/`expires_at` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. `expires_at` changes are not logged. **`actual_quantity` is rejected with 400 if the item is split** — use `PATCH /items/:id/placements/:placementId` (change one placement's quantity) or `POST /items/:id/split` (reallocate between locations) instead |
 | `PATCH /items/:id/thumbnail` | Set/clear the photo. Body: `{ thumbnail }` — a `data:` URI string, or `null`/omitted to remove it |

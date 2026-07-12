@@ -355,7 +355,18 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive substring match against item name only (not notes). Returns all matches, unbounded."
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -519,6 +530,39 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Items"
+        ],
+        "summary": "Get a single item",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ItemId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
           },
           "404": {
             "description": "Not found",

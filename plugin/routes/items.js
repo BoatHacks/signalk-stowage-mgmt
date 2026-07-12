@@ -74,8 +74,21 @@ module.exports = function registerItemRoutes (router, getDb) {
   }
 
   router.get('/items', (req, res) => {
-    const items = db().prepare('SELECT * FROM items ORDER BY name').all()
+    const { q } = req.query || {}
+    let items
+    if (q) {
+      items = db().prepare('SELECT * FROM items WHERE name LIKE ? ESCAPE \'\\\' ORDER BY name')
+        .all('%' + String(q).replace(/[\\%_]/g, '\\$&') + '%')
+    } else {
+      items = db().prepare('SELECT * FROM items ORDER BY name').all()
+    }
     res.json(withDetails(items))
+  })
+
+  router.get('/items/:id', (req, res) => {
+    const item = getItemOr404(req.params.id, res)
+    if (!item) return
+    res.json(withDetails(item))
   })
 
   router.post('/items', (req, res) => {
