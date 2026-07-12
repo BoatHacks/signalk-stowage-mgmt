@@ -350,6 +350,29 @@ enabled.
 All request/response bodies are JSON. Errors are `{ "error": "..." }` with
 an appropriate HTTP status code.
 
+**Known external consumers**
+
+`signalk-maintenance-tracker`'s `inventory-interaction` feature calls this
+API directly — the first (and so far only) external consumer. It depends on:
+
+- `GET /items` — called same-origin, straight from its browser frontend
+  (parts picker, stock badges), not proxied through its own backend.
+- `GET /items/:id` — backend lookup before decrementing stock.
+- `PATCH /items/:id` — decrements `actual_quantity` for non-split items.
+- `PATCH /items/:id/placements/:placementId` — same, per-placement, for
+  split items.
+- The `Item` shape's `id`, `name`, `actual_quantity`, `target_quantity`,
+  and `placements` (each `{ id, location_id, quantity }`).
+- The `{ "error": "..." }` error shape, to distinguish "no such item" from
+  "route doesn't exist" on `GET /items/:id`'s 404.
+
+There's no version negotiation between the two plugins, so a breaking
+change to any of the above won't fail loudly on either side — it'll just
+silently break the integration. **Call this out explicitly in the
+CHANGELOG** when it happens, even if the change doesn't touch this
+plugin's own frontend at all. (See issue #18 for the fuller discussion —
+no versioning/deprecation process beyond this is planned for now.)
+
 **Locations** (storage spaces & containers)
 
 | Method & path | Purpose |
