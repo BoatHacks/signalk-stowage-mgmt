@@ -262,7 +262,7 @@ select {
 }
 .node-type { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 
-.node-actions { display: flex; gap: 6px; }
+.node-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .node-actions button { padding: 4px 8px; font-size: 12px; }
 
 .icon-btn {

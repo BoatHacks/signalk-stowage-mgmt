@@ -44,14 +44,19 @@ go to **Server → App Store**, search for "Stowage Management", and click
 ## Usage
 
 **Inventory (tab):**
-- "+ Storage Space" creates a new top-level storage space (e.g. "Lazarette").
+- "+ Storage Space" (toolbar) creates a new top-level storage space (e.g.
+  "Lazarette"). Every node also has its own "+ Storage Space", for nesting
+  one inside another (e.g. "Port Locker" inside "Aft Cabin") — storage
+  spaces can be mapped to a floorplan area at any depth, not just at the
+  top level.
 - Per node: "+ Container" (nestable to any depth), "+ Item", plus icon
   buttons on each item: edit (properties), photo, move, delete.
 - Containers can be dragged directly onto another container or storage
   space to move them (or dragged onto the floating "Not Stored" panel to
   detach them to the top level). Items can likewise be dragged onto any
   storage space/container, or dragged straight onto an assigned floorplan
-  area to stow them there.
+  area to stow them there. Storage spaces aren't draggable — once placed,
+  re-parenting one takes deleting and recreating it under the new parent.
 - Items show actual quantity (click to edit inline, with +/- steppers) and
   target quantity, if set, as "×3 / 6".
 - "Export as Markdown" renders the whole inventory tree (storage spaces,
@@ -120,7 +125,10 @@ go to **Server → App Store**, search for "Stowage Management", and click
   "+ Storage" to create a new one on the spot and assign it in one step —
   the field is pre-filled with a name guessed from the area's SVG id
   (e.g. `area-navtable` → "Navtable"), which clears on first click so you
-  can type your own.
+  can type your own. Existing storage spaces are listed by their full path
+  (e.g. "Aft Cabin → Port Locker"), not just their bare name, since nested
+  storage spaces can share a name at different depths (e.g. a "Port
+  Locker" under both Aft Cabin and Fwd Cabin).
 - If two areas visually overlap on the floorplan (e.g. a locker drawn
   above a berth, with storage space behind/below it), only the topmost one
   is clickable. For the one underneath, use the **"Area ID"** button on
@@ -246,7 +254,7 @@ uploaded, so in practice this table normally holds at most one row.
 | `id` | TEXT, PK | |
 | `name` | TEXT | |
 | `type` | TEXT | `storage_space` or `container` (CHECK constraint) |
-| `parent_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. Nesting: containers can nest inside containers or storage spaces to any depth; storage spaces may also have `parent_id = NULL` (top-level) — a non-null `parent_id` on a `storage_space` row is possible via the API but the UI always creates them at the top level |
+| `parent_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. Nesting: containers can nest inside containers or storage spaces to any depth; storage spaces can likewise nest inside another storage space or container to any depth (or have `parent_id = NULL` for top-level) — a storage space maps to a floorplan area independently of its own nesting depth |
 | `floorplan_id` | TEXT, FK → `floorplans.id` | `ON DELETE SET NULL`. Only meaningful on `storage_space` rows |
 | `svg_element_id` | TEXT | The `id` attribute of the matched SVG shape. Only meaningful on `storage_space` rows |
 

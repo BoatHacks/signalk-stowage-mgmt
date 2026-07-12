@@ -10,6 +10,18 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Storage spaces can now be nested inside another storage space (or
+  container) to any depth, not just created at the top level — e.g.
+  "Port Locker" inside "Aft Cabin". Backend and floorplan-mapping/locate
+  logic already supported this; the missing piece was a "+ Storage
+  Space" button on every tree node, not just the top-level toolbar.
+  The floorplan "Assign area" picker now lists storage spaces by their
+  full breadcrumb path rather than bare name, since nesting makes
+  same-named spaces at different depths (e.g. two "Port Locker"s)
+  possible.
+
 ## [0.8.4] - 2026-07-12
 
 ### Added

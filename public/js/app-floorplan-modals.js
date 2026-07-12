@@ -131,7 +131,7 @@ export function LocationAssignModal() {
             var isAssigned = s.floorplan_id === floorplanId && s.svg_element_id === svgElementId;
             return html`
               <button type="button" key=${s.id} class=${'category-chip' + (isAssigned ? ' assigned' : '')}
-                      onClick=${function () { toggle(s, !isAssigned); }}>${s.name}</button>
+                      onClick=${function () { toggle(s, !isAssigned); }}>${pathToRoot(app.data, s.id)}</button>
             `;
           })}
         </div>

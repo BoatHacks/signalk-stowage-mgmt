@@ -128,6 +128,7 @@ export function LocationNode(props) {
            onDrop=${handleDrop}>
         <span class="node-title">${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}</span>
         <span class="node-actions">
+          <button type="button" onClick=${function () { app.addStorageSpace(loc.id); }}>+ Storage Space</button>
           <button type="button" onClick=${function () { app.addContainer(loc.id); }}>+ Container</button>
           <button type="button" onClick=${function () { app.addItem(loc.id); }}>+ Item</button>
           <${IconBtn} icon="edit" title="Rename" onClick=${function () { app.renameLocation(loc); }} />

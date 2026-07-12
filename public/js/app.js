@@ -131,10 +131,10 @@ function App() {
     refreshData: refreshData,
 
     // locations
-    addStorageSpace: function () {
+    addStorageSpace: function (parentId) {
       var name = prompt('Name of the new storage space (e.g. "Lazarette"):');
       if (!name) return;
-      act(function () { return api.createLocation({ name: name, type: 'storage_space' }); });
+      act(function () { return api.createLocation({ name: name, type: 'storage_space', parent_id: parentId || null }); });
     },
     addContainer: function (parentId) {
       var name = prompt('Name of the new container (e.g. "First Aid Box"):');
