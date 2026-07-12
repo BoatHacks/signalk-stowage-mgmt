@@ -401,6 +401,11 @@
                     "type": "string",
                     "nullable": true,
                     "description": "Optional note recorded in the item log for the initial quantity."
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
                   }
                 }
               }
@@ -467,6 +472,11 @@
                     "type": "string",
                     "nullable": true,
                     "description": "Optional note recorded in the item log if actual_quantity and/or target_quantity change in this request."
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
                   }
                 }
               }
@@ -1597,6 +1607,12 @@
               "$ref": "#/components/schemas/ItemPlacement"
             },
             "description": "Empty for a normal item. Non-empty means this item's stock is split across multiple locations \u2014 in that case actual_quantity is the sum of placement quantities, location_id is null, and actual_quantity can only be changed via POST /items/:id/split."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Optional expiration date (YYYY-MM-DD). Not tracked in the item log."
           }
         }
       },

@@ -13,6 +13,7 @@ export function ItemPropertiesModal() {
   var actualState = useState(0);
   var targetState = useState('');
   var notesState = useState('');
+  var expiresAtState = useState('');
   var changeNoteState = useState('');
   var noteViewState = useState('show'); // 'show' | 'edit'
 
@@ -22,6 +23,7 @@ export function ItemPropertiesModal() {
     actualState[1](item.actual_quantity);
     targetState[1](item.target_quantity === null || item.target_quantity === undefined ? '' : String(item.target_quantity));
     notesState[1](item.notes || '');
+    expiresAtState[1](item.expires_at || '');
     changeNoteState[1]('');
     noteViewState[1]('show');
   }, [item && item.id]);
@@ -32,6 +34,7 @@ export function ItemPropertiesModal() {
   var actualQty = actualState[0], setActualQty = actualState[1];
   var targetQty = targetState[0], setTargetQty = targetState[1];
   var notes = notesState[0], setNotes = notesState[1];
+  var expiresAt = expiresAtState[0], setExpiresAt = expiresAtState[1];
   var changeNote = changeNoteState[0], setChangeNote = changeNoteState[1];
   var noteView = noteViewState[0], setNoteView = noteViewState[1];
 
@@ -42,6 +45,7 @@ export function ItemPropertiesModal() {
       name: trimmedName,
       target_quantity: targetQty === '' ? null : Math.max(0, parseInt(targetQty, 10) || 0),
       notes: notes || null,
+      expires_at: expiresAt || null,
       note: changeNote || null
     };
     if (!isSplit(item)) body.actual_quantity = Math.max(0, parseInt(actualQty, 10) || 0);
@@ -85,6 +89,11 @@ export function ItemPropertiesModal() {
             <label>Target Quantity</label>
             <input type="number" min="0" step="1" placeholder="none" value=${targetQty} onInput=${function (e) { setTargetQty(e.target.value); }} />
           </div>
+        </div>
+
+        <div class="form-field">
+          <label>Expiration Date <span class="hint">(optional)</span></label>
+          <input type="date" value=${expiresAt} onInput=${function (e) { setExpiresAt(e.target.value); }} />
         </div>
 
         <div class="form-field">

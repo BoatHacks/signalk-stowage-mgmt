@@ -8,6 +8,7 @@ import { FloorplanTab } from './app-floorplan-tab.js';
 import { CategoriesTab } from './app-categories-tab.js';
 import { OverviewTab } from './app-overview-tab.js';
 import { UnderstockedTab } from './app-understocked-tab.js';
+import { ExpiringTab, buildExpiringMarkdown } from './app-expiring-tab.js';
 import { StoreLogTab, buildStoreLogMarkdown } from './app-storelog-tab.js';
 import { ItemPropertiesModal, CategoryModal, ExportModal } from './app-item-modals.js';
 import { PhotoModal } from './app-photo-modal.js';
@@ -28,6 +29,7 @@ var TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'categories', label: 'Categories' },
   { id: 'understocked', label: 'Understocked' },
+  { id: 'expiring', label: 'Expiring' },
   { id: 'storelog', label: 'Store Log' }
 ];
 
@@ -207,6 +209,7 @@ function App() {
     openExportModal: function (kind, payload) {
       var text;
       if (kind === 'shopping') text = buildShoppingListMarkdown(data);
+      else if (kind === 'expiring') text = buildExpiringMarkdown(data);
       else if (kind === 'storelog-individual' || kind === 'storelog-aggregate' || kind === 'storelog-target' || kind === 'storelog-splits') {
         text = buildStoreLogMarkdown(kind, payload);
       } else text = buildInventoryMarkdown(data);
@@ -243,6 +246,7 @@ function App() {
   else if (activeTab === 'overview') activeTabView = html`<${OverviewTab} />`;
   else if (activeTab === 'categories') activeTabView = html`<${CategoriesTab} />`;
   else if (activeTab === 'understocked') activeTabView = html`<${UnderstockedTab} />`;
+  else if (activeTab === 'expiring') activeTabView = html`<${ExpiringTab} />`;
   else if (activeTab === 'storelog') activeTabView = html`<${StoreLogTab} />`;
 
   return html`

@@ -81,7 +81,7 @@ module.exports = function registerItemRoutes (router, getDb) {
   router.post('/items', (req, res) => {
     const {
       name, actual_quantity: actualQuantity, target_quantity: targetQuantity, notes,
-      location_id: locationId, category_ids: categoryIds, note
+      location_id: locationId, category_ids: categoryIds, note, expires_at: expiresAt
     } = req.body || {}
     if (!name) return res.status(400).json({ error: 'name required' })
     if (locationId) {
@@ -98,8 +98,8 @@ module.exports = function registerItemRoutes (router, getDb) {
     const startingQuantity = actualQuantity || 1
     runInTransaction(db(), () => {
       db().prepare(
-        'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null)
+        'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null, expiresAt || null)
       const link = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
       for (const catId of ids) link.run(id, catId)
       logItemEvent(db(), { itemId: id, itemName: name, event: 'created', oldValue: 0, newValue: startingQuantity, note })
@@ -114,6 +114,7 @@ module.exports = function registerItemRoutes (router, getDb) {
     const { name, actual_quantity: actualQuantity, note } = body
     const hasTargetQuantity = Object.prototype.hasOwnProperty.call(body, 'target_quantity')
     const hasNotes = Object.prototype.hasOwnProperty.call(body, 'notes')
+    const hasExpiresAt = Object.prototype.hasOwnProperty.call(body, 'expires_at')
     const newTargetQuantity = hasTargetQuantity ? (body.target_quantity ?? null) : null
 
     if (actualQuantity != null && getPlacements(item.id).length > 0) {
@@ -128,13 +129,15 @@ module.exports = function registerItemRoutes (router, getDb) {
           name = COALESCE(?, name),
           actual_quantity = COALESCE(?, actual_quantity),
           target_quantity = CASE WHEN ? = 1 THEN ? ELSE target_quantity END,
-          notes = CASE WHEN ? = 1 THEN ? ELSE notes END
+          notes = CASE WHEN ? = 1 THEN ? ELSE notes END,
+          expires_at = CASE WHEN ? = 1 THEN ? ELSE expires_at END
          WHERE id = ?`
       ).run(
         name ?? null,
         actualQuantity ?? null,
         hasTargetQuantity ? 1 : 0, newTargetQuantity,
         hasNotes ? 1 : 0, hasNotes ? (body.notes ?? null) : null,
+        hasExpiresAt ? 1 : 0, hasExpiresAt ? (body.expires_at ?? null) : null,
         item.id
       )
 
@@ -151,6 +154,7 @@ module.exports = function registerItemRoutes (router, getDb) {
           oldValue: item.target_quantity, newValue: newTargetQuantity, note
         })
       }
+      // expires_at changes are deliberately not logged to item_log.
     })
 
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))

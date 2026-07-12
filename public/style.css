@@ -915,6 +915,9 @@ select {
   color: var(--warn);
 }
 
+.expiring-status-expired { font-weight: 600; color: var(--danger); }
+.expiring-status-soon { font-weight: 600; color: var(--warn); }
+
 .understocked-chip-actions { display: flex; }
 
 /* ---------- export as markdown ---------- */

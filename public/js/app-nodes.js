@@ -154,7 +154,7 @@ export function NotStoredPanel() {
   var unassignedItems = resolvedItemsIn(app.data, null);
   var hasOrphans = orphanedContainers.length > 0 || unassignedItems.length > 0;
   var visible = app.dragActive || hasOrphans;
-  var hiddenForTab = app.activeTab === 'overview' || app.activeTab === 'categories' || app.activeTab === 'understocked' || app.activeTab === 'storelog';
+  var hiddenForTab = app.activeTab === 'overview' || app.activeTab === 'categories' || app.activeTab === 'understocked' || app.activeTab === 'expiring' || app.activeTab === 'storelog';
 
   var dropTargetState = useState(false);
   var isDropTarget = dropTargetState[0];
@@ -199,7 +199,7 @@ export function NotStoredPanel() {
 
 export function SplitDropPanel() {
   var app = useApp();
-  var hiddenForTab = app.activeTab === 'overview' || app.activeTab === 'categories' || app.activeTab === 'understocked' || app.activeTab === 'storelog';
+  var hiddenForTab = app.activeTab === 'overview' || app.activeTab === 'categories' || app.activeTab === 'understocked' || app.activeTab === 'expiring' || app.activeTab === 'storelog';
 
   var dropTargetState = useState(false);
   var isDropTarget = dropTargetState[0];

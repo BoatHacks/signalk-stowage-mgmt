@@ -162,6 +162,19 @@ go to **Server → App Store**, search for "Stowage Management", and click
   case-insensitive. Items without a `source:` line are grouped under "No
   Shop Specified". Within each shop's group, items are sorted by category.
 
+**Expiring (tab):**
+- Set an optional expiration date on an item via the Item Properties
+  dialog. Lists every item that's either already expired or expiring
+  within 14 days (a fixed window for now), soonest/most-overdue first.
+  Already-expired items are visually distinguished (shown in the
+  "danger" color) from ones still within the window ("warning" color).
+- One date per item — if you buy the same thing at different times with
+  different expiration dates, there's currently no way to track those as
+  separate batches on a single item (create separate items if you need
+  that today; see `ROADMAP.md`).
+- Not tracked in the Store Log.
+- "Export as Markdown" produces the same list as a table.
+
 **Store Log (tab):**
 - An audit trail of item creation, actual/target quantity changes, and
   deletion — useful for questions like "how many rolls of toilet paper did
@@ -233,6 +246,7 @@ uploaded, so in practice this table normally holds at most one row.
 | `notes` | TEXT, nullable | Free-text, rendered as markdown in the UI. (Earlier versions had a separate `description` column; it was merged into `notes` and dropped.) |
 | `location_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. `NULL` means "not stored anywhere" **or** "this item is split across locations" — check `item_placements` to tell which |
 | `thumbnail` | TEXT, nullable | Square-cropped photo as a `data:` URI (JPEG), or `NULL` |
+| `expires_at` | TEXT, nullable | Optional expiration date (`YYYY-MM-DD`). Not tracked in `item_log` |
 
 **`item_placements`**
 
@@ -318,8 +332,8 @@ an appropriate HTTP status code.
 | Method & path | Purpose |
 |---|---|
 | `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) and a `placements` array (empty unless split — see below) |
-| `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids?, note? }`. `note` is recorded in the item log for the initial quantity, not stored on the item itself |
-| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note }`. `target_quantity`/`notes` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. **`actual_quantity` is rejected with 400 if the item is split** — use `PATCH /items/:id/placements/:placementId` (change one placement's quantity) or `POST /items/:id/split` (reallocate between locations) instead |
+| `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids?, note?, expires_at? }`. `note` is recorded in the item log for the initial quantity, not stored on the item itself |
+| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note, expires_at }`. `target_quantity`/`notes`/`expires_at` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. `expires_at` changes are not logged. **`actual_quantity` is rejected with 400 if the item is split** — use `PATCH /items/:id/placements/:placementId` (change one placement's quantity) or `POST /items/:id/split` (reallocate between locations) instead |
 | `PATCH /items/:id/thumbnail` | Set/clear the photo. Body: `{ thumbnail }` — a `data:` URI string, or `null`/omitted to remove it |
 | `PATCH /items/:id/move` | Move a whole (unsplit) item to a different location. Body: `{ location_id }` (omit/null to unassign). Not logged. **Rejected with 400 if the item is split** — move a specific placement via the endpoint below instead |
 | `GET /items/:id/placements` | List an item's placements (`[{ id, location_id, location_name, quantity }]`). Empty array means it isn't split |
