@@ -10,6 +10,16 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- File attachments for items (issue #15): upload manuals, spec
+  sheets, receipts, or any other file type from the Item Properties
+  dialog. Unlike the existing photo thumbnail, attachments have no
+  size limit and are stored on disk (under the plugin's data
+  directory) rather than in SQLite, since they're unbounded in both
+  size and count. `GET/POST /items/:id/attachments`,
+  `GET/DELETE /items/:id/attachments/:attachmentId`.
+
 ## [0.8.2] - 2026-07-12
 
 ### Added

@@ -14,6 +14,19 @@ export function itemsIn(data, locationId) {
   });
 }
 
+export function formatBytes(bytes) {
+  if (bytes == null) return '';
+  if (bytes < 1024) return bytes + ' B';
+  var units = ['KB', 'MB', 'GB', 'TB'];
+  var value = bytes;
+  var unitIndex = -1;
+  do {
+    value /= 1024;
+    unitIndex++;
+  } while (value >= 1024 && unitIndex < units.length - 1);
+  return value.toFixed(value < 10 ? 1 : 0) + ' ' + units[unitIndex];
+}
+
 export function isSplit(item) {
   return !!(item.placements && item.placements.length > 0);
 }

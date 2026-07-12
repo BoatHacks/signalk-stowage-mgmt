@@ -52,6 +52,8 @@ function App() {
   var floorplanMode = floorplanModeState[0], setFloorplanModeState = floorplanModeState[1];
 
   var propertiesModalItemState = useState(null);
+  var attachmentsState = useState([]);
+  var attachmentsLoadingState = useState(false);
   var photoModalItemState = useState(null);
   var categoryModalItemState = useState(null);
   var moveModalState = useState(null);
@@ -83,6 +85,24 @@ function App() {
     var timer = setInterval(refreshData, POLL_INTERVAL_MS);
     return function () { clearInterval(timer); };
   }, [refreshData]);
+
+  // Attachments are fetched separately from the main polled dataset (only
+  // while the Item Properties modal is open for a given item), since they
+  // can be numerous/large and there's no reason to carry them along on
+  // every 5s refresh of the whole app.
+  function loadAttachments (itemId) {
+    attachmentsLoadingState[1](true);
+    return api.listAttachments(itemId)
+      .then(function (list) { attachmentsState[1](list); })
+      .catch(function (err) { showToast(err.message); })
+      .then(function () { attachmentsLoadingState[1](false); });
+  }
+
+  useEffect(function () {
+    var item = propertiesModalItemState[0];
+    if (!item) { attachmentsState[1]([]); return; }
+    loadAttachments(item.id);
+  }, [propertiesModalItemState[0] && propertiesModalItemState[0].id]);
 
   function showToast(message) {
     setToastMessage(message);
@@ -179,6 +199,21 @@ function App() {
     getFloorplan: function (id) { return api.getFloorplan(id); },
     uploadFloorplan: function (name, svgContent) { return act(function () { return api.uploadFloorplan(name, svgContent); }); },
     deleteFloorplan: function (id) { return act(function () { return api.deleteFloorplan(id); }); },
+
+    // attachments
+    attachments: attachmentsState[0],
+    attachmentsLoading: attachmentsLoadingState[0],
+    uploadAttachment: function (itemId, file) {
+      return api.uploadAttachment(itemId, file)
+        .then(function () { return loadAttachments(itemId); })
+        .catch(function (err) { showToast(err.message); throw err; });
+    },
+    deleteAttachment: function (itemId, attachmentId) {
+      return api.deleteAttachment(itemId, attachmentId)
+        .then(function () { return loadAttachments(itemId); })
+        .catch(function (err) { showToast(err.message); throw err; });
+    },
+    attachmentUrl: function (itemId, attachmentId) { return api.attachmentUrl(itemId, attachmentId); },
 
     // modals
     propertiesModalItem: propertiesModalItemState[0],

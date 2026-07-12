@@ -1,8 +1,9 @@
 const { randomUUID } = require('crypto')
 const { runInTransaction } = require('../tx')
 const { logItemEvent, logSplitEvent } = require('../itemLog')
+const { deleteItemAttachments } = require('../attachmentsStore')
 
-module.exports = function registerItemRoutes (router, getDb) {
+module.exports = function registerItemRoutes (router, getDb, getDataDir) {
   function db () {
     const instance = getDb()
     if (!instance) throw Object.assign(new Error('database not ready'), { statusCode: 503 })
@@ -405,6 +406,9 @@ module.exports = function registerItemRoutes (router, getDb) {
       })
       db().prepare('DELETE FROM items WHERE id = ?').run(item.id)
     })
+    // item_attachments rows cascade automatically via the foreign key; the
+    // files themselves live on disk and need a separate cleanup pass.
+    deleteItemAttachments(getDataDir(), item.id)
     res.status(204).end()
   })
 

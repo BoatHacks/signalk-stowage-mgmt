@@ -90,6 +90,9 @@ go to **Server → App Store**, search for "Stowage Management", and click
 - Photo (separate camera icon): upload an image, drag to pan and use the
   slider to zoom, then save a square-cropped thumbnail. Shown on the item
   row, the Overview table, and the Understocked page.
+- Attachments: upload any file (manuals, spec sheets, receipts — no size
+  limit or type restriction). Click one to open/download it via the
+  browser's native handling. Stored on disk, not in the database.
 
 **Floorplan (tab):**
 - Only the single most recently uploaded SVG is shown. Uploading a new one
@@ -316,8 +319,27 @@ between locations is **not** logged — only the act of splitting is.
 
 Composite primary key `(item_id, category_id)`.
 
+**`item_attachments`**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT, PK | Also used as the on-disk filename |
+| `item_id` | TEXT, FK → `items.id` | `ON DELETE CASCADE` |
+| `filename` | TEXT | Original filename as uploaded — display-only, never used to build a filesystem path |
+| `mime_type` | TEXT | From the upload's `Content-Type` header |
+| `size` | INTEGER | Bytes |
+| `uploaded_at` | TEXT | |
+
+Unlike `thumbnail` (a small `data:` URI stored inline), attachment files are
+unbounded in size and count, so they're **not** stored in SQLite — only
+this metadata row is. The file itself lives on disk at
+`<dataDir>/attachments/<item_id>/<attachment_id>`, deleted individually via
+`DELETE /items/:id/attachments/:attachmentId` or all at once (best-effort)
+when the item itself is deleted.
+
 Indexes exist on `locations.parent_id`, `locations.floorplan_id`,
-`items.location_id`, and `item_categories.category_id`.
+`items.location_id`, `item_categories.category_id`, and
+`item_attachments.item_id`.
 
 ## API (under `/plugins/signalk-stowage-mgmt`)
 
@@ -357,6 +379,10 @@ an appropriate HTTP status code.
 | `DELETE /items/:id/categories/:categoryId` | Remove a category |
 | `DELETE /items/:id` | Delete the item. Logs a `deleted` event using up whatever quantity remained |
 | `GET /items/:id/locate` | For a normal item: walks the parent chain upward until it finds a mapped storage space; returns `{ item_id, path, floorplan_id, svg_element_id, storage_space }`, or 404 with the (unmapped) `path` if none is found. For a **split** item: returns `{ item_id, split: true, matches: [...] }` — one entry per placement that resolves to a mapped storage space (placements with no mapped area are silently skipped; 404 only if none resolve) |
+| `GET /items/:id/attachments` | List an item's attachments (`[{ id, item_id, filename, mime_type, size, uploaded_at }]`) |
+| `POST /items/:id/attachments` | Upload a file. **Body is the raw file bytes**, not JSON — set `Content-Type` to the file's MIME type, and pass the original filename URI-encoded in the `X-Filename` header. No size limit, no file-type restriction |
+| `GET /items/:id/attachments/:attachmentId` | Download/view the raw file, with its original `Content-Type` and a `Content-Disposition` set from `filename` — the browser handles it natively (inline for PDFs/images, download for anything else) |
+| `DELETE /items/:id/attachments/:attachmentId` | Delete an attachment (row + file on disk) |
 
 **Item Log**
 

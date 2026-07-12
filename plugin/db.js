@@ -71,6 +71,15 @@ function initDb (dataDir) {
       quantity INTEGER NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS item_attachments (
+      id TEXT PRIMARY KEY,
+      item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+      filename TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS item_log (
       id TEXT PRIMARY KEY,
       item_id TEXT NOT NULL,
@@ -96,6 +105,7 @@ function initDb (dataDir) {
     CREATE INDEX IF NOT EXISTS idx_item_log_item ON item_log(item_id);
     CREATE INDEX IF NOT EXISTS idx_item_placements_item ON item_placements(item_id);
     CREATE INDEX IF NOT EXISTS idx_item_placements_location ON item_placements(location_id);
+    CREATE INDEX IF NOT EXISTS idx_item_attachments_item ON item_attachments(item_id);
   `)
 
   const itemColumns = db.prepare("PRAGMA table_info(items)").all().map(c => c.name)

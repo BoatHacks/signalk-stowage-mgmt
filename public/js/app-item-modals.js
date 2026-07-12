@@ -1,7 +1,63 @@
-import { html, useState, useEffect } from '../vendor/preact-htm-standalone.js';
-import { useApp } from './app-core.js';
+import { html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
+import { useApp, Icon } from './app-core.js';
 import { renderMarkdown } from './markdown.js';
-import { isSplit } from './helpers.js';
+import { isSplit, formatBytes } from './helpers.js';
+
+// ---------- attachments (lives inside the Item Properties modal) ----------
+
+function AttachmentsSection(props) {
+  var app = useApp();
+  var item = props.item;
+  var fileInputRef = useRef(null);
+  var uploadingState = useState(false);
+  var uploading = uploadingState[0], setUploading = uploadingState[1];
+
+  function handleFiles(fileList) {
+    var files = Array.prototype.slice.call(fileList || []);
+    if (!files.length) return;
+    setUploading(true);
+    // Upload sequentially — simplest way to avoid hammering the server (or
+    // the boat's often-modest hardware) with many parallel disk writes when
+    // someone selects a big batch of files at once.
+    var chain = Promise.resolve();
+    files.forEach(function (file) {
+      chain = chain.then(function () { return app.uploadAttachment(item.id, file); });
+    });
+    chain.catch(function () {}).then(function () { setUploading(false); });
+  }
+
+  var attachments = app.attachments || [];
+
+  return html`
+    <div class="form-field">
+      <label>Attachments <span class="hint">(manuals, spec sheets, receipts \u2014 any file type)</span></label>
+      ${app.attachmentsLoading && !attachments.length ? html`<p class="hint">Loading\u2026</p>` : null}
+      ${!app.attachmentsLoading && !attachments.length ? html`<p class="hint">No attachments yet.</p>` : null}
+      ${attachments.length ? html`
+        <ul class="attachment-list">
+          ${attachments.map(function (att) {
+            return html`
+              <li key=${att.id} class="attachment-row">
+                <a href=${app.attachmentUrl(item.id, att.id)} target="_blank" rel="noopener noreferrer" class="attachment-link">
+                  <${Icon} name="attachment" />
+                  <span class="attachment-name">${att.filename}</span>
+                  <span class="attachment-size">${formatBytes(att.size)}</span>
+                </a>
+                <button type="button" class="icon-btn danger" title="Remove attachment" aria-label="Remove attachment"
+                        onClick=${function () { app.deleteAttachment(item.id, att.id).catch(function () {}); }}>×</button>
+              </li>
+            `;
+          })}
+        </ul>
+      ` : null}
+      <label class="upload-btn">
+        ${uploading ? 'Uploading\u2026' : '+ Add Attachment'}
+        <input ref=${fileInputRef} type="file" multiple hidden disabled=${uploading}
+               onChange=${function (e) { handleFiles(e.target.files); e.target.value = ''; }} />
+      </label>
+    </div>
+  `;
+}
 
 // ---------- item properties modal ----------
 
@@ -115,6 +171,8 @@ export function ItemPropertiesModal() {
           ` : null}
           <div class="notes-preview" dangerouslySetInnerHTML=${{ __html: renderMarkdown(notes) }}></div>
         </div>
+
+        <${AttachmentsSection} item=${item} />
       </div>
     </div>
   `;

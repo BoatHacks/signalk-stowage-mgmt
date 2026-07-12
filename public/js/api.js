@@ -36,6 +36,30 @@ function del(path) {
   return request(path, { method: 'DELETE' });
 }
 
+// Attachments upload as raw bytes (not JSON) since there's no size limit and
+// files can be arbitrarily large — see api.uploadAttachment below.
+async function uploadRaw(path, file) {
+  var res = await fetch(BASE + path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      'X-Filename': encodeURIComponent(file.name || 'attachment')
+    },
+    body: file
+  });
+  var data = null;
+  try {
+    data = await res.json();
+  } catch (err) {
+    data = null;
+  }
+  if (!res.ok) {
+    var message = (data && data.error) || (res.status + ' ' + res.statusText);
+    throw new Error(message);
+  }
+  return data;
+}
+
 export const api = {
   // Locations (storage spaces & containers)
   listLocations: function () { return get('/locations'); },
@@ -65,6 +89,10 @@ export const api = {
   removeItemCategory: function (id, categoryId) { return del('/items/' + id + '/categories/' + categoryId); },
   deleteItem: function (id) { return del('/items/' + id); },
   locateItem: function (id) { return get('/items/' + id + '/locate'); },
+  listAttachments: function (id) { return get('/items/' + id + '/attachments'); },
+  uploadAttachment: function (id, file) { return uploadRaw('/items/' + id + '/attachments', file); },
+  deleteAttachment: function (itemId, attachmentId) { return del('/items/' + itemId + '/attachments/' + attachmentId); },
+  attachmentUrl: function (itemId, attachmentId) { return BASE + '/items/' + itemId + '/attachments/' + attachmentId; },
 
   // Categories
   listCategories: function () { return get('/categories'); },

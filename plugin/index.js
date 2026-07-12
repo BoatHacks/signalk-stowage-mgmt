@@ -6,6 +6,7 @@ const registerItemRoutes = require('./routes/items')
 const registerFloorplanRoutes = require('./routes/floorplans')
 const registerCategoryRoutes = require('./routes/categories')
 const registerItemLogRoutes = require('./routes/itemLog')
+const registerAttachmentRoutes = require('./routes/attachments')
 
 module.exports = function (app) {
   const plugin = {}
@@ -14,9 +15,10 @@ module.exports = function (app) {
   plugin.description = 'Organize items into containers and storage spaces, and locate them on an SVG floorplan.'
 
   let db = null
+  let dataDir = null
 
   plugin.start = function (options) {
-    const dataDir = typeof app.getDataDirPath === 'function'
+    dataDir = typeof app.getDataDirPath === 'function'
       ? app.getDataDirPath()
       : path.join(__dirname, '..', 'data')
     db = initDb(dataDir)
@@ -44,10 +46,11 @@ module.exports = function (app) {
     router.use(jsonBodyParser({ limit: 15 * 1024 * 1024 })) // floorplan SVGs can be a few MB
 
     registerLocationRoutes(router, () => db)
-    registerItemRoutes(router, () => db)
+    registerItemRoutes(router, () => db, () => dataDir)
     registerFloorplanRoutes(router, () => db)
     registerCategoryRoutes(router, () => db)
     registerItemLogRoutes(router, () => db)
+    registerAttachmentRoutes(router, () => db, () => dataDir)
 
     // eslint-disable-next-line no-unused-vars
     router.use((err, req, res, next) => {
