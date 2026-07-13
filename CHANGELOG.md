@@ -12,6 +12,20 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- A "tag" icon now represents categories everywhere they appear:
+  the top-level "+ Storage Space" toolbar button and the Categories
+  tab's own "+ Category" button are now icon buttons too (matching the
+  inventory tree/item chip conversion from before); every "add
+  category" action across the app (item chip, Item Properties quick
+  actions, the category-assignment modal's "+ New Category") now uses
+  a tag+plus composite icon instead of plain text or a bare "+"; and
+  category badges, the category-assignment modal's chips, and each
+  row on the Categories tab now show a small leading tag icon.
+- The per-node "Area ID" button (manually setting a storage space's
+  SVG element id) is now just "ID".
+
+### Added
+
 - The "+ Storage Space"/"+ Container"/"+ Item" buttons on each inventory
   tree node, and the "+ Category" button on each item chip, are now icon
   buttons instead of text. Storage space and container use their entity

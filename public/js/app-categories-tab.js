@@ -1,5 +1,5 @@
 import { html, useState } from '../vendor/preact-htm-standalone.js';
-import { useApp } from './app-core.js';
+import { useApp, IconBtn, Icon } from './app-core.js';
 import { ItemChip } from './app-nodes.js';
 import { pathToRoot } from './helpers.js';
 
@@ -28,7 +28,7 @@ export function CategoriesTab() {
         <input type="text" placeholder="New category name" value=${newName}
                onInput=${function (e) { setNewName(e.target.value); }}
                onKeyDown=${function (e) { if (e.key === 'Enter') createCategory(); }} />
-        <button type="button" onClick=${createCategory}>+ Category</button>
+        <${IconBtn} icon="add-tag" title="Add category" onClick=${createCategory} />
       </div>
       <div class="categories-list">
         ${!app.data.categories.length ? html`<p class="hint">No categories created yet.</p>` : null}
@@ -38,7 +38,7 @@ export function CategoriesTab() {
           return html`
             <div class="category-fold" key=${cat.id}>
               <div class="category-row category-fold-header" onClick=${function () { toggle(cat.id); }}>
-                <span><span class="fold-arrow">${isExpanded ? '\u25be' : '\u25b8'}</span>${cat.name}<span class="category-count">${items.length} Item(s)</span></span>
+                <span><span class="fold-arrow">${isExpanded ? '\u25be' : '\u25b8'}</span><span class="type-icon"><${Icon} name="tag" title="Category" /></span>${cat.name}<span class="category-count">${items.length} Item(s)</span></span>
                 <span class="node-actions">
                   <button type="button" onClick=${function (e) {
                     e.stopPropagation();

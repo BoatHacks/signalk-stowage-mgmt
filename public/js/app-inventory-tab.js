@@ -1,5 +1,5 @@
 import { html } from '../vendor/preact-htm-standalone.js';
-import { useApp } from './app-core.js';
+import { useApp, IconBtn } from './app-core.js';
 import { LocationNode } from './app-nodes.js';
 import { childLocations } from './helpers.js';
 
@@ -10,7 +10,7 @@ export function InventoryTab() {
   return html`
     <section class="tab-panel active">
       <div class="toolbar">
-        <button type="button" onClick=${function () { app.addStorageSpace(); }}>+ Storage Space</button>
+        <${IconBtn} icon="add-cabinet" title="Add storage space" onClick=${function () { app.addStorageSpace(); }} />
         <button type="button" onClick=${function () { app.openExportModal('inventory'); }}>Export as Markdown</button>
       </div>
       <div class="tree">

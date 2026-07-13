@@ -1,5 +1,5 @@
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
-import { useApp, Icon } from './app-core.js';
+import { useApp, Icon, IconBtn } from './app-core.js';
 import { renderMarkdown } from './markdown.js';
 import { isSplit, formatBytes } from './helpers.js';
 
@@ -126,7 +126,7 @@ export function ItemPropertiesModal() {
 
         <div class="properties-quick-actions">
           <button type="button" onClick=${function () { app.openPhotoModal(item); }}>Add Photo</button>
-          <button type="button" onClick=${function () { app.openCategoryModal(item); }}>+ Category</button>
+          <${IconBtn} icon="add-tag" title="Add category" onClick=${function () { app.openCategoryModal(item); }} />
         </div>
 
         <div class="form-field-row">
@@ -216,7 +216,7 @@ export function CategoryModal() {
                       onClick=${function () {
                         var action = isAssigned ? app.removeItemCategory(item.id, cat.id) : app.addItemCategory(item.id, cat.id);
                         action.catch(function () {});
-                      }}>${cat.name}</button>
+                      }}><span class="type-icon"><${Icon} name="tag" title="Category" /></span>${cat.name}</button>
             `;
           })}
         </div>
@@ -224,7 +224,7 @@ export function CategoryModal() {
           <input type="text" placeholder="New category name" value=${newName}
                  onInput=${function (e) { setNewName(e.target.value); }}
                  onKeyDown=${function (e) { if (e.key === 'Enter') createCategory(); }} />
-          <button type="button" onClick=${createCategory}>+ New Category</button>
+          <${IconBtn} icon="add-tag" title="Create new category" onClick=${createCategory} />
         </div>
       </div>
     </div>
