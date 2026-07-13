@@ -10,41 +10,12 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
-### Changed
-
-- The floating "Not Stored" and "Drop here to split" panels are now
-  twice as wide (260px → 520px) — both share the same `.orphaned-panel`
-  base style, so one change covers both.
-
 ### Added
 
-- A "tag" icon now represents categories everywhere they appear:
-  the top-level "+ Storage Space" toolbar button and the Categories
-  tab's own "+ Category" button are now icon buttons too (matching the
-  inventory tree/item chip conversion from before); every "add
-  category" action across the app (item chip, Item Properties quick
-  actions, the category-assignment modal's "+ New Category") now uses
-  a tag+plus composite icon instead of plain text or a bare "+"; and
-  category badges, the category-assignment modal's chips, and each
-  row on the Categories tab now show a small leading tag icon.
-- The per-node "Area ID" button (manually setting a storage space's
-  SVG element id) is now just "ID".
-
-### Added
-
-- The "+ Storage Space"/"+ Container"/"+ Item" buttons on each inventory
-  tree node, and the "+ Category" button on each item chip, are now icon
-  buttons instead of text. Storage space and container use their entity
-  icon with a small "+" badge (so they stay unambiguous at a glance
-  without needing to hover for the tooltip — this app targets
-  touchscreen MFDs where hovering isn't really a thing); item and
-  category use a plain "+", since a badge on the item's already-tiny dot
-  icon wouldn't have read well. Didn't touch the top-level toolbar's
-  "+ Storage Space" or the Categories tab's own "+ Category" button,
-  since those aren't part of the tree/item-chip row this was about.
-
-### Added
-
+- Storage spaces, containers, and items in the inventory tree now show a
+  small leading icon (file cabinet, cardboard box, and a plain dot,
+  respectively) so the three row types are easier to tell apart at a
+  glance, especially now that storage spaces can be nested.
 - Every icon in the app now has a tooltip. The new inventory-tree type
   icons (cabinet/box/dot) and the attachment-list paperclip previously
   had none since they weren't wrapped in an already-titled button;
@@ -52,13 +23,30 @@ was renamed to `signalk-stowage-mgmt`.
   tooltip and an `aria-label`. The theme toggle's tooltip is now
   state-specific ("Switch to light/dark mode") instead of a generic
   "Toggle light/dark theme".
+- The "+ Storage Space"/"+ Container"/"+ Item" buttons on each inventory
+  tree node, and the "+ Category" button on each item chip, are now icon
+  buttons instead of text. Storage space and container use their entity
+  icon with a small "+" badge (so they stay unambiguous at a glance
+  without needing to hover for the tooltip — this app targets
+  touchscreen MFDs where hovering isn't really a thing); item and
+  category use a plain "+", since a badge on the item's already-tiny dot
+  icon wouldn't have read well.
+- A "tag" icon now represents categories everywhere they appear: the
+  top-level "+ Storage Space" toolbar button and the Categories tab's
+  own "+ Category" button are now icon buttons too; every "add
+  category" action across the app (item chip, Item Properties quick
+  actions, the category-assignment modal's "+ New Category") now uses
+  a tag+plus composite icon instead of plain text or a bare "+"; and
+  category badges, the category-assignment modal's chips, and each row
+  on the Categories tab now show a small leading tag icon.
+- The per-node "Area ID" button (manually setting a storage space's
+  SVG element id) is now just "ID".
 
-### Added
+### Changed
 
-- Storage spaces, containers, and items in the inventory tree now show a
-  small leading icon (file cabinet, cardboard box, and a plain dot,
-  respectively) so the three row types are easier to tell apart at a
-  glance, especially now that storage spaces can be nested.
+- The floating "Not Stored" and "Drop here to split" panels are now
+  twice as wide (260px → 520px) — both share the same `.orphaned-panel`
+  base style, so one change covers both.
 
 ## [0.8.5] - 2026-07-12
 
