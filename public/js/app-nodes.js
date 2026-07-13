@@ -70,7 +70,10 @@ export function ItemChip(props) {
           <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${deleteWholeItem} />
         </span>
       </div>
-      ${categoryBadges.length ? html`<div class="item-categories">${categoryBadges}<button type="button" class="category-add-btn" onClick=${function () { app.openCategoryModal(item); }}>+</button></div>` : html`<div class="item-categories"><button type="button" class="category-add-btn" onClick=${function () { app.openCategoryModal(item); }}>+ Category</button></div>`}
+      <div class="item-categories">
+        ${categoryBadges}
+        <${IconBtn} icon="plus" title="Add category" onClick=${function () { app.openCategoryModal(item); }} />
+      </div>
     </div>
   `;
 }
@@ -128,9 +131,9 @@ export function LocationNode(props) {
            onDrop=${handleDrop}>
         <span class="node-title"><span class="type-icon"><${Icon} name=${isContainer ? 'box' : 'cabinet'} title=${isContainer ? 'Container' : 'Storage space'} /></span>${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}</span>
         <span class="node-actions">
-          <button type="button" onClick=${function () { app.addStorageSpace(loc.id); }}>+ Storage Space</button>
-          <button type="button" onClick=${function () { app.addContainer(loc.id); }}>+ Container</button>
-          <button type="button" onClick=${function () { app.addItem(loc.id); }}>+ Item</button>
+          <${IconBtn} icon="add-cabinet" title="Add storage space" onClick=${function () { app.addStorageSpace(loc.id); }} />
+          <${IconBtn} icon="add-box" title="Add container" onClick=${function () { app.addContainer(loc.id); }} />
+          <${IconBtn} icon="plus" title="Add item" onClick=${function () { app.addItem(loc.id); }} />
           <${IconBtn} icon="edit" title="Rename" onClick=${function () { app.renameLocation(loc); }} />
           ${!isContainer ? html`<button type="button" title="Manually set the SVG area id this storage space maps to" onClick=${function () { app.setManualSvgId(loc); }}>Area ID</button>` : null}
           ${isContainer ? html`<${IconBtn} icon="move" title="Move" onClick=${function () { app.openMoveModal('container', loc); }} />` : null}

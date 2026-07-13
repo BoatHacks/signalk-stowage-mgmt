@@ -12,6 +12,19 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- The "+ Storage Space"/"+ Container"/"+ Item" buttons on each inventory
+  tree node, and the "+ Category" button on each item chip, are now icon
+  buttons instead of text. Storage space and container use their entity
+  icon with a small "+" badge (so they stay unambiguous at a glance
+  without needing to hover for the tooltip — this app targets
+  touchscreen MFDs where hovering isn't really a thing); item and
+  category use a plain "+", since a badge on the item's already-tiny dot
+  icon wouldn't have read well. Didn't touch the top-level toolbar's
+  "+ Storage Space" or the Categories tab's own "+ Category" button,
+  since those aren't part of the tree/item-chip row this was about.
+
+### Added
+
 - Every icon in the app now has a tooltip. The new inventory-tree type
   icons (cabinet/box/dot) and the attachment-list paperclip previously
   had none since they weren't wrapped in an already-titled button;
