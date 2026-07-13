@@ -14,12 +14,31 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read # needed to look up the Plugin CI workflow run for this commit
       id-token: write # required so GitHub can issue an OIDC token for npm trusted publishing
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+
+      # Refuse to publish unless Plugin CI (.github/workflows/plugin-ci.yml)
+      # has actually completed successfully for this exact commit. Checked
+      # via the Actions API rather than a `needs:`/workflow_run dependency
+      # since this workflow is triggered by a GitHub release (or a manual
+      # retry with an arbitrary past tag), not by Plugin CI itself finishing.
+      - name: Verify Plugin CI succeeded for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "Commit: $SHA"
+          CONCLUSION=$(gh api "repos/${{ github.repository }}/actions/workflows/plugin-ci.yml/runs?head_sha=${SHA}&status=completed&per_page=1" --jq '.workflow_runs[0].conclusion // "none"')
+          echo "Plugin CI conclusion for this commit: $CONCLUSION"
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "::error::Plugin CI has not completed successfully for commit $SHA (conclusion: $CONCLUSION). Refusing to publish."
+            exit 1
+          fi
 
       # Trusted publishing requires npm CLI 11.5.1+ and Node 22.14.0+;
       # Node 24's bundled npm already satisfies both, so no separate
