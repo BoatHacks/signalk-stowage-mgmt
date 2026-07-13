@@ -15,7 +15,7 @@ function useApp() { return useContext(AppCtx); }
 // ---------- small shared bits ----------
 
 function Icon(props) {
-  return html`<span class="icon" dangerouslySetInnerHTML=${{ __html: ICONS[props.name] || '' }}></span>`;
+  return html`<span class="icon" title=${props.title || null} aria-label=${props.title || null} dangerouslySetInnerHTML=${{ __html: ICONS[props.name] || '' }}></span>`;
 }
 
 function IconBtn(props) {

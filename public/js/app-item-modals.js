@@ -38,8 +38,8 @@ function AttachmentsSection(props) {
           ${attachments.map(function (att) {
             return html`
               <li key=${att.id} class="attachment-row">
-                <a href=${app.attachmentUrl(item.id, att.id)} target="_blank" rel="noopener noreferrer" class="attachment-link">
-                  <${Icon} name="attachment" />
+                <a href=${app.attachmentUrl(item.id, att.id)} target="_blank" rel="noopener noreferrer" class="attachment-link" title=${'Open "' + att.filename + '"'}>
+                  <${Icon} name="attachment" title="Attachment" />
                   <span class="attachment-name">${att.filename}</span>
                   <span class="attachment-size">${formatBytes(att.size)}</span>
                 </a>

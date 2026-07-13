@@ -12,6 +12,16 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- Every icon in the app now has a tooltip. The new inventory-tree type
+  icons (cabinet/box/dot) and the attachment-list paperclip previously
+  had none since they weren't wrapped in an already-titled button;
+  `Icon` now accepts an optional `title` that renders as both a native
+  tooltip and an `aria-label`. The theme toggle's tooltip is now
+  state-specific ("Switch to light/dark mode") instead of a generic
+  "Toggle light/dark theme".
+
+### Added
+
 - Storage spaces, containers, and items in the inventory tree now show a
   small leading icon (file cabinet, cardboard box, and a plain dot,
   respectively) so the three row types are easier to tell apart at a

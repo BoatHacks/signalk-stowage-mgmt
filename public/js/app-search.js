@@ -74,8 +74,9 @@ export function LocateItemPopup() {
 
 export function ThemeToggle() {
   var app = useApp();
+  var label = app.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
   return html`
-    <button type="button" class="theme-toggle" title="Toggle light/dark theme" aria-label="Toggle light/dark theme"
+    <button type="button" class="theme-toggle" title=${label} aria-label=${label}
             onClick=${function () { app.setTheme(app.theme === 'dark' ? 'light' : 'dark'); }}>
       <${Icon} name=${app.theme === 'dark' ? 'sun' : 'moon'} />
     </button>

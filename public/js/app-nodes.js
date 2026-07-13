@@ -48,7 +48,7 @@ export function ItemChip(props) {
          onDragEnd=${function () { setDragging(false); app.setDragActive(false); }}>
       <div class="item-row-main">
         <span>
-          ${thumb}<span class="type-icon"><${Icon} name="dot" /></span>${item.name}
+          ${thumb}<span class="type-icon"><${Icon} name="dot" title="Item" /></span>${item.name}
           ${isPlacementRow
             ? html`<${QuantityEditor} item=${item} placementId=${item.placementId} className="qty split-qty" />`
             : html`<${QuantityEditor} item=${item} className="qty" />`}
@@ -126,7 +126,7 @@ export function LocationNode(props) {
            onDragOver=${function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setIsDropTarget(true); }}
            onDragLeave=${function () { setIsDropTarget(false); }}
            onDrop=${handleDrop}>
-        <span class="node-title"><span class="type-icon"><${Icon} name=${isContainer ? 'box' : 'cabinet'} /></span>${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}</span>
+        <span class="node-title"><span class="type-icon"><${Icon} name=${isContainer ? 'box' : 'cabinet'} title=${isContainer ? 'Container' : 'Storage space'} /></span>${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}</span>
         <span class="node-actions">
           <button type="button" onClick=${function () { app.addStorageSpace(loc.id); }}>+ Storage Space</button>
           <button type="button" onClick=${function () { app.addContainer(loc.id); }}>+ Container</button>
