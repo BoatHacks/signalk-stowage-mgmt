@@ -10,6 +10,29 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- A real automated test suite (`node --test`), replacing the placeholder
+  `test` script that was previously just an echo statement. 62 tests
+  across two areas:
+  - Backend (`test/backend/`): every route file, exercised via real HTTP
+    requests against the actual plugin (`registerWithRouter`) mounted on
+    an Express router, backed by a fresh temp SQLite db per test —
+    items CRUD, split/placement logic (including the collapse-back and
+    merge-on-move behavior), categories, locations (including nesting at
+    any depth, move/cycle detection, svg-mapping), floorplans,
+    attachments (upload/download byte-for-byte/delete/cascade cleanup),
+    item-log filtering, the `runInTransaction` commit/rollback wrapper,
+    and `initDb`'s schema/seeding/idempotent-migration behavior.
+  - Frontend (`test/frontend/`): the pure data-layer helpers in
+    `public/js/helpers.js` (no DOM dependency, so no browser/JSDOM
+    needed) — breadcrumb paths, split-item resolution, markdown export
+    builders, understocked detection, byte formatting, etc.
+  - Added `express` as a devDependency for the backend test harness
+    (`test-helpers/server.js`); excluded both `test/` and
+    `test-helpers/` from the published npm package via a new
+    `.npmignore`.
+
 ### Fixed
 
 - Below 900px wide, the "Not Stored" and "Drop here to split" panels
