@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-07-13
+
 ### Added
 
 - Storage spaces, containers, and items in the inventory tree now show a
