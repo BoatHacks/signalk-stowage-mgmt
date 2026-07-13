@@ -98,7 +98,11 @@ export function LocationAssignModal() {
 
   if (!svgElementId) return null;
 
-  var storageSpaces = app.data.locations.filter(function (l) { return l.type === 'storage_space'; });
+  var storageSpaces = app.data.locations
+    .filter(function (l) { return l.type === 'storage_space'; })
+    .map(function (l) { return { loc: l, crumb: pathToRoot(app.data, l.id) }; })
+    .sort(function (a, b) { return a.crumb.localeCompare(b.crumb); })
+    .map(function (entry) { return entry.loc; });
   var floorplanId = app.data.floorplans.length ? app.data.floorplans[0].id : null;
 
   function toggle(space, shouldAssign) {
