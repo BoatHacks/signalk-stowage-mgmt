@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-07-12
+
 ### Added
 
 - Storage spaces can now be nested inside another storage space (or
