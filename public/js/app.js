@@ -48,6 +48,8 @@ function App() {
   var toastMessage = toastState[0], setToastMessage = toastState[1];
   var dragActiveState = useState(false);
   var dragActive = dragActiveState[0], setDragActive = dragActiveState[1];
+  var dragEntityTypeState = useState(null);
+  var dragEntityType = dragEntityTypeState[0], setDragEntityType = dragEntityTypeState[1];
   var floorplanModeState = useState('display');
   var floorplanMode = floorplanModeState[0], setFloorplanModeState = floorplanModeState[1];
 
@@ -126,6 +128,8 @@ function App() {
     toastMessage: toastMessage,
     showToast: showToast,
     setDragActive: setDragActive,
+    dragEntityType: dragEntityType,
+    setDragEntityType: setDragEntityType,
     setTheme: setThemeState,
     setFloorplanMode: setFloorplanModeState,
     refreshData: refreshData,

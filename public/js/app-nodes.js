@@ -44,8 +44,9 @@ export function ItemChip(props) {
            e.dataTransfer.setData('application/x-placement-id', item.placementId || '');
            setDragging(true);
            app.setDragActive(true);
+           app.setDragEntityType('item');
          }}
-         onDragEnd=${function () { setDragging(false); app.setDragActive(false); }}>
+         onDragEnd=${function () { setDragging(false); app.setDragActive(false); app.setDragEntityType(null); }}>
       <div class="item-row-main">
         <span>
           ${thumb}<span class="type-icon"><${Icon} name="dot" title="Item" /></span>${item.name}
@@ -123,8 +124,9 @@ export function LocationNode(props) {
              e.dataTransfer.setData('application/x-drag-type', 'container');
              setDragging(true);
              app.setDragActive(true);
+             app.setDragEntityType('container');
            } : null}
-           onDragEnd=${isContainer ? function () { setDragging(false); app.setDragActive(false); } : null}
+           onDragEnd=${isContainer ? function () { setDragging(false); app.setDragActive(false); app.setDragEntityType(null); } : null}
            onDragEnter=${function (e) { e.preventDefault(); }}
            onDragOver=${function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setIsDropTarget(true); }}
            onDragLeave=${function () { setIsDropTarget(false); }}
@@ -179,7 +181,7 @@ export function NotStoredPanel() {
   if (hiddenForTab || !visible) return null;
 
   return html`
-    <div class="orphaned-panel">
+    <div class="orphaned-panel ${app.dragEntityType === 'item' ? 'side-by-side' : ''}">
       <div class="orphaned-panel-title">Not Stored</div>
       <div class="node-header ${isDropTarget ? 'drop-target' : ''}"
            onDragEnter=${function (e) { e.preventDefault(); }}
@@ -224,7 +226,7 @@ export function SplitDropPanel() {
     app.openSplitModal(item, fromLocationId);
   }
 
-  if (hiddenForTab || !app.dragActive) return null;
+  if (hiddenForTab || !app.dragActive || app.dragEntityType !== 'item') return null;
 
   return html`
     <div class="orphaned-panel split-drop-panel">

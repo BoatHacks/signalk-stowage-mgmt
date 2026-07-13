@@ -747,6 +747,26 @@ select {
     left: 20px;
     width: auto;
   }
+
+  /* Both panels can be visible at once during an item drag (you can drop
+     an item back to "Not Stored" or onto "Split"). Give them distinct,
+     non-overlapping rectangles instead of both landing on the identical
+     bottom/left/right/auto-width rect above — otherwise whichever renders
+     later in the DOM (split-drop-panel) sits directly on top and blocks
+     all interaction with the other one, including starting a fresh drag
+     from something inside it. Only applied when .side-by-side is set
+     (JS adds it to the "Not Stored" panel exactly when an item drag means
+     the split panel will also be showing) so a lone visible panel still
+     gets the full width. */
+  .orphaned-panel.side-by-side {
+    right: auto;
+    width: calc(50% - 30px);
+  }
+
+  .split-drop-panel {
+    left: auto;
+    width: calc(50% - 30px);
+  }
 }
 
 /* ---------- item thumbnails ---------- */

@@ -10,6 +10,18 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Below 900px wide, the "Not Stored" and "Drop here to split" panels
+  both collapsed to the identical fixed rectangle (bottom/left/right,
+  auto width), and since both can be visible at once during an item
+  drag, whichever rendered later in the DOM (the split panel) sat
+  directly on top and blocked all interaction with the other one —
+  including starting a new drag from something inside it. They now
+  sit side by side instead of overlapping. Also stopped the split
+  panel from showing at all during container drags (containers can't
+  be split), so it isn't needlessly taking up half the space then.
+
 ## [0.8.6] - 2026-07-13
 
 ### Added
