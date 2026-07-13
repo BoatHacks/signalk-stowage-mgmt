@@ -100,6 +100,13 @@ go to **Server → App Store**, search for "Stowage Management", and click
   browser's native handling. Stored on disk, not in the database.
 
 **Floorplan (tab):**
+- Don't have an SVG floorplan of your boat yet? [ClearShip's free Boat
+  Floor Plan Editor](https://clearship.app/tools/floor-plan) is a nice
+  way to make one — draw your layout in the browser with predefined
+  hull/berth/galley/engine symbols, or trace over a photo of your
+  manual's deck plan, then export straight to SVG. No signup, nothing
+  leaves your browser, and the exported file drops right into the
+  upload step below.
 - Only the single most recently uploaded SVG is shown. Uploading a new one
   replaces it. If the new SVG has elements with the **same id** as ones your
   storage spaces were already mapped to, those assignments carry over
