@@ -278,6 +278,14 @@ select {
 .icon-btn:hover { background: var(--surface-alt); color: var(--text); }
 .icon-btn.danger:hover { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
 
+.type-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -2px;
+  margin-right: 6px;
+  color: var(--text-muted);
+}
+
 .children { margin-top: 8px; margin-left: 18px; padding-left: 12px; border-left: 2px solid var(--border); }
 
 .item-row { display: block; padding: 6px 8px; border-radius: 6px; }

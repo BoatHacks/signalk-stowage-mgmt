@@ -10,6 +10,13 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Storage spaces, containers, and items in the inventory tree now show a
+  small leading icon (file cabinet, cardboard box, and a plain dot,
+  respectively) so the three row types are easier to tell apart at a
+  glance, especially now that storage spaces can be nested.
+
 ## [0.8.5] - 2026-07-12
 
 ### Added
