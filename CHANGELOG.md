@@ -10,6 +10,12 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- The floating "Not Stored" and "Drop here to split" panels are now
+  twice as wide (260px → 520px) — both share the same `.orphaned-panel`
+  base style, so one change covers both.
+
 ### Added
 
 - A "tag" icon now represents categories everywhere they appear:
