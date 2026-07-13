@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-07-13
+
 ### Added
 
 - A real automated test suite (`node --test`), replacing the placeholder
