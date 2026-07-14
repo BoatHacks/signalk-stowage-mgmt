@@ -10,6 +10,22 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Touch-friendliness fixes from issue #22's audit:
+  - Overview and Store Log tables are now wrapped in a scrollable
+    container, so a wide table's overflow is contained to just the
+    table on narrow screens instead of dragging the whole page
+    sideways (the same bug already fixed for the tab bar).
+  - Modals now have a 16px side gutter (`.modal-overlay` padding)
+    instead of touching both screen edges, so rounded corners don't
+    get clipped on phones.
+  - Icon buttons grow from 26×26px to 44×44px on actual touchscreens
+    (gated on `pointer: coarse`, not viewport width, so a narrow
+    desktop window with a mouse is unaffected and a large touchscreen
+    MFD gets the bigger targets regardless of its resolution), with a
+    bit more gap between adjacent ones in the same row too.
+
 ### Changed
 
 - Merged the Understocked and Expiring tabs into a single "Stock Alerts"

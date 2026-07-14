@@ -97,6 +97,7 @@ export function OverviewTab() {
         <input type="text" placeholder="Filter table…" value=${filter} onInput=${function (e) { setFilter(e.target.value); }} />
       </div>
       <p class="hint">Clicking a row jumps to the floorplan (if assigned).</p>
+      <div class="table-scroll">
       <table class="overview-table">
         <thead>
           <tr>
@@ -129,6 +130,7 @@ export function OverviewTab() {
           })}
         </tbody>
       </table>
+      </div>
     </section>
   `;
 }

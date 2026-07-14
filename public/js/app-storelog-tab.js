@@ -100,6 +100,7 @@ export function StoreLogTab () {
       ${loading ? html`<p class="hint">Loading\u2026</p>` : html`
         <${StoreLogSection} title="Individual Movements"
                              onExport=${function () { app.openExportModal('storelog-individual', { start: start, end: end, rows: individual }); }}>
+          <div class="table-scroll">
           <table class="overview-table">
             <thead><tr><th>Item</th><th>Added</th><th>Used</th><th>Timestamp</th><th>Note</th></tr></thead>
             <tbody>
@@ -117,10 +118,12 @@ export function StoreLogTab () {
               })}
             </tbody>
           </table>
+          </div>
         </${StoreLogSection}>
 
         <${StoreLogSection} title="Aggregate Movements"
                              onExport=${function () { app.openExportModal('storelog-aggregate', { start: start, end: end, rows: aggregate }); }}>
+          <div class="table-scroll">
           <table class="overview-table">
             <thead><tr><th>Item</th><th>Added</th><th>Used</th></tr></thead>
             <tbody>
@@ -136,10 +139,12 @@ export function StoreLogTab () {
               })}
             </tbody>
           </table>
+          </div>
         </${StoreLogSection}>
 
         <${StoreLogSection} title="Target Adjustments"
                              onExport=${function () { app.openExportModal('storelog-target', { start: start, end: end, rows: targetAdjustments }); }}>
+          <div class="table-scroll">
           <table class="overview-table">
             <thead><tr><th>Item</th><th>From</th><th>To</th><th>Date</th><th>Note</th></tr></thead>
             <tbody>
@@ -157,10 +162,12 @@ export function StoreLogTab () {
               })}
             </tbody>
           </table>
+          </div>
         </${StoreLogSection}>
 
         <${StoreLogSection} title="Splits"
                              onExport=${function () { app.openExportModal('storelog-splits', { start: start, end: end, rows: splits }); }}>
+          <div class="table-scroll">
           <table class="overview-table">
             <thead><tr><th>Item</th><th>From</th><th>To</th><th>Quantity</th><th>Date</th><th>Note</th></tr></thead>
             <tbody>
@@ -179,11 +186,13 @@ export function StoreLogTab () {
               })}
             </tbody>
           </table>
+          </div>
         </${StoreLogSection}>
 
         <${StoreLogSection} title="Predicted Runway"
                              hint="Based on consumption in the date range above. Needs at least 3 separate uses in that range to estimate a rate; items without enough history aren't shown."
                              onExport=${function () { app.openExportModal('storelog-predictions', { start: start, end: end, rows: predictions }); }}>
+          <div class="table-scroll">
           <table class="overview-table">
             <thead><tr><th>Item</th><th>Current Stock</th><th>Consumed (range)</th><th>Days Remaining</th><th>Runs Out Around</th></tr></thead>
             <tbody>
@@ -201,6 +210,7 @@ export function StoreLogTab () {
               })}
             </tbody>
           </table>
+          </div>
         </${StoreLogSection}>
       `}
     </section>

@@ -265,6 +265,7 @@ select {
 .node-type { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 
 .node-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.item-actions { display: inline-flex; gap: 6px; }
 .node-actions button { padding: 4px 8px; font-size: 12px; }
 
 .icon-btn {
@@ -494,6 +495,16 @@ select {
   animation: inv-blink 0.9s ease-in-out infinite;
 }
 
+/* Contains a wide table's horizontal overflow to just the table itself
+   on narrow screens, instead of the table running off the edge and
+   dragging the whole page sideways (the same bug fixed for the tab bar,
+   just tables can't sensibly wrap columns the way tabs wrap to a second
+   row, so a contained scrollbar is the right fix here instead). */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .overview-table {
   width: 100%;
   border-collapse: collapse;
@@ -571,6 +582,8 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px; /* keeps .modal's rounded corners off the screen edges on phones */
+  box-sizing: border-box;
   z-index: 1000;
 }
 
@@ -1331,4 +1344,26 @@ select {
   text-decoration: underline;
   cursor: pointer;
   font-size: inherit;
+}
+
+/* Icon buttons are 26x26px — comfortable for a mouse pointer, but under
+   the ~44px minimum usable touch target, with several sitting close
+   together in the same row (e.g. Delete right next to Move/Edit — a
+   real mis-tap risk for a destructive action, though Delete's own
+   confirmation dialog is the safety net there). Gated on pointer:
+   coarse (an actual touchscreen) rather than viewport width, so a
+   narrow desktop window with a mouse doesn't get the larger targets
+   it doesn't need, and a large touchscreen MFD does regardless of its
+   resolution. */
+@media (pointer: coarse) {
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .item-actions,
+  .node-actions,
+  .understocked-chip-actions {
+    gap: 10px;
+  }
 }
