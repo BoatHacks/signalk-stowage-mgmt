@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.8] - 2026-07-14
+
 ### Added
 
 - Clicking an item chip in the floorplan's "Found" popup re-triggers
