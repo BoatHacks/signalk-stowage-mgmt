@@ -15,65 +15,35 @@ was renamed to `signalk-stowage-mgmt`.
 ### Added
 
 - Clicking an item chip in the floorplan's "Found" popup re-triggers
-  the area blink (clicking its action buttons — edit, photo, split,
-  move, delete, category add/remove, the quantity stepper — still just
-  does that action, not also a re-blink).
+  the area blink. Its action buttons (edit, photo, split, move,
+  delete, category, quantity) still just do their own thing.
 - Touch-friendliness fixes from issue #22's audit:
-  - Overview and Store Log tables are now wrapped in a scrollable
-    container, so a wide table's overflow is contained to just the
-    table on narrow screens instead of dragging the whole page
-    sideways (the same bug already fixed for the tab bar).
-  - Modals now have a 16px side gutter (`.modal-overlay` padding)
-    instead of touching both screen edges, so rounded corners don't
-    get clipped on phones.
-  - Icon buttons grow from 26×26px to 44×44px on actual touchscreens
-    (gated on `pointer: coarse`, not viewport width, so a narrow
-    desktop window with a mouse is unaffected and a large touchscreen
-    MFD gets the bigger targets regardless of its resolution), with a
-    bit more gap between adjacent ones in the same row too.
+  - Overview and Store Log tables now scroll horizontally within
+    themselves instead of dragging the whole page sideways.
+  - Modals get a 16px side gutter on phones instead of touching both
+    screen edges.
+  - Icon buttons grow from 26×26 to 44×44px on actual touchscreens
+    (`pointer: coarse`, not viewport width), with more gap between
+    adjacent ones.
 
 ### Changed
 
-- Merged the Understocked and Expiring tabs into a single "Stock Alerts"
-  tab. An item chip now shows an "Understocked" badge, an "Expiring"
-  badge, or both, whichever apply. The shopping-list export (now the
-  only "Export as Markdown" action on this tab) includes expiring items
-  alongside understocked ones — an expiring item is treated as if it
-  had 0 in stock (so it's listed at its full target quantity, or its
-  current on-hand quantity if no target is set), with an "expires
-  <date>" note appended to its line.
-- The tab bar (Inventory/Floorplan/Overview/Categories/Stock Alerts/
-  Store Log) had no wrap or overflow handling at all on narrow screens,
-  so once the tabs didn't fit in one row, the whole page — not just the
-  tab bar — ran off the right edge, and reaching e.g. Store Log meant
-  scrolling the entire layout sideways. Tabs now wrap onto a second row
-  instead, so every tab stays visible and one tap away; merging
-  Understocked/Expiring above also means one fewer tab competing for
-  space in the first place.
+- Merged Understocked and Expiring into a single "Stock Alerts" tab.
+  A chip shows both badges when applicable. The shopping-list export
+  now includes expiring items too, treated as 0 in stock, with an
+  "expires <date>" note.
+- The tab bar now wraps onto a second row on narrow screens instead
+  of overflowing and dragging the whole page sideways.
 
 ### Fixed
 
-- Search barely had any width on mobile (issue #19). The header packed
-  the title, search box, version, and theme toggle into a single row;
-  on phone-width screens, search (the only flexible one) got squeezed
-  down to almost nothing next to the full-length title. Below 900px,
-  title/version/toggle now sit on their own compact row, and search
-  gets a full-width row of its own underneath.
-- The Actual Quantity / Target Quantity fields in Item Properties (and
-  any other `.form-field-row`, e.g. the Split dialog) could overflow
-  off the right edge of the screen on narrow phones, making Target
-  Quantity completely unreachable (issue #20). The `<input>` never had
-  an explicit width, so it fell back to the browser's default
-  number-input width — and flex items don't shrink below their
-  content's natural size by default, so the row overflowed instead of
-  the two fields sharing the available space. Inputs/selects/textareas
-  now always fill their `.form-field` column, which can now shrink
-  below that default width when needed.
-- A `str_replace` meant to add a class name to the item chip's action
-  row (as part of the touch-target work above) accidentally deleted
-  the "Edit" button entirely from every standard item chip (Inventory
-  tab, floorplan "Found" popup, Categories tab) — it survived only on
-  the separate Stock Alerts tab chip. Restored.
+- Search barely had any width on mobile (issue #19) — squeezed out by
+  the title, version, and theme toggle sharing one row. They now get
+  their own compact row, with search full-width below.
+- Actual/Target Quantity fields could overflow off-screen on narrow
+  phones, making Target Quantity unreachable (issue #20).
+- A previous edit accidentally deleted the "Edit" button from every
+  standard item chip. Restored.
 
 ## [0.8.7] - 2026-07-13
 
