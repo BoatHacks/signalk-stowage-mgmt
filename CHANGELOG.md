@@ -12,6 +12,19 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Fixed
 
+- The Actual Quantity / Target Quantity fields in Item Properties (and
+  any other `.form-field-row`, e.g. the Split dialog) could overflow
+  off the right edge of the screen on narrow phones, making Target
+  Quantity completely unreachable (issue #20). The `<input>` never had
+  an explicit width, so it fell back to the browser's default
+  number-input width — and flex items don't shrink below their
+  content's natural size by default, so the row overflowed instead of
+  the two fields sharing the available space. Inputs/selects/textareas
+  now always fill their `.form-field` column, which can now shrink
+  below that default width when needed.
+
+### Fixed
+
 - Search barely had any width on mobile (issue #19). The header packed
   the title, search box, version, and theme toggle into a single row;
   on phone-width screens, search (the only flexible one) got squeezed

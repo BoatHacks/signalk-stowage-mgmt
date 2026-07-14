@@ -847,6 +847,7 @@ select {
   gap: 4px;
   margin-bottom: 12px;
   flex: 1;
+  min-width: 0; /* allow shrinking below the input's default browser width — see .form-field-row */
 }
 
 .form-field label {
@@ -856,7 +857,9 @@ select {
 }
 
 .form-field input,
+.form-field select,
 .form-field textarea {
+  width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
