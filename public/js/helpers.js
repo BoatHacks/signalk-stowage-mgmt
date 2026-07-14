@@ -85,6 +85,28 @@ export function isUnderstocked(item) {
     item.actual_quantity < item.target_quantity;
 }
 
+export var EXPIRING_WINDOW_DAYS = 14;
+
+// Whole-days difference between today (local midnight) and a "YYYY-MM-DD"
+// date string, parsed as local midnight too (avoids the classic off-by-one
+// bug from parsing a bare date string as UTC).
+export function daysUntil(dateStr) {
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var target = new Date(dateStr + 'T00:00:00');
+  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+}
+
+export function expiringStatusText(days) {
+  if (days < 0) return 'Expired ' + Math.abs(days) + (Math.abs(days) === 1 ? ' day' : ' days') + ' ago';
+  if (days === 0) return 'Expires today';
+  return 'Expires in ' + days + (days === 1 ? ' day' : ' days');
+}
+
+export function isExpiringSoon(item) {
+  return !!item.expires_at && daysUntil(item.expires_at) <= EXPIRING_WINDOW_DAYS;
+}
+
 // Turns an SVG element id like "area-navtable" into a readable default
 // name: "Navtable".
 export function deriveNameFromSvgElementId(svgElementId) {
@@ -162,16 +184,27 @@ function categorySortKey(item) {
 }
 
 export function buildShoppingListMarkdown(data) {
-  var understocked = data.items.filter(isUnderstocked);
+  // Expiring items go on the list even if they're otherwise fully
+  // stocked — soon they won't be, so they need replacing. For the
+  // purposes of this list they're treated as if 0 were on hand, so the
+  // amount to buy is the full target (falling back to whatever's on
+  // hand today if there's no target set to size the replacement by).
+  var understockedItems = data.items.filter(isUnderstocked);
+  var expiringItems = data.items.filter(isExpiringSoon);
+  var byId = new Map();
+  understockedItems.forEach(function (item) { byId.set(item.id, item); });
+  expiringItems.forEach(function (item) { byId.set(item.id, item); });
+  var shoppingItems = Array.from(byId.values());
+
   var lines = ['# Shopping List', ''];
 
-  if (!understocked.length) {
+  if (!shoppingItems.length) {
     lines.push('Nothing needed right now.');
     return lines.join('\n').trim() + '\n';
   }
 
   var groups = new Map();
-  understocked.forEach(function (item) {
+  shoppingItems.forEach(function (item) {
     var shop = extractSourceFromNotes(item.notes);
     var key = shop || null;
     if (!groups.has(key)) groups.set(key, []);
@@ -188,8 +221,13 @@ export function buildShoppingListMarkdown(data) {
       return categorySortKey(a).localeCompare(categorySortKey(b)) || a.name.localeCompare(b.name);
     });
     items.forEach(function (item) {
-      var needed = item.target_quantity - item.actual_quantity;
-      lines.push('- ' + item.name + ' \u2014 need ' + needed);
+      var expiring = isExpiringSoon(item);
+      var hasTarget = item.target_quantity !== null && item.target_quantity !== undefined;
+      var onHand = expiring ? 0 : item.actual_quantity;
+      var needed = hasTarget ? (item.target_quantity - onHand) : item.actual_quantity;
+      var line = '- ' + item.name + ' \u2014 need ' + needed;
+      if (expiring) line += ' (expires ' + item.expires_at + ')';
+      lines.push(line);
     });
     lines.push('');
   });

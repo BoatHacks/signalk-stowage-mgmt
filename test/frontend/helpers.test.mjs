@@ -3,11 +3,22 @@ import assert from 'node:assert/strict'
 import {
   childLocations, itemsIn, formatBytes, isSplit, resolvedItemsIn, descendantIds,
   pathToRoot, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
-  buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown
+  buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
+  isExpiringSoon, daysUntil, expiringStatusText
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
   return Object.assign({ locations: [], items: [], categories: [], floorplans: [] }, overrides)
+}
+
+// "YYYY-MM-DD" for today + offsetDays (local time), matching the format
+// isExpiringSoon/daysUntil expect.
+function dateOffset (offsetDays) {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + offsetDays)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 test('childLocations: filters by parent_id, treating undefined/null as top-level', () => {
@@ -119,6 +130,28 @@ test('isUnderstocked: true only when target_quantity is set and actual is below 
   assert.equal(isUnderstocked({ actual_quantity: 1 }), false)
 })
 
+test('daysUntil: whole-day difference between today and a date string', () => {
+  assert.equal(daysUntil(dateOffset(0)), 0)
+  assert.equal(daysUntil(dateOffset(5)), 5)
+  assert.equal(daysUntil(dateOffset(-3)), -3)
+})
+
+test('expiringStatusText: describes today, future, and past dates', () => {
+  assert.equal(expiringStatusText(0), 'Expires today')
+  assert.equal(expiringStatusText(1), 'Expires in 1 day')
+  assert.equal(expiringStatusText(5), 'Expires in 5 days')
+  assert.equal(expiringStatusText(-1), 'Expired 1 day ago')
+  assert.equal(expiringStatusText(-4), 'Expired 4 days ago')
+})
+
+test('isExpiringSoon: true when expires_at is within the window (or already past), false otherwise', () => {
+  assert.equal(isExpiringSoon({ expires_at: dateOffset(5) }), true)
+  assert.equal(isExpiringSoon({ expires_at: dateOffset(-2) }), true)
+  assert.equal(isExpiringSoon({ expires_at: dateOffset(30) }), false)
+  assert.equal(isExpiringSoon({ expires_at: null }), false)
+  assert.equal(isExpiringSoon({}), false)
+})
+
 test('deriveNameFromSvgElementId: strips area prefix, replaces separators, title-cases', () => {
   assert.equal(deriveNameFromSvgElementId('area-navtable'), 'Navtable')
   assert.equal(deriveNameFromSvgElementId('area_port_locker'), 'Port Locker')
@@ -177,4 +210,39 @@ test('buildShoppingListMarkdown: groups understocked items by "source:" note, so
 test('buildShoppingListMarkdown: says nothing needed when nothing is understocked', () => {
   const data = makeData({ items: [{ id: '1', name: 'Bulb', actual_quantity: 5, target_quantity: 5 }] })
   assert.match(buildShoppingListMarkdown(data), /Nothing needed right now/)
+})
+
+test('buildShoppingListMarkdown: includes expiring items, treated as 0 in stock, with an expires-date note', () => {
+  const soonDate = dateOffset(5)
+  const data = makeData({
+    items: [
+      // Fully stocked but expiring soon: still needed, full target amount since it's treated as 0 on hand.
+      { id: '1', name: 'Flares', actual_quantity: 4, target_quantity: 4, expires_at: soonDate, notes: null },
+      // Not expiring, not understocked: excluded.
+      { id: '2', name: 'Bulb', actual_quantity: 5, target_quantity: 5 }
+    ]
+  })
+  const md = buildShoppingListMarkdown(data)
+  assert.match(md, /Flares.*need 4.*\(expires/)
+  assert.match(md, new RegExp(`expires ${soonDate}`))
+  assert.doesNotMatch(md, /Bulb/)
+})
+
+test('buildShoppingListMarkdown: an item that is both understocked and expiring is treated as 0 in stock (full target needed)', () => {
+  const soonDate = dateOffset(1)
+  const data = makeData({
+    items: [{ id: '1', name: 'Milk', actual_quantity: 2, target_quantity: 3, expires_at: soonDate, notes: null }]
+  })
+  const md = buildShoppingListMarkdown(data)
+  // Needed is the full target (3), not target - actual (1), since expiring items count as 0 on hand.
+  assert.match(md, /Milk.*need 3.*\(expires/)
+})
+
+test('buildShoppingListMarkdown: expiring item with no target_quantity falls back to its actual quantity as the amount needed', () => {
+  const soonDate = dateOffset(2)
+  const data = makeData({
+    items: [{ id: '1', name: 'Cheese', actual_quantity: 2, target_quantity: null, expires_at: soonDate, notes: null }]
+  })
+  const md = buildShoppingListMarkdown(data)
+  assert.match(md, /Cheese.*need 2.*\(expires/)
 })

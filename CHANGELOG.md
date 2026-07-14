@@ -10,6 +10,25 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- Merged the Understocked and Expiring tabs into a single "Stock Alerts"
+  tab. An item chip now shows an "Understocked" badge, an "Expiring"
+  badge, or both, whichever apply. The shopping-list export (now the
+  only "Export as Markdown" action on this tab) includes expiring items
+  alongside understocked ones — an expiring item is treated as if it
+  had 0 in stock (so it's listed at its full target quantity, or its
+  current on-hand quantity if no target is set), with an "expires
+  <date>" note appended to its line.
+- The tab bar (Inventory/Floorplan/Overview/Categories/Stock Alerts/
+  Store Log) had no wrap or overflow handling at all on narrow screens,
+  so once the tabs didn't fit in one row, the whole page — not just the
+  tab bar — ran off the right edge, and reaching e.g. Store Log meant
+  scrolling the entire layout sideways. Tabs now wrap onto a second row
+  instead, so every tab stays visible and one tap away; merging
+  Understocked/Expiring above also means one fewer tab competing for
+  space in the first place.
+
 ### Fixed
 
 - The Actual Quantity / Target Quantity fields in Item Properties (and

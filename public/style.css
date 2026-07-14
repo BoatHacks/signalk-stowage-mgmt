@@ -22,6 +22,7 @@
   --on-accent-text: #fff;
   --danger-bg: #fbeaea;
   --danger-border: #e3b3b3;
+  --warn-bg: #f8ecd9;
   --drop-target-bg: #eaf3ea;
   --drop-target-border: #4a8f4a;
   --unmapped-highlight-bg: #cfe8fa;
@@ -54,6 +55,7 @@
   --on-accent-text: #fbdbd3;
   --danger-bg: #3a2320;
   --danger-border: #5a3530;
+  --warn-bg: #402920;
   /* Drop-target/valid-interaction feedback and "needs assignment" area
      highlighting were green and blue respectively — bright red in dark
      mode too, so nothing on screen reads as a non-red hue. */
@@ -936,7 +938,7 @@ select {
 }
 .notes-preview a { color: var(--link); }
 
-/* ---------- understocked page ---------- */
+/* ---------- stock alerts page (understocked + expiring) ---------- */
 
 .understocked-list {
   display: grid;
@@ -976,8 +978,31 @@ select {
 }
 
 .understocked-chip-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-weight: 600;
   font-size: 14px;
+}
+
+.chip-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  line-height: 1.5;
+}
+
+.chip-badge-understocked {
+  color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.chip-badge-expiring {
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .understocked-chip-qty {
@@ -1189,6 +1214,22 @@ select {
     order: 4;
     flex: 1 1 100%;
     max-width: none;
+  }
+
+  /* All 6 tabs (Inventory, Floorplan, Overview, Categories, Stock Alerts,
+     Store Log) don't fit in one row on a phone; .tabs had no wrap or
+     overflow handling at all, so it just ran off the right edge and
+     dragged the whole page sideways with it (issue: Store Log only
+     reachable by scrolling the entire layout). Wrap onto a second row
+     instead — every tab stays visible and one tap away, just costs a
+     bit of extra height. Smaller font/padding keeps that cost modest. */
+  .tabs {
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    padding: 8px 10px;
+    font-size: 13px;
   }
 }
 
