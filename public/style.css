@@ -1167,6 +1167,26 @@ select {
     right: 20px;
     width: auto;
   }
+
+  /* At phone widths, header h1 + search-box (flex:1) + version + theme
+     toggle all competing for one row left the search box squeezed down
+     to almost nothing. Give title/version/toggle their own compact row,
+     and let search take the full width on a row of its own below. */
+  header {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    justify-content: space-between;
+  }
+
+  header h1 { order: 1; font-size: 15px; }
+  .app-version { order: 2; }
+  .theme-toggle { order: 3; }
+
+  .search-box {
+    order: 4;
+    flex: 1 1 100%;
+    max-width: none;
+  }
 }
 
 /* ---------- store log tab ---------- */

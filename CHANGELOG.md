@@ -10,6 +10,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Search barely had any width on mobile (issue #19). The header packed
+  the title, search box, version, and theme toggle into a single row;
+  on phone-width screens, search (the only flexible one) got squeezed
+  down to almost nothing next to the full-length title. Below 900px,
+  title/version/toggle now sit on their own compact row, and search
+  gets a full-width row of its own underneath.
+
 ## [0.8.7] - 2026-07-13
 
 ### Added
