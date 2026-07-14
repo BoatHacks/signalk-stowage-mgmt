@@ -1686,6 +1686,87 @@
           }
         }
       }
+    },
+    "/export": {
+      "get": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Export a full inventory snapshot",
+        "description": "Categories, locations (with hierarchy and floorplan mappings), and items (with their categories, placements, and attachment metadata). Excludes floorplan SVG content, attachment file contents, and Store Log history.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportSnapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/import": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Restore from a full inventory snapshot",
+        "description": "Replaces categories/locations/items entirely with the given snapshot (a restore, not a merge). Floorplans, attachment files, and Store Log history are never touched. A location's floorplan mapping only survives if that floorplan_id still exists in the target database; otherwise it's dropped (not a fatal error) and counted in dropped_floorplan_mappings. Original ids are preserved.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportSnapshot"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restored": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "integer"
+                        },
+                        "locations": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "dropped_floorplan_mappings": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or unsupported payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1972,6 +2053,36 @@
           "uploaded_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ExportSnapshot": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "type": "integer"
+          },
+          "exported_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         }
       }

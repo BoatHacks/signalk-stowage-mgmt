@@ -62,6 +62,11 @@ go to **Server → App Store**, search for "Stowage Management", and click
 - "Export as Markdown" renders the whole inventory tree (storage spaces,
   nested containers, items with quantities/targets/categories, plus a "Not
   Stored" section for orphans) into a copyable markdown document.
+- "Export to JSON" downloads a full snapshot (see the API table below for
+  exactly what's in it); "Import from JSON" **replaces** the current
+  inventory with a previously exported file, after a confirmation dialog —
+  it's a restore, not a merge, so export a fresh backup first if you're
+  not sure.
 - The floating "Not Stored" panel (bottom/top-right of the screen,
   depending on context) lists any containers with no parent and any items
   with no location — normally hidden, it appears automatically whenever
@@ -445,6 +450,25 @@ no versioning/deprecation process beyond this is planned for now.)
 | `GET /floorplans/:id` | Get one floorplan including its full `svg_content` |
 | `POST /floorplans` | Upload. Body: `{ name, svg_content }` (raw SVG markup as text) |
 | `DELETE /floorplans/:id` | Delete (400 if any storage space is still mapped to it — clear those mappings first) |
+
+**Backup / restore**
+
+| Method & path | Purpose |
+|---|---|
+| `GET /export` | Full inventory snapshot as JSON: categories, locations (with hierarchy and floorplan mappings), and items (with their categories, placements, and attachment *metadata*). Deliberately excludes floorplan SVG content, attachment file contents, and Store Log history — see below |
+| `POST /import` | **Replaces** categories/locations/items entirely with the given snapshot (same shape `GET /export` returns) — a restore, not a merge. Floorplans, attachment files, and Store Log history are never touched. Returns `{ restored: { categories, locations, items }, dropped_floorplan_mappings }` |
+
+A snapshot only carries a location's floorplan *mapping* (`floorplan_id` +
+`svg_element_id`), not the floorplan itself — so a mapping only survives
+`/import` if that exact `floorplan_id` still exists in the *target*
+database. This makes the feature best suited to backup/restore on the same
+instance (protecting against accidental data loss) rather than migrating
+to a different one; a mapping that can't be resolved is silently dropped
+(not a fatal error) and counted in `dropped_floorplan_mappings`. Original
+ids are preserved on restore, so anything depending on stable item/location
+ids (see "Known external consumers" above) keeps working after a restore.
+`/import` is a full replace of everything in scope — there's currently no
+merge/append mode (see issue #26).
 
 ## Known limitations / possible next steps
 

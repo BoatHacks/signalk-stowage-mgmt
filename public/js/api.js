@@ -93,6 +93,8 @@ export const api = {
   uploadAttachment: function (id, file) { return uploadRaw('/items/' + id + '/attachments', file); },
   deleteAttachment: function (itemId, attachmentId) { return del('/items/' + itemId + '/attachments/' + attachmentId); },
   attachmentUrl: function (itemId, attachmentId) { return BASE + '/items/' + itemId + '/attachments/' + attachmentId; },
+  exportSnapshot: function () { return get('/export'); },
+  importSnapshot: function (payload) { return post('/import', payload); },
 
   // Categories
   listCategories: function () { return get('/categories'); },

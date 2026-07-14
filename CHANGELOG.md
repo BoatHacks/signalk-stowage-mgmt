@@ -10,6 +10,20 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- "Export to JSON" / "Import from JSON" buttons on the Inventory tab —
+  a full backup/restore mechanism for categories, locations (with
+  hierarchy and floorplan mappings), and items (with categories,
+  placements, and attachment metadata). Import is a full replace, not
+  a merge (confirmation dialog required) — a merge/append mode is
+  tracked separately in issue #26. Floorplan SVG content, attachment
+  file contents, and Store Log history are deliberately excluded from
+  the snapshot; a location's floorplan mapping only survives import if
+  that floorplan still exists in the target database (dropped
+  gracefully, not a fatal error, otherwise). Original ids are
+  preserved on restore.
+
 ## [0.8.8] - 2026-07-14
 
 ### Added

@@ -7,6 +7,7 @@ const registerFloorplanRoutes = require('./routes/floorplans')
 const registerCategoryRoutes = require('./routes/categories')
 const registerItemLogRoutes = require('./routes/itemLog')
 const registerAttachmentRoutes = require('./routes/attachments')
+const registerBackupRoutes = require('./routes/backup')
 
 module.exports = function (app) {
   const plugin = {}
@@ -51,6 +52,7 @@ module.exports = function (app) {
     registerCategoryRoutes(router, () => db)
     registerItemLogRoutes(router, () => db)
     registerAttachmentRoutes(router, () => db, () => dataDir)
+    registerBackupRoutes(router, () => db)
 
     // eslint-disable-next-line no-unused-vars
     router.use((err, req, res, next) => {

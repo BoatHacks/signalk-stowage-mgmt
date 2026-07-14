@@ -255,6 +255,34 @@ function App() {
 
     getItemLog: function (start, end) { return api.getItemLog(start, end); },
 
+    // backup / restore
+    exportSnapshot: function () {
+      return api.exportSnapshot().then(function (snapshot) {
+        var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        var stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = 'stowage-export-' + stamp + '.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }).catch(function (err) { showToast(err.message); });
+    },
+    importSnapshot: function (payload) {
+      return act(function () { return api.importSnapshot(payload); }).then(function (result) {
+        var message = 'Restored ' + result.restored.items + ' items, ' + result.restored.locations +
+          ' locations, ' + result.restored.categories + ' categories.';
+        if (result.dropped_floorplan_mappings) {
+          message += ' ' + result.dropped_floorplan_mappings + ' floorplan mapping(s) could not be restored ' +
+            "(that floorplan isn't present here).";
+        }
+        showToast(message);
+        return result;
+      });
+    },
+
     // search / locate
     locateTarget: locateTargetState[0],
     locatePopupItem: locatePopupItemState[0],
