@@ -10,15 +10,6 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
-### Fixed
-
-- Regression from the previous commit (touch target sizing): a
-  `str_replace` meant to add a class name to the item chip's action
-  row accidentally deleted the "Edit" button entirely from every
-  standard item chip (Inventory tab, floorplan "Found" popup,
-  Categories tab) — it survived only on the separate Stock Alerts tab
-  chip. Restored.
-
 ### Added
 
 - Clicking an item chip in the floorplan's "Found" popup re-triggers
@@ -60,6 +51,12 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Fixed
 
+- Search barely had any width on mobile (issue #19). The header packed
+  the title, search box, version, and theme toggle into a single row;
+  on phone-width screens, search (the only flexible one) got squeezed
+  down to almost nothing next to the full-length title. Below 900px,
+  title/version/toggle now sit on their own compact row, and search
+  gets a full-width row of its own underneath.
 - The Actual Quantity / Target Quantity fields in Item Properties (and
   any other `.form-field-row`, e.g. the Split dialog) could overflow
   off the right edge of the screen on narrow phones, making Target
@@ -70,15 +67,11 @@ was renamed to `signalk-stowage-mgmt`.
   the two fields sharing the available space. Inputs/selects/textareas
   now always fill their `.form-field` column, which can now shrink
   below that default width when needed.
-
-### Fixed
-
-- Search barely had any width on mobile (issue #19). The header packed
-  the title, search box, version, and theme toggle into a single row;
-  on phone-width screens, search (the only flexible one) got squeezed
-  down to almost nothing next to the full-length title. Below 900px,
-  title/version/toggle now sit on their own compact row, and search
-  gets a full-width row of its own underneath.
+- A `str_replace` meant to add a class name to the item chip's action
+  row (as part of the touch-target work above) accidentally deleted
+  the "Edit" button entirely from every standard item chip (Inventory
+  tab, floorplan "Found" popup, Categories tab) — it survived only on
+  the separate Stock Alerts tab chip. Restored.
 
 ## [0.8.7] - 2026-07-13
 
