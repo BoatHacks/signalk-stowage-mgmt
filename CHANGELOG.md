@@ -10,6 +10,17 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Fixed
+
+- README's Usage section still described the old separate Understocked
+  and Expiring tabs, never updated when they were merged into Stock
+  Alerts. Rewrote that section to match current behavior.
+
+### Added
+
+- Added the screenshots from `docs/screenshots/` to the README's Usage
+  section, one per tab.
+
 ## [0.8.9] - 2026-07-14
 
 ### Added

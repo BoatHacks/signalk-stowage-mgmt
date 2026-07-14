@@ -44,6 +44,9 @@ go to **Server → App Store**, search for "Stowage Management", and click
 ## Usage
 
 **Inventory (tab):**
+
+![Inventory tab](docs/screenshots/inventory.png)
+
 - "+ Storage Space" (toolbar) creates a new top-level storage space (e.g.
   "Lazarette"). Every node also has its own "+ Storage Space", for nesting
   one inside another (e.g. "Port Locker" inside "Aft Cabin") — storage
@@ -105,6 +108,9 @@ go to **Server → App Store**, search for "Stowage Management", and click
   browser's native handling. Stored on disk, not in the database.
 
 **Floorplan (tab):**
+
+![Floorplan tab](docs/screenshots/floorplan.png)
+
 - Don't have an SVG floorplan of your boat yet? [ClearShip's free Boat
   Floor Plan Editor](https://clearship.app/tools/floor-plan) is a nice
   way to make one — draw your layout in the browser with predefined
@@ -149,6 +155,9 @@ go to **Server → App Store**, search for "Stowage Management", and click
   the mapping.
 
 **Categories (tab):**
+
+![Categories tab](docs/screenshots/categories.png)
+
 - "+ Category" creates a new category. Four defaults are seeded on first
   start: "food", "spare part", "equipment", "tools".
 - Each category is a collapsible fold-down; click its header to expand and
@@ -165,6 +174,9 @@ go to **Server → App Store**, search for "Stowage Management", and click
 - An item can carry any number of categories at once.
 
 **Overview (tab):**
+
+![Overview tab](docs/screenshots/overview.png)
+
 - Table of all items with thumbnail, actual quantity, direct location,
   full path (e.g. "Lazarette → Tool box"), categories, and whether the
   location is mapped on the floorplan.
@@ -173,32 +185,38 @@ go to **Server → App Store**, search for "Stowage Management", and click
 - Clicking a row jumps to the Floorplan tab and makes the area blink, same
   as search (if it's mapped).
 
-**Understocked (tab):**
-- Lists every item whose target quantity is set and whose actual quantity
-  is below it. Each shown as a large-thumbnail chip with name, editable
-  actual quantity, target quantity, and an edit button — nothing else, to
-  keep restocking runs focused.
-- Its "Export as Markdown" button produces a shopping list grouped by
-  shop. To assign an item to a shop, put a line reading `source: <shop
-  name>` anywhere in that item's notes (e.g. `source: West Marine`) — it
-  can be on its own line alongside other notes text, and matching is
-  case-insensitive. Items without a `source:` line are grouped under "No
-  Shop Specified". Within each shop's group, items are sorted by category.
+**Stock Alerts (tab):**
 
-**Expiring (tab):**
+![Stock Alerts tab](docs/screenshots/stock-alerts.png)
+
+- Lists every item that's understocked (target quantity set and actual
+  below it), expiring (already expired, or expiring within 14 days — a
+  fixed window for now), or both — most urgent first (expiring items
+  soonest/most-overdue first, then understocked-only items alphabetically).
+  Each shown as a large-thumbnail chip with name, an "Understocked" and/or
+  "Expiring" badge, editable actual quantity, target quantity, and an edit
+  button.
 - Set an optional expiration date on an item via the Item Properties
-  dialog. Lists every item that's either already expired or expiring
-  within 14 days (a fixed window for now), soonest/most-overdue first.
-  Already-expired items are visually distinguished (shown in the
-  "danger" color) from ones still within the window ("warning" color).
-- One date per item — if you buy the same thing at different times with
-  different expiration dates, there's currently no way to track those as
-  separate batches on a single item (create separate items if you need
-  that today; see `ROADMAP.md`).
-- Not tracked in the Store Log.
-- "Export as Markdown" produces the same list as a table.
+  dialog. One date per item — if you buy the same thing at different
+  times with different expiration dates, there's currently no way to
+  track those as separate batches on a single item (create separate items
+  if you need that today; see `ROADMAP.md`).
+- Its "Export as Markdown" button produces a shopping list grouped by
+  shop, covering both understocked and expiring items — an expiring item
+  is treated as if it had 0 in stock (so it's listed at its full target
+  quantity, or its current on-hand quantity if no target is set), with
+  an "expires \<date\>" note appended. To assign an item to a shop, put a
+  line reading `source: <shop name>` anywhere in that item's notes (e.g.
+  `source: West Marine`) — it can be on its own line alongside other
+  notes text, and matching is case-insensitive. Items without a `source:`
+  line are grouped under "No Shop Specified". Within each shop's group,
+  items are sorted by category.
+- Expiration status isn't tracked in the Store Log.
 
 **Store Log (tab):**
+
+![Store Log tab](docs/screenshots/store-log.png)
+
 - An audit trail of item creation, actual/target quantity changes,
   deletion, and splits — useful for questions like "how many rolls of
   toilet paper did we use last month?" Moving an item (or one placement
