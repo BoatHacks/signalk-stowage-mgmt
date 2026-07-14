@@ -13,6 +13,14 @@
     "appIcon": "./assets/icons/icon-512.png",
     "recommends": [
       "signalk-maintenance-tracker"
+    ],
+    "screenshots": [
+      "./docs/screenshots/inventory.png",
+      "./docs/screenshots/floorplan.png",
+      "./docs/screenshots/overview.png",
+      "./docs/screenshots/categories.png",
+      "./docs/screenshots/stock-alerts.png",
+      "./docs/screenshots/store-log.png"
     ]
   },
   "main": "plugin/index.js",

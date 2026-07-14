@@ -10,6 +10,13 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Registered the 6 screenshots from `docs/screenshots/` under
+  `signalk.screenshots` in `package.json`, so the SignalK App Store
+  can display them (previously showed "This plugin does not provide
+  screenshots").
+
 ### Fixed
 
 - README's Usage section still described the old separate Understocked
