@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.9] - 2026-07-14
+
 ### Added
 
 - "Export to JSON" / "Import from JSON" buttons on the Inventory tab —
