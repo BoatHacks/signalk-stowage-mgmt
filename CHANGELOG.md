@@ -10,8 +10,21 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Regression from the previous commit (touch target sizing): a
+  `str_replace` meant to add a class name to the item chip's action
+  row accidentally deleted the "Edit" button entirely from every
+  standard item chip (Inventory tab, floorplan "Found" popup,
+  Categories tab) — it survived only on the separate Stock Alerts tab
+  chip. Restored.
+
 ### Added
 
+- Clicking an item chip in the floorplan's "Found" popup re-triggers
+  the area blink (clicking its action buttons — edit, photo, split,
+  move, delete, category add/remove, the quantity stepper — still just
+  does that action, not also a re-blink).
 - Touch-friendliness fixes from issue #22's audit:
   - Overview and Store Log tables are now wrapped in a scrollable
     container, so a wide table's overflow is contained to just the

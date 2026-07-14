@@ -59,6 +59,7 @@ export function ItemChip(props) {
           ${split ? html`<span class="split-badge" title=${item.placements.length + ' locations'}>split \u00d7${item.placements.length}</span>` : null}
         </span>
         <span class="item-actions">
+          <${IconBtn} icon="edit" title="Edit" onClick=${function () { app.openPropertiesModal(item); }} />
           <${IconBtn} icon="photo" title="Photo" onClick=${function () { app.openPhotoModal(item); }} />
           <${IconBtn} icon="split" title="Split this item across another location"
                       onClick=${function () { app.openSplitModal(item, isPlacementRow ? (item.placements.find(function (p) { return p.id === item.placementId; }) || {}).location_id : item.location_id); }} />

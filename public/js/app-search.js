@@ -63,11 +63,23 @@ export function LocateItemPopup() {
   var app = useApp();
   if (!app.locatePopupItem) return null;
   var liveItem = app.data.items.find(function (i) { return i.id === app.locatePopupItem.id; }) || app.locatePopupItem;
+
+  // Re-blink the matching floorplan area(s) when the chip itself is
+  // clicked — but not when the click is on one of the chip's own action
+  // buttons/inputs (edit, photo, split, move, delete, quantity stepper,
+  // category add/remove), which should only do their own thing.
+  function onChipClick (e) {
+    if (e.target.closest('.item-actions, .item-categories, .qty, button, input')) return;
+    app.locateItem(liveItem);
+  }
+
   return html`
     <div class="locate-item-popup">
       <button class="modal-close locate-item-popup-close" aria-label="Close" onClick=${app.closeLocatePopup}>×</button>
       <div class="orphaned-panel-title">Found</div>
-      <${ItemChip} item=${liveItem} />
+      <div onClick=${onChipClick}>
+        <${ItemChip} item=${liveItem} />
+      </div>
     </div>
   `;
 }
