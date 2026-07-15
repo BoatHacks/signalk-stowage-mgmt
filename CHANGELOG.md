@@ -12,6 +12,13 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Changed
 
+- Removed the version number from the header entirely (it's still in
+  `<meta name="version">` in the page source, just not displayed).
+  Removed the now-unused `APP_VERSION`/`versionMeta` variables and the
+  `.app-version` CSS along with it.
+
+### Changed
+
 - Moved the version number in the header to the far right (after the
   edit-mode and theme toggles, not before them). Also gave it
   `margin-left: auto` — without it, the search box's `max-width` cap

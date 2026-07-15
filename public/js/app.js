@@ -16,12 +16,6 @@ import { SplitModal } from './app-split-modal.js';
 import { buildInventoryMarkdown, buildShoppingListMarkdown } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 
-// Sourced from the <meta name="version"> tag in index.html, which is kept
-// in sync manually with package.json's "version" field (no build step here
-// to inject it automatically) — this way there's only one place to update.
-var versionMeta = document.querySelector('meta[name="version"]');
-var APP_VERSION = (versionMeta && versionMeta.content) || '0.0.0';
-
 var TABS = [
   { id: 'inventory', label: 'Inventory' },
   { id: 'floorplan', label: 'Floorplan' },
@@ -327,7 +321,6 @@ function App() {
         <${SearchBox} />
         <${EditModeToggle} />
         <${ThemeToggle} />
-        <span class="app-version">v${APP_VERSION}</span>
       </header>
 
       <nav class="tabs">
