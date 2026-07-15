@@ -136,6 +136,7 @@ header {
 }
 
 header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+.header-icon { display: none; }
 
 .search-box { position: relative; flex: 1; max-width: 420px; }
 
@@ -1235,7 +1236,14 @@ select {
     justify-content: space-between;
   }
 
-  header h1 { order: 1; font-size: 15px; }
+  header h1 { order: 1; font-size: 15px; display: flex; align-items: center; }
+  .header-icon {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+  .header-title-text { display: none; }
   .app-version { order: 2; }
   .edit-mode-toggle { order: 3; }
   .theme-toggle { order: 4; }

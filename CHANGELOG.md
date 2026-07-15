@@ -12,6 +12,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- On narrow (mobile-width) screens, the "Stowage Management" header
+  title is replaced with a small thumbnail of the app icon, to save
+  horizontal space. Both the icon and the text stay in the DOM at all
+  times; a CSS media query toggles which is visible, matching how the
+  rest of the app's responsive layout already works (no JS-based
+  viewport detection).
+
+### Added
+
 - App-wide "Edit mode" toggle in the header, next to the theme toggle.
   Off (the default): each item/container/storage-space chip's action
   buttons collapse behind a single "..." button; clicking it

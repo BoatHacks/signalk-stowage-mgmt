@@ -323,7 +323,7 @@ function App() {
   return html`
     <${AppCtx.Provider} value=${ctx}>
       <header>
-        <h1>Stowage Management</h1>
+        <h1><img class="header-icon" src="assets/icons/icon-512.png" alt="Stowage Management" /><span class="header-title-text">Stowage Management</span></h1>
         <${SearchBox} />
         <span class="app-version">v${APP_VERSION}</span>
         <${EditModeToggle} />
