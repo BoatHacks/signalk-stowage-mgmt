@@ -10,6 +10,12 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- The collapse/expand triangle (▾/▸) is a lot bigger now — 11px → 22px.
+  Shared `.fold-arrow` class, so this covers both the Categories tab and
+  Store Log's section toggles at once.
+
 ## [0.8.10] - 2026-07-15
 
 ### Added
