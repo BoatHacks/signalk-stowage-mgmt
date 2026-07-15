@@ -43,6 +43,20 @@ go to **Server → App Store**, search for "Stowage Management", and click
 
 ## Usage
 
+**Header controls (present on every tab):** a search box (see "Search"
+below); an **Edit mode** toggle; and a light/dark theme toggle.
+
+Edit mode is off by default. While it's off, each item/container/storage-
+space chip's action buttons (edit, photo, split, move, delete, add
+category — or add-storage-space/add-container/add-item/rename/delete/
+move for a location) are collapsed behind a single "..." button, to keep
+the tree uncluttered — click it to temporarily reveal that one chip's
+buttons (only one chip's menu stays open at a time; opening another one,
+or flipping the global toggle, collapses it back). Turning Edit mode on
+shows every chip's buttons everywhere, all the time, with no "..." at
+all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
+(for assigning floorplan areas — see below); the two don't interact.
+
 **Inventory (tab):**
 
 ![Inventory tab](docs/screenshots/inventory.png)
@@ -54,10 +68,8 @@ go to **Server → App Store**, search for "Stowage Management", and click
   top level.
 - Per node: "+ Container" (nestable to any depth), "+ Item", plus icon
   buttons on each item: edit (properties), photo, split, move, delete,
-  add category. Collapsed behind a single "..." by default — click it to
-  temporarily reveal that chip's buttons, or turn on the "Edit mode"
-  toggle in the header (next to the theme toggle) to always show every
-  chip's buttons app-wide.
+  add category (collapsed behind "..." unless Edit mode is on — see
+  "Header controls" above).
 - Containers can be dragged directly onto another container or storage
   space to move them (or dragged onto the floating "Not Stored" panel to
   detach them to the top level). Items can likewise be dragged onto any
