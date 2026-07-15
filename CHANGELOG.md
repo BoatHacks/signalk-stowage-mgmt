@@ -12,6 +12,20 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- App-wide "Edit mode" toggle in the header, next to the theme toggle.
+  Off (the default): each item/container/storage-space chip's action
+  buttons collapse behind a single "..." button; clicking it
+  temporarily reveals that chip's buttons (only one chip's menu can be
+  open at a time — opening another one, or flipping the global toggle,
+  collapses it back). On: every chip's buttons are always shown, no
+  "..." anywhere. Item chips' "Add category" button moved out of the
+  separate categories row and into this same collapsible group, so all
+  6 of an item's actions (edit, photo, split, move, delete, add
+  category) collapse/expand together — category badges themselves stay
+  always visible, just their "add" button moved.
+
+### Added
+
 - Registered the 6 screenshots from `docs/screenshots/` under
   `signalk.screenshots` in `package.json`, so the SignalK App Store
   can display them (previously showed "This plugin does not provide

@@ -27,6 +27,26 @@ function IconBtn(props) {
   `;
 }
 
+// Wraps a chip/node's row of action buttons (edit, move, delete, etc.).
+// When the global edit-mode toggle is on, all of them are always shown.
+// When it's off, they collapse behind a single "..." button — clicking it
+// temporarily reveals them for just that one chip (chipKey must be unique
+// per chip/node); clicking "..." again, or opening a different chip's
+// menu, collapses it back. Only one chip's menu can be open at a time.
+function ChipActionsMenu (props) {
+  var app = useApp();
+  var isOpen = app.editMode || app.expandedChipKey === props.chipKey;
+  return html`
+    <span class=${props.className}>
+      ${!app.editMode ? html`
+        <${IconBtn} icon="more" title=${isOpen ? 'Hide actions' : 'Show actions'}
+                    onClick=${function () { app.toggleExpandedChip(props.chipKey); }} />
+      ` : null}
+      ${isOpen ? props.children : null}
+    </span>
+  `;
+}
+
 function Toast() {
   var app = useApp();
   if (!app.toastMessage) return null;
@@ -106,4 +126,4 @@ function QuantityEditor(props) {
   `;
 }
 
-export { AppCtx, useApp, Icon, IconBtn, Toast, QuantityEditor, POLL_INTERVAL_MS, PHOTO_VIEWPORT_SIZE, PHOTO_OUTPUT_SIZE };
+export { AppCtx, useApp, Icon, IconBtn, Toast, QuantityEditor, ChipActionsMenu, POLL_INTERVAL_MS, PHOTO_VIEWPORT_SIZE, PHOTO_OUTPUT_SIZE };

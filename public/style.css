@@ -89,6 +89,22 @@ body {
 }
 .theme-toggle:hover { background: rgba(255,255,255,0.12); }
 
+.edit-mode-toggle {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.35);
+  color: var(--header-text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.edit-mode-toggle:hover { background: rgba(255,255,255,0.12); }
+.edit-mode-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 * { box-sizing: border-box; }
 
 /* Form controls don't inherit color/background from the page by default in
@@ -1221,10 +1237,11 @@ select {
 
   header h1 { order: 1; font-size: 15px; }
   .app-version { order: 2; }
-  .theme-toggle { order: 3; }
+  .edit-mode-toggle { order: 3; }
+  .theme-toggle { order: 4; }
 
   .search-box {
-    order: 4;
+    order: 5;
     flex: 1 1 100%;
     max-width: none;
   }

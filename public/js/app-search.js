@@ -84,6 +84,17 @@ export function LocateItemPopup() {
   `;
 }
 
+export function EditModeToggle() {
+  var app = useApp();
+  var label = app.editMode ? 'Turn off edit mode' : 'Turn on edit mode';
+  return html`
+    <button type="button" class=${'edit-mode-toggle' + (app.editMode ? ' active' : '')} title=${label} aria-label=${label}
+            onClick=${app.toggleEditMode}>
+      <${Icon} name="edit" />
+    </button>
+  `;
+}
+
 export function ThemeToggle() {
   var app = useApp();
   var label = app.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';

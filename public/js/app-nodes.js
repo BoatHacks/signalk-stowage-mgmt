@@ -1,5 +1,5 @@
 import { html, useState } from '../vendor/preact-htm-standalone.js';
-import { useApp, IconBtn, Icon, QuantityEditor } from './app-core.js';
+import { useApp, IconBtn, Icon, QuantityEditor, ChipActionsMenu } from './app-core.js';
 import { childLocations, resolvedItemsIn, isSplit } from './helpers.js';
 
 // ---------- item chip ----------
@@ -58,7 +58,7 @@ export function ItemChip(props) {
             : null}
           ${split ? html`<span class="split-badge" title=${item.placements.length + ' locations'}>split \u00d7${item.placements.length}</span>` : null}
         </span>
-        <span class="item-actions">
+        <${ChipActionsMenu} chipKey=${'item:' + item.id + ':' + (item.placementId || '')} className="item-actions">
           <${IconBtn} icon="edit" title="Edit" onClick=${function () { app.openPropertiesModal(item); }} />
           <${IconBtn} icon="photo" title="Photo" onClick=${function () { app.openPhotoModal(item); }} />
           <${IconBtn} icon="split" title="Split this item across another location"
@@ -69,11 +69,11 @@ export function ItemChip(props) {
                         else app.openMoveModal('item', item);
                       }} />
           <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${deleteWholeItem} />
-        </span>
+          <${IconBtn} icon="add-tag" title="Add category" onClick=${function () { app.openCategoryModal(item); }} />
+        </${ChipActionsMenu}>
       </div>
       <div class="item-categories">
         ${categoryBadges}
-        <${IconBtn} icon="add-tag" title="Add category" onClick=${function () { app.openCategoryModal(item); }} />
       </div>
     </div>
   `;
@@ -132,7 +132,7 @@ export function LocationNode(props) {
            onDragLeave=${function () { setIsDropTarget(false); }}
            onDrop=${handleDrop}>
         <span class="node-title"><span class="type-icon"><${Icon} name=${isContainer ? 'box' : 'cabinet'} title=${isContainer ? 'Container' : 'Storage space'} /></span>${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}</span>
-        <span class="node-actions">
+        <${ChipActionsMenu} chipKey=${'location:' + loc.id} className="node-actions">
           <${IconBtn} icon="add-cabinet" title="Add storage space" onClick=${function () { app.addStorageSpace(loc.id); }} />
           <${IconBtn} icon="add-box" title="Add container" onClick=${function () { app.addContainer(loc.id); }} />
           <${IconBtn} icon="plus" title="Add item" onClick=${function () { app.addItem(loc.id); }} />
@@ -140,7 +140,7 @@ export function LocationNode(props) {
           ${!isContainer ? html`<button type="button" title="Manually set the SVG area id this storage space maps to" onClick=${function () { app.setManualSvgId(loc); }}>ID</button>` : null}
           ${isContainer ? html`<${IconBtn} icon="move" title="Move" onClick=${function () { app.openMoveModal('container', loc); }} />` : null}
           <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${function () { app.deleteLocation(loc); }} />
-        </span>
+        </${ChipActionsMenu}>
       </div>
       ${(children.length || items.length) ? html`
         <div class="children">

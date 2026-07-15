@@ -1,7 +1,7 @@
 import { html, render, useState, useEffect, useRef, useCallback } from '../vendor/preact-htm-standalone.js';
 import { api } from './api.js';
 import { AppCtx, Toast, POLL_INTERVAL_MS } from './app-core.js';
-import { SearchBox, LocateItemPopup, ThemeToggle } from './app-search.js';
+import { SearchBox, LocateItemPopup, ThemeToggle, EditModeToggle } from './app-search.js';
 import { NotStoredPanel, SplitDropPanel } from './app-nodes.js';
 import { InventoryTab } from './app-inventory-tab.js';
 import { FloorplanTab } from './app-floorplan-tab.js';
@@ -48,6 +48,10 @@ function App() {
   var dragActive = dragActiveState[0], setDragActive = dragActiveState[1];
   var dragEntityTypeState = useState(null);
   var dragEntityType = dragEntityTypeState[0], setDragEntityType = dragEntityTypeState[1];
+  var editModeState = useState(false);
+  var editMode = editModeState[0], setEditMode = editModeState[1];
+  var expandedChipKeyState = useState(null);
+  var expandedChipKey = expandedChipKeyState[0], setExpandedChipKey = expandedChipKeyState[1];
   var floorplanModeState = useState('display');
   var floorplanMode = floorplanModeState[0], setFloorplanModeState = floorplanModeState[1];
 
@@ -128,6 +132,10 @@ function App() {
     setDragActive: setDragActive,
     dragEntityType: dragEntityType,
     setDragEntityType: setDragEntityType,
+    editMode: editMode,
+    toggleEditMode: function () { setEditMode(!editMode); setExpandedChipKey(null); },
+    expandedChipKey: expandedChipKey,
+    toggleExpandedChip: function (key) { setExpandedChipKey(expandedChipKey === key ? null : key); },
     setTheme: setThemeState,
     setFloorplanMode: setFloorplanModeState,
     refreshData: refreshData,
@@ -318,6 +326,7 @@ function App() {
         <h1>Stowage Management</h1>
         <${SearchBox} />
         <span class="app-version">v${APP_VERSION}</span>
+        <${EditModeToggle} />
         <${ThemeToggle} />
       </header>
 

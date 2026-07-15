@@ -53,7 +53,11 @@ go to **Server → App Store**, search for "Stowage Management", and click
   spaces can be mapped to a floorplan area at any depth, not just at the
   top level.
 - Per node: "+ Container" (nestable to any depth), "+ Item", plus icon
-  buttons on each item: edit (properties), photo, move, delete.
+  buttons on each item: edit (properties), photo, split, move, delete,
+  add category. Collapsed behind a single "..." by default — click it to
+  temporarily reveal that chip's buttons, or turn on the "Edit mode"
+  toggle in the header (next to the theme toggle) to always show every
+  chip's buttons app-wide.
 - Containers can be dragged directly onto another container or storage
   space to move them (or dragged onto the floating "Not Stored" panel to
   detach them to the top level). Items can likewise be dragged onto any
@@ -149,7 +153,7 @@ go to **Server → App Store**, search for "Stowage Management", and click
   Locker" under both Aft Cabin and Fwd Cabin).
 - If two areas visually overlap on the floorplan (e.g. a locker drawn
   above a berth, with storage space behind/below it), only the topmost one
-  is clickable. For the one underneath, use the **"Area ID"** button on
+  is clickable. For the one underneath, use the **"ID"** button on
   that storage space (in the Inventory tree) to type its SVG element id
   directly instead — no click required. Leave the field blank to remove
   the mapping.
