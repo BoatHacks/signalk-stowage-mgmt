@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.10] - 2026-07-15
+
 ### Added
 
 - App-wide "Edit mode" toggle in the header, next to the theme toggle.
