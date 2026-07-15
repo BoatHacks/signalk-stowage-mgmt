@@ -10,31 +10,6 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
-### Changed
-
-- Removed the version number from the header entirely (it's still in
-  `<meta name="version">` in the page source, just not displayed).
-  Removed the now-unused `APP_VERSION`/`versionMeta` variables and the
-  `.app-version` CSS along with it.
-
-### Changed
-
-- Moved the version number in the header to the far right (after the
-  edit-mode and theme toggles, not before them). Also gave it
-  `margin-left: auto` — without it, the search box's `max-width` cap
-  meant it stopped absorbing space before reaching the true right
-  edge, leaving a gap after the last button instead of the version
-  actually sitting flush against the edge.
-
-### Added
-
-- On narrow (mobile-width) screens, the "Stowage Management" header
-  title is replaced with a small thumbnail of the app icon, to save
-  horizontal space. Both the icon and the text stay in the DOM at all
-  times; a CSS media query toggles which is visible, matching how the
-  rest of the app's responsive layout already works (no JS-based
-  viewport detection).
-
 ### Added
 
 - App-wide "Edit mode" toggle in the header, next to the theme toggle.
@@ -48,24 +23,25 @@ was renamed to `signalk-stowage-mgmt`.
   6 of an item's actions (edit, photo, split, move, delete, add
   category) collapse/expand together — category badges themselves stay
   always visible, just their "add" button moved.
-
-### Added
-
-- Registered the 6 screenshots from `docs/screenshots/` under
-  `signalk.screenshots` in `package.json`, so the SignalK App Store
-  can display them (previously showed "This plugin does not provide
+- On narrow (mobile-width) screens, the "Stowage Management" header
+  title is replaced with a small thumbnail of the app icon, to save
+  horizontal space.
+- Added screenshots for all 6 tabs at `docs/screenshots/`, added to
+  the README's Usage section, and registered under
+  `signalk.screenshots` in `package.json` so the SignalK App Store can
+  display them (previously showed "This plugin does not provide
   screenshots").
+
+### Changed
+
+- Removed the version number from the header entirely (it's still in
+  `<meta name="version">` in the page source, just not displayed).
 
 ### Fixed
 
 - README's Usage section still described the old separate Understocked
   and Expiring tabs, never updated when they were merged into Stock
   Alerts. Rewrote that section to match current behavior.
-
-### Added
-
-- Added the screenshots from `docs/screenshots/` to the README's Usage
-  section, one per tab.
 
 ## [0.8.9] - 2026-07-14
 
