@@ -10,21 +10,6 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
-### Added
-
-- Documented the Edit mode toggle properly: a new "Header controls"
-  intro paragraph at the top of Usage explains what it does and
-  explicitly disambiguates it from the Floorplan tab's own, unrelated
-  "Edit"/"Save" toggle (same word, different feature — they don't
-  interact). Trimmed the now-redundant explanation that had been
-  crammed into the Inventory tab's bullet list.
-
-### Changed
-
-- Refreshed all 6 screenshots in `docs/screenshots/` (and the README's
-  Usage section) — the header had changed since they were taken
-  (Edit mode toggle added, version number removed).
-
 ## [0.8.10] - 2026-07-15
 
 ### Added
@@ -48,11 +33,19 @@ was renamed to `signalk-stowage-mgmt`.
   `signalk.screenshots` in `package.json` so the SignalK App Store can
   display them (previously showed "This plugin does not provide
   screenshots").
+- Documented the Edit mode toggle properly: a new "Header controls"
+  intro paragraph at the top of Usage explains what it does and
+  explicitly disambiguates it from the Floorplan tab's own, unrelated
+  "Edit"/"Save" toggle (same word, different feature — they don't
+  interact).
 
 ### Changed
 
 - Removed the version number from the header entirely (it's still in
   `<meta name="version">` in the page source, just not displayed).
+- Refreshed all 6 screenshots in `docs/screenshots/` — the header had
+  changed since they were taken (Edit mode toggle added, version
+  number removed).
 
 ### Fixed
 
