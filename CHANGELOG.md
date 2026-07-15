@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.11] - 2026-07-15
+
 ### Changed
 
 - The collapse/expand triangle (▾/▸) is a lot bigger now — 11px → 22px.
