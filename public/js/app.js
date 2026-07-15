@@ -325,9 +325,9 @@ function App() {
       <header>
         <h1><img class="header-icon" src="assets/icons/icon-512.png" alt="Stowage Management" /><span class="header-title-text">Stowage Management</span></h1>
         <${SearchBox} />
-        <span class="app-version">v${APP_VERSION}</span>
         <${EditModeToggle} />
         <${ThemeToggle} />
+        <span class="app-version">v${APP_VERSION}</span>
       </header>
 
       <nav class="tabs">

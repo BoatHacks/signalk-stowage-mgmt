@@ -75,6 +75,7 @@ body {
   color: rgba(255, 255, 255, 0.45);
   font-size: 12px;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .theme-toggle {
@@ -1244,9 +1245,9 @@ select {
     border-radius: 6px;
   }
   .header-title-text { display: none; }
-  .app-version { order: 2; }
-  .edit-mode-toggle { order: 3; }
-  .theme-toggle { order: 4; }
+  .edit-mode-toggle { order: 2; }
+  .theme-toggle { order: 3; }
+  .app-version { order: 4; }
 
   .search-box {
     order: 5;

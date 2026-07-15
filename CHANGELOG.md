@@ -10,6 +10,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- Moved the version number in the header to the far right (after the
+  edit-mode and theme toggles, not before them). Also gave it
+  `margin-left: auto` — without it, the search box's `max-width` cap
+  meant it stopped absorbing space before reaching the true right
+  edge, leaving a gap after the last button instead of the version
+  actually sitting flush against the edge.
+
 ### Added
 
 - On narrow (mobile-width) screens, the "Stowage Management" header
