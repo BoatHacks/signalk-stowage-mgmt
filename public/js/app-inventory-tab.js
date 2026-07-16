@@ -42,7 +42,7 @@ export function InventoryTab() {
       </div>
       <div class="tree">
         ${!topLevel.length ? html`<p class="hint">No storage spaces created yet.</p>` : null}
-        ${topLevel.map(function (loc) { return html`<${LocationNode} loc=${loc} key=${loc.id} />`; })}
+        ${topLevel.map(function (loc) { return html`<${LocationNode} loc=${loc} topLevel=${true} key=${loc.id} />`; })}
       </div>
     </section>
   `;

@@ -10,6 +10,18 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Top-level storage spaces on the Inventory tab are now collapsible
+  (expanded by default). Collapsed, a space shows a summary in place
+  of its contents — "*n* spaces, *n* containers, *n* items" — counting
+  nested storage spaces/containers at any depth and every item in the
+  subtree (a split item with only some placements inside still counts
+  once, not once per placement). New "Collapse All"/"Expand All"
+  button in the tab bar, shown only on the Inventory tab, toggling
+  every top-level space at once. Reuses the existing `.fold-arrow`
+  styling from Categories/Store Log for the individual toggle.
+
 ## [0.8.11] - 2026-07-15
 
 ### Changed

@@ -1,6 +1,6 @@
 import { html, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn, Icon, QuantityEditor, ChipActionsMenu } from './app-core.js';
-import { childLocations, resolvedItemsIn, isSplit } from './helpers.js';
+import { childLocations, resolvedItemsIn, isSplit, subtreeSummary } from './helpers.js';
 
 // ---------- item chip ----------
 
@@ -95,6 +95,9 @@ export function LocationNode(props) {
   var items = resolvedItemsIn(app.data, loc.id);
   var isContainer = loc.type === 'container';
   var mapped = loc.type === 'storage_space' && loc.svg_element_id;
+  var isTopLevel = !!props.topLevel && !isContainer;
+  var collapsed = isTopLevel && app.collapsedLocationIds.has(loc.id);
+  var summary = collapsed ? subtreeSummary(app.data, loc.id) : null;
 
   function handleDrop(e) {
     e.preventDefault();
@@ -131,7 +134,11 @@ export function LocationNode(props) {
            onDragOver=${function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setIsDropTarget(true); }}
            onDragLeave=${function () { setIsDropTarget(false); }}
            onDrop=${handleDrop}>
-        <span class="node-title"><span class="type-icon"><${Icon} name=${isContainer ? 'box' : 'cabinet'} title=${isContainer ? 'Container' : 'Storage space'} /></span>${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}</span>
+        <span class="node-title">
+          ${isTopLevel ? html`<span class="fold-arrow" onClick=${function (e) { e.stopPropagation(); app.toggleLocationCollapse(loc.id); }}>${collapsed ? '\u25b8' : '\u25be'}</span>` : null}
+          <span class="type-icon"><${Icon} name=${isContainer ? 'box' : 'cabinet'} title=${isContainer ? 'Container' : 'Storage space'} /></span>${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}
+          ${collapsed ? html`<span class="collapsed-summary">${summary.spaces} spaces, ${summary.containers} containers, ${summary.items} items</span>` : null}
+        </span>
         <${ChipActionsMenu} chipKey=${'location:' + loc.id} className="node-actions">
           <${IconBtn} icon="add-cabinet" title="Add storage space" onClick=${function () { app.addStorageSpace(loc.id); }} />
           <${IconBtn} icon="add-box" title="Add container" onClick=${function () { app.addContainer(loc.id); }} />
@@ -142,7 +149,7 @@ export function LocationNode(props) {
           <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${function () { app.deleteLocation(loc); }} />
         </${ChipActionsMenu}>
       </div>
-      ${(children.length || items.length) ? html`
+      ${(!collapsed && (children.length || items.length)) ? html`
         <div class="children">
           ${children.map(function (child) { return html`<${LocationNode} loc=${child} key=${child.id} />`; })}
           ${items.map(function (item) { return html`<${ItemChip} item=${item} key=${item.id + ':' + (item.placementId || '')} />`; })}

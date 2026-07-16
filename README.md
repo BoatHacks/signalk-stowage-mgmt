@@ -66,6 +66,13 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   one inside another (e.g. "Port Locker" inside "Aft Cabin") — storage
   spaces can be mapped to a floorplan area at any depth, not just at the
   top level.
+- Top-level storage spaces are collapsible (expanded by default) — click
+  the ▾/▸ arrow next to the name to fold one up. Collapsed, it shows a
+  summary instead of its contents: "*n* spaces, *n* containers, *n*
+  items" (nested storage spaces/containers at any depth, and items
+  anywhere in the subtree — a split item counts once even if only some of
+  its placements fall inside). "Collapse All"/"Expand All" in the tab bar
+  (only shown on this tab) toggles every top-level space at once.
 - Per node: "+ Container" (nestable to any depth), "+ Item", plus icon
   buttons on each item: edit (properties), photo, split, move, delete,
   add category (collapsed behind "..." unless Edit mode is on — see

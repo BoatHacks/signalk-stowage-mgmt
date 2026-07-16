@@ -4,7 +4,7 @@ import {
   childLocations, itemsIn, formatBytes, isSplit, resolvedItemsIn, descendantIds,
   pathToRoot, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
-  isExpiringSoon, daysUntil, expiringStatusText
+  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -98,6 +98,42 @@ test('descendantIds: collects all nested children recursively', () => {
   })
   assert.deepEqual(descendantIds(data, 'a').sort(), ['b', 'c'])
   assert.deepEqual(descendantIds(data, 'd'), [])
+})
+
+test('subtreeSummary: counts nested spaces/containers and distinct items (including split items, counted once)', () => {
+  const data = makeData({
+    locations: [
+      { id: 'aft', name: 'Aft Cabin', type: 'storage_space', parent_id: null },
+      { id: 'locker', name: 'Port Locker', type: 'storage_space', parent_id: 'aft' },
+      { id: 'box', name: 'Box', type: 'container', parent_id: 'locker' },
+      { id: 'box2', name: 'Box 2', type: 'container', parent_id: 'aft' },
+      { id: 'other', name: 'Other Cabin', type: 'storage_space', parent_id: null }
+    ],
+    items: [
+      { id: '1', name: 'Fuse', location_id: 'box', actual_quantity: 1 },
+      { id: '2', name: 'Rope', location_id: 'aft', actual_quantity: 1 },
+      // Split item with one placement inside the subtree, one outside -- counts once.
+      {
+        id: '3',
+        name: 'Split Item',
+        placements: [
+          { id: 'p1', location_id: 'box2', quantity: 2 },
+          { id: 'p2', location_id: 'other', quantity: 3 }
+        ]
+      },
+      // Entirely outside the subtree -- not counted.
+      { id: '4', name: 'Elsewhere', location_id: 'other', actual_quantity: 1 }
+    ]
+  })
+  const summary = subtreeSummary(data, 'aft')
+  assert.equal(summary.spaces, 1) // locker (nested storage space), not aft itself
+  assert.equal(summary.containers, 2) // box, box2
+  assert.equal(summary.items, 3) // Fuse, Rope, Split Item
+})
+
+test('subtreeSummary: empty subtree', () => {
+  const data = makeData({ locations: [{ id: 'a', name: 'Empty', type: 'storage_space', parent_id: null }] })
+  assert.deepEqual(subtreeSummary(data, 'a'), { spaces: 0, containers: 0, items: 0 })
 })
 
 test('pathToRoot: builds a breadcrumb string from root to the given location', () => {

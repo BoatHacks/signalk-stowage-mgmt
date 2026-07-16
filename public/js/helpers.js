@@ -63,6 +63,37 @@ export function descendantIds(data, locationId) {
   return all;
 }
 
+// Counts, for the collapsed view of a top-level storage space: how many
+// nested storage spaces and containers it contains (at any depth), and how
+// many distinct items live anywhere in that subtree (including a split
+// item with only some of its placements inside the subtree — counted once,
+// not once per placement).
+export function subtreeSummary(data, locationId) {
+  var nestedIds = descendantIds(data, locationId);
+  var idSet = new Set(nestedIds);
+  idSet.add(locationId);
+
+  var spaces = 0, containers = 0;
+  nestedIds.forEach(function (id) {
+    var loc = data.locations.find(function (l) { return l.id === id; });
+    if (!loc) return;
+    if (loc.type === 'storage_space') spaces++;
+    else containers++;
+  });
+
+  var itemIds = new Set();
+  data.items.forEach(function (item) {
+    if (isSplit(item)) {
+      var inSubtree = item.placements.some(function (p) { return idSet.has(p.location_id); });
+      if (inSubtree) itemIds.add(item.id);
+    } else if (item.location_id && idSet.has(item.location_id)) {
+      itemIds.add(item.id);
+    }
+  });
+
+  return { spaces: spaces, containers: containers, items: itemIds.size };
+}
+
 export function pathToRoot(data, locationId) {
   var names = [];
   var current = data.locations.find(function (l) { return l.id === locationId; });
