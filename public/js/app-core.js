@@ -38,11 +38,11 @@ function ChipActionsMenu (props) {
   var isOpen = app.editMode || app.expandedChipKey === props.chipKey;
   return html`
     <span class=${props.className}>
+      ${isOpen ? props.children : null}
       ${!app.editMode ? html`
         <${IconBtn} icon="more" title=${isOpen ? 'Hide actions' : 'Show actions'}
                     onClick=${function () { app.toggleExpandedChip(props.chipKey); }} />
       ` : null}
-      ${isOpen ? props.children : null}
     </span>
   `;
 }

@@ -10,6 +10,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- The "..." button on a chip's action row now stays fixed in place when
+  clicked — the other six buttons appear to its left instead of to its
+  right. Previously "..." rendered first with the buttons appearing
+  after it; since these rows are right-aligned, expanding pushed the
+  whole group (including "...") further left each time, making it look
+  like the button itself was moving.
+
 ### Added
 
 - Top-level storage spaces on the Inventory tab are now collapsible
