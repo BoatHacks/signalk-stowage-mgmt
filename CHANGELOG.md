@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.12] - 2026-07-15
+
 ### Added
 
 - Top-level storage spaces on the Inventory tab are now collapsible
