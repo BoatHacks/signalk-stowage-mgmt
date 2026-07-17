@@ -183,11 +183,6 @@ header h1 { margin: 0; font-size: 18px; font-weight: 600; }
   border-bottom: 1px solid var(--border);
 }
 
-.collapse-all-btn {
-  margin-left: auto;
-  align-self: flex-start;
-}
-
 .tab-btn {
   border: none;
   background: none;

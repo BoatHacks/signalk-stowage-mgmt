@@ -355,11 +355,6 @@ function App() {
                     onClick=${function () { switchTab(t.id); }}>${t.label}</button>
           `;
         })}
-        ${activeTab === 'inventory' ? html`
-          <button type="button" class="collapse-all-btn" onClick=${ctx.toggleCollapseAllTopLevel}>
-            ${ctx.allTopLevelCollapsed() ? 'Expand All' : 'Collapse All'}
-          </button>
-        ` : null}
       </nav>
 
       <main>

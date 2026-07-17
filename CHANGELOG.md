@@ -10,6 +10,11 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- Moved "Collapse All"/"Expand All" from the tabs nav bar into the
+  Inventory toolbar, right after "Import from JSON".
+
 ## [0.8.12] - 2026-07-15
 
 ### Added

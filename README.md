@@ -71,8 +71,8 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   summary instead of its contents: "*n* spaces, *n* containers, *n*
   items" (nested storage spaces/containers at any depth, and items
   anywhere in the subtree — a split item counts once even if only some of
-  its placements fall inside). "Collapse All"/"Expand All" in the tab bar
-  (only shown on this tab) toggles every top-level space at once.
+  its placements fall inside). "Collapse All"/"Expand All" in the toolbar
+  toggles every top-level space at once.
 - Per node: "+ Container" (nestable to any depth), "+ Item", plus icon
   buttons on each item: edit (properties), photo, split, move, delete,
   add category (collapsed behind "..." unless Edit mode is on — see
