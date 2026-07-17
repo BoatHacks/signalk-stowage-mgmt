@@ -10,11 +10,6 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
-### Changed
-
-- Moved "Collapse All"/"Expand All" from the tabs nav bar into the
-  Inventory toolbar, right after "Import from JSON".
-
 ## [0.8.12] - 2026-07-15
 
 ### Added
@@ -24,10 +19,10 @@ was renamed to `signalk-stowage-mgmt`.
   of its contents — "*n* spaces, *n* containers, *n* items" — counting
   nested storage spaces/containers at any depth and every item in the
   subtree (a split item with only some placements inside still counts
-  once, not once per placement). New "Collapse All"/"Expand All"
-  button in the tab bar, shown only on the Inventory tab, toggling
-  every top-level space at once. Reuses the existing `.fold-arrow`
-  styling from Categories/Store Log for the individual toggle.
+  once, not once per placement). "Collapse All"/"Expand All" in the
+  Inventory toolbar toggles every top-level space at once. Reuses the
+  existing `.fold-arrow` styling from Categories/Store Log for the
+  individual toggle.
 
 ### Changed
 
