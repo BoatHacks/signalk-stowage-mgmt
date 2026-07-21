@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.8.13] - 2026-07-17
+
 ### Added
 
 - New plugin option: "Automatically switch light/dark theme based on
