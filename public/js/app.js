@@ -36,6 +36,8 @@ function App() {
   var activeTab = tabState[0], setActiveTab = tabState[1];
   var themeState = useState(getPreferredTheme());
   var theme = themeState[0], setThemeState = themeState[1];
+  var configState = useState({ autoTheme: false, themeRecommendation: null });
+  var config = configState[0], setConfig = configState[1];
   var toastState = useState(null);
   var toastMessage = toastState[0], setToastMessage = toastState[1];
   var dragActiveState = useState(false);
@@ -68,12 +70,31 @@ function App() {
 
   useEffect(function () { applyTheme(theme); }, [theme]);
 
+  // When the plugin's "Automatically switch theme" option is on, follow
+  // its recommendation (derived server-side from environment.sun/mode)
+  // instead of waiting for a manual toggle. Only acts when the
+  // recommendation actually differs from the current theme, so this
+  // doesn't fight a fresh manual click mid-poll-cycle for no reason — and
+  // does nothing at all if the option is off or the server has no
+  // recommendation yet (e.g. neither environment path is populated).
+  useEffect(function () {
+    if (!config.autoTheme) return;
+    var recommendation = config.themeRecommendation;
+    if ((recommendation === 'light' || recommendation === 'dark') && recommendation !== theme) {
+      setThemeState(recommendation);
+    }
+  }, [config.autoTheme, config.themeRecommendation]);
+
   var refreshData = useCallback(function () {
     if (fetchInFlightRef.current) return Promise.resolve();
     fetchInFlightRef.current = true;
-    return Promise.all([api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans()])
+    return Promise.all([
+      api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(),
+      api.getConfig().catch(function () { return { autoTheme: false, themeRecommendation: null }; })
+    ])
       .then(function (results) {
         setData({ locations: results[0], items: results[1], categories: results[2], floorplans: results[3] });
+        setConfig(results[4]);
         setLoaded(true);
       })
       .catch(function (err) { showToast(err.message); })

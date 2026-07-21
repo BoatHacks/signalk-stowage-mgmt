@@ -10,6 +10,19 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- New plugin option: "Automatically switch light/dark theme based on
+  sun position" (off by default, set in the SignalK Admin UI's Plugin
+  Config page). When on, the webapp's theme follows
+  `vessels.self.environment.sun` (preferred — dawn/sunrise/day/sunset/
+  dusk/night) or falls back to `vessels.self.environment.mode`
+  (simpler day/night), overriding the manual toggle — everything
+  except "day" counts as dark, to protect night vision from dusk
+  through dawn. New `GET /config` endpoint backs it, polled by the
+  webapp alongside its regular data refresh. Copied from
+  `signalk-dead-mans-switch`'s identical feature. 7 new backend tests.
+
 ## [0.8.12] - 2026-07-15
 
 ### Added

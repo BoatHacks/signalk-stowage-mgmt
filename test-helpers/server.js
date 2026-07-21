@@ -9,16 +9,18 @@ const pluginFactory = require('../plugin/index.js')
 // actual SignalK server uses) against a throwaway temp directory, and
 // returns helpers for making real HTTP requests against it. Every call
 // gets its own fresh SQLite db — no shared state between tests.
-async function startTestServer () {
+async function startTestServer (opts) {
+  opts = opts || {}
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'stowage-test-'))
   const fakeApp = {
     debug: () => {},
     error: () => {},
     getDataDirPath: () => dataDir
   }
+  if (opts.getSelfPath) fakeApp.getSelfPath = opts.getSelfPath
 
   const plugin = pluginFactory(fakeApp)
-  plugin.start({})
+  plugin.start(opts.options || {})
 
   const app = express()
   const router = express.Router()

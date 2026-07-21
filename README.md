@@ -41,10 +41,29 @@ go to **Server → App Store**, search for "Stowage Management", and click
    (also linked from the Webapps list in the Admin UI, as "Stowage
    Management").
 
+## Configuration
+
+Set in the plugin's config page in the SignalK Admin UI
+(Server → Plugin Config → Stowage Management):
+
+- **Automatically switch light/dark theme based on sun position**
+  (off by default). When on, the webapp's theme follows
+  `vessels.self.environment.sun` (preferred — one of dawn, sunrise, day,
+  sunset, dusk, or night; published by a plugin like
+  `signalk-derived-data`) or, if that's not available,
+  `vessels.self.environment.mode` (a simpler day/night fallback some
+  setups use instead). Everything except "day" is treated as dark, to
+  protect night vision from dusk through dawn rather than only once it's
+  fully dark. Overrides the manual light/dark toggle in the header (see
+  "Header controls" below) while it's on; if neither path has a
+  recognized value yet, the manual/OS-preference theme is left alone.
+
 ## Usage
 
 **Header controls (present on every tab):** a search box (see "Search"
-below); an **Edit mode** toggle; and a light/dark theme toggle.
+below); an **Edit mode** toggle; and a light/dark theme toggle (see
+"Configuration" above for automatically switching this based on sun
+position instead).
 
 Edit mode is off by default. While it's off, each item/container/storage-
 space chip's action buttons (edit, photo, split, move, delete, add
@@ -510,6 +529,12 @@ ids are preserved on restore, so anything depending on stable item/location
 ids (see "Known external consumers" above) keeps working after a restore.
 `/import` is a full replace of everything in scope — there's currently no
 merge/append mode (see issue #26).
+
+**Config**
+
+| Method & path | Purpose |
+|---|---|
+| `GET /config` | `{ autoTheme, themeRecommendation }` — the current value of the "Automatically switch light/dark theme" plugin option, and the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet). Polled by the webapp alongside its regular data refresh; see "Configuration" above |
 
 ## Known limitations / possible next steps
 

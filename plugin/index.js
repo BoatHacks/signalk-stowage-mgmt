@@ -8,6 +8,7 @@ const registerCategoryRoutes = require('./routes/categories')
 const registerItemLogRoutes = require('./routes/itemLog')
 const registerAttachmentRoutes = require('./routes/attachments')
 const registerBackupRoutes = require('./routes/backup')
+const registerConfigRoutes = require('./routes/config')
 
 module.exports = function (app) {
   const plugin = {}
@@ -17,8 +18,10 @@ module.exports = function (app) {
 
   let db = null
   let dataDir = null
+  let pluginOptions = {}
 
   plugin.start = function (options) {
+    pluginOptions = options || {}
     dataDir = typeof app.getDataDirPath === 'function'
       ? app.getDataDirPath()
       : path.join(__dirname, '..', 'data')
@@ -35,7 +38,15 @@ module.exports = function (app) {
 
   plugin.schema = {
     type: 'object',
-    properties: {}
+    properties: {
+      autoTheme: {
+        type: 'boolean',
+        title: 'Automatically switch light/dark theme based on sun position',
+        description:
+          'Webapp follows vessels.self.environment.sun (preferred - dawn/sunrise/day/sunset/dusk/night) or vessels.self.environment.mode (simpler day/night fallback) instead of the manual light/dark toggle. Needs a plugin like signalk-derived-data publishing one of those paths.',
+        default: false
+      }
+    }
   }
 
   plugin.getOpenApi = function () {
@@ -53,6 +64,7 @@ module.exports = function (app) {
     registerItemLogRoutes(router, () => db)
     registerAttachmentRoutes(router, () => db, () => dataDir)
     registerBackupRoutes(router, () => db)
+    registerConfigRoutes(router, app, () => pluginOptions)
 
     // eslint-disable-next-line no-unused-vars
     router.use((err, req, res, next) => {

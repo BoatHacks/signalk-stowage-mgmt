@@ -1767,6 +1767,40 @@
           }
         }
       }
+    },
+    "/config": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "Get the current theme-automation config/recommendation",
+        "description": "Reflects the plugin's 'Automatically switch light/dark theme based on sun position' option (set in the SignalK Admin UI's Plugin Config page) and, when it's on, the theme currently recommended based on vessels.self.environment.sun (preferred) or vessels.self.environment.mode (fallback).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "autoTheme": {
+                      "type": "boolean"
+                    },
+                    "themeRecommendation": {
+                      "type": "string",
+                      "enum": [
+                        "light",
+                        "dark"
+                      ],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
