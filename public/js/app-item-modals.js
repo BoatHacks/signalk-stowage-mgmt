@@ -125,7 +125,7 @@ export function ItemPropertiesModal() {
         </div>
 
         <div class="properties-quick-actions">
-          <button type="button" onClick=${function () { app.openPhotoModal(item); }}>Add Photo</button>
+          <${IconBtn} icon="photo" title="Add photo" onClick=${function () { app.openPhotoModal(item); }} />
           <${IconBtn} icon="add-tag" title="Add category" onClick=${function () { app.openCategoryModal(item); }} />
         </div>
 

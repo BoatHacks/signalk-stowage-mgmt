@@ -1,5 +1,5 @@
 import { html, useState, useMemo } from '../vendor/preact-htm-standalone.js';
-import { useApp } from './app-core.js';
+import { useApp, QuantityEditor } from './app-core.js';
 import { pathToRoot, isSplit } from './helpers.js';
 
 // True if this location, or any of its storage-space ancestors, is mapped
@@ -46,6 +46,7 @@ export function OverviewTab() {
         item: item,
         name: item.name,
         actualQuantity: item.actual_quantity,
+        targetQuantity: item.target_quantity,
         thumbnail: item.thumbnail || null,
         directLocation: directLocation,
         directType: directType,
@@ -85,6 +86,7 @@ export function OverviewTab() {
     { key: null, label: 'Photo' },
     { key: 'name', label: 'Item' },
     { key: 'actualQuantity', label: 'Actual Quantity' },
+    { key: 'targetQuantity', label: 'Target Quantity' },
     { key: 'directLocation', label: 'Direct Location' },
     { key: 'fullPath', label: 'Full Path' },
     { key: 'categoryNames', label: 'Categories' },
@@ -111,7 +113,7 @@ export function OverviewTab() {
           </tr>
         </thead>
         <tbody>
-          ${!sorted.length ? html`<tr class="empty-row"><td colspan="7">No items found.</td></tr>` : null}
+          ${!sorted.length ? html`<tr class="empty-row"><td colspan="8">No items found.</td></tr>` : null}
           ${sorted.map(function (r) {
             var thumb = r.thumbnail
               ? html`<img class="item-thumb" src=${r.thumbnail} alt="" />`
@@ -120,7 +122,8 @@ export function OverviewTab() {
               <tr key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
                 <td>${thumb}</td>
                 <td>${r.name}</td>
-                <td>${r.actualQuantity}</td>
+                <td><${QuantityEditor} item=${r.item} /></td>
+                <td>${r.targetQuantity != null ? r.targetQuantity : '\u2014'}</td>
                 <td>${r.directLocation}${r.directType ? html` <span class="node-type">${r.directType}</span>` : null}</td>
                 <td>${r.fullPath}</td>
                 <td>${r.categoryNames}</td>

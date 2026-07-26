@@ -223,9 +223,11 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
 
 ![Overview tab](docs/screenshots/overview.png)
 
-- Table of all items with thumbnail, actual quantity, direct location,
-  full path (e.g. "Lazarette → Tool box"), categories, and whether the
-  location is mapped on the floorplan.
+- Table of all items with thumbnail, actual quantity (click to edit
+  inline, same as everywhere else — except for a split item, which shows
+  a tooltip pointing you at Split instead), target quantity, direct
+  location, full path (e.g. "Lazarette → Tool box"), categories, and
+  whether the location is mapped on the floorplan.
 - Click column headers to sort, use the text field to filter by item name,
   direct location, and path.
 - Clicking a row jumps to the Floorplan tab and makes the area blink, same

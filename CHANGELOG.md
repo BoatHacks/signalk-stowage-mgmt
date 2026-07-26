@@ -12,6 +12,18 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- Overview table: actual quantity is now editable inline (click to
+  edit, same `QuantityEditor` control used everywhere else — a split
+  item stays read-only there too, with the usual "use Split instead"
+  tooltip), and target quantity is now a visible column.
+
+### Changed
+
+- Item Properties: "Add Photo" is now an icon button (matching "Add
+  category" right next to it) instead of a text button.
+
+### Added
+
 - Every node in the Inventory tree — storage spaces *and* containers,
   at any depth — is now collapsible, not just top-level storage
   spaces. "Collapse All"/"Expand All" now toggles every node in the
