@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-26
+
 ### Added
 
 - New "Touch" view on the Overview tab (toggle next to "Table"), for
