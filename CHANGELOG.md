@@ -12,6 +12,14 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- Every node in the Inventory tree — storage spaces *and* containers,
+  at any depth — is now collapsible, not just top-level storage
+  spaces. "Collapse All"/"Expand All" now toggles every node in the
+  tree, not just the top-level ones.
+- Overview table: actual quantity is now editable inline (click to
+  edit, same `QuantityEditor` control used everywhere else — a split
+  item stays read-only there too, with the usual "use Split instead"
+  tooltip), and target quantity is now a visible column.
 - Clicking an item on the Categories tab (its location text or the
   chip's body — not one of its own action buttons) now jumps to the
   Floorplan tab and blinks the matching area, same as the Overview
@@ -19,25 +27,6 @@ was renamed to `signalk-stowage-mgmt`.
   used by the Found popup) into a shared `makeLocateOnChipClick`
   helper so both places use identical logic instead of a duplicated
   copy.
-
-### Added
-
-- Overview table: actual quantity is now editable inline (click to
-  edit, same `QuantityEditor` control used everywhere else — a split
-  item stays read-only there too, with the usual "use Split instead"
-  tooltip), and target quantity is now a visible column.
-
-### Changed
-
-- Item Properties: "Add Photo" is now an icon button (matching "Add
-  category" right next to it) instead of a text button.
-
-### Added
-
-- Every node in the Inventory tree — storage spaces *and* containers,
-  at any depth — is now collapsible, not just top-level storage
-  spaces. "Collapse All"/"Expand All" now toggles every node in the
-  tree, not just the top-level ones.
 
 ### Changed
 
@@ -47,6 +36,8 @@ was renamed to `signalk-stowage-mgmt`.
   spaces/containers too (previously, an empty top-level storage space
   was silently skipped — nested empty locations were already
   included).
+- Item Properties: "Add Photo" is now an icon button (matching "Add
+  category" right next to it) instead of a text button.
 
 ## [0.8.13] - 2026-07-17
 
