@@ -10,6 +10,22 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Every node in the Inventory tree — storage spaces *and* containers,
+  at any depth — is now collapsible, not just top-level storage
+  spaces. "Collapse All"/"Expand All" now toggles every node in the
+  tree, not just the top-level ones.
+
+### Changed
+
+- "Export as Markdown" now marks each heading with `*S*` (storage
+  space) or `*C*` (container), so the type survives being flattened
+  into plain markdown headings, and now includes empty storage
+  spaces/containers too (previously, an empty top-level storage space
+  was silently skipped — nested empty locations were already
+  included).
+
 ## [0.8.13] - 2026-07-17
 
 ### Added

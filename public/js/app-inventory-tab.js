@@ -39,13 +39,13 @@ export function InventoryTab() {
         <button type="button" onClick=${function () { app.exportSnapshot().catch(function () {}); }}>Export to JSON</button>
         <button type="button" onClick=${function () { importFileRef.current && importFileRef.current.click(); }}>Import from JSON</button>
         <input ref=${importFileRef} type="file" accept="application/json,.json" hidden onChange=${handleImportFile} />
-        <button type="button" onClick=${app.toggleCollapseAllTopLevel}>
-          ${app.allTopLevelCollapsed() ? 'Expand All' : 'Collapse All'}
+        <button type="button" onClick=${app.toggleCollapseAll}>
+          ${app.allCollapsed() ? 'Expand All' : 'Collapse All'}
         </button>
       </div>
       <div class="tree">
         ${!topLevel.length ? html`<p class="hint">No storage spaces created yet.</p>` : null}
-        ${topLevel.map(function (loc) { return html`<${LocationNode} loc=${loc} topLevel=${true} key=${loc.id} />`; })}
+        ${topLevel.map(function (loc) { return html`<${LocationNode} loc=${loc} key=${loc.id} />`; })}
       </div>
     </section>
   `;

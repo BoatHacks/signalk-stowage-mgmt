@@ -95,8 +95,7 @@ export function LocationNode(props) {
   var items = resolvedItemsIn(app.data, loc.id);
   var isContainer = loc.type === 'container';
   var mapped = loc.type === 'storage_space' && loc.svg_element_id;
-  var isTopLevel = !!props.topLevel && !isContainer;
-  var collapsed = isTopLevel && app.collapsedLocationIds.has(loc.id);
+  var collapsed = app.collapsedLocationIds.has(loc.id);
   var summary = collapsed ? subtreeSummary(app.data, loc.id) : null;
 
   function handleDrop(e) {
@@ -135,7 +134,7 @@ export function LocationNode(props) {
            onDragLeave=${function () { setIsDropTarget(false); }}
            onDrop=${handleDrop}>
         <span class="node-title">
-          ${isTopLevel ? html`<span class="fold-arrow" onClick=${function (e) { e.stopPropagation(); app.toggleLocationCollapse(loc.id); }}>${collapsed ? '\u25b8' : '\u25be'}</span>` : null}
+          <span class="fold-arrow" onClick=${function (e) { e.stopPropagation(); app.toggleLocationCollapse(loc.id); }}>${collapsed ? '\u25b8' : '\u25be'}</span>
           <span class="type-icon"><${Icon} name=${isContainer ? 'box' : 'cabinet'} title=${isContainer ? 'Container' : 'Storage space'} /></span>${loc.name}${mapped ? html`<span class="svg-mapped-badge">on plan</span>` : null}
           ${collapsed ? html`<span class="collapsed-summary">${summary.spaces} spaces, ${summary.containers} containers, ${summary.items} items</span>` : null}
         </span>

@@ -13,7 +13,7 @@ import { ItemPropertiesModal, CategoryModal, ExportModal } from './app-item-moda
 import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
-import { buildInventoryMarkdown, buildShoppingListMarkdown, childLocations } from './helpers.js';
+import { buildInventoryMarkdown, buildShoppingListMarkdown } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 
 var TABS = [
@@ -163,18 +163,14 @@ function App() {
     },
     // "Collapse/Expand All" in the tabs nav: if any top-level storage space
     // is currently expanded, collapse them all; otherwise expand them all.
-    toggleCollapseAllTopLevel: function () {
-      var topLevelIds = childLocations(data, null)
-        .filter(function (l) { return l.type === 'storage_space'; })
-        .map(function (l) { return l.id; });
-      var anyExpanded = topLevelIds.some(function (id) { return !collapsedLocationIds.has(id); });
-      setCollapsedLocationIds(anyExpanded ? new Set(topLevelIds) : new Set());
+    toggleCollapseAll: function () {
+      var allIds = data.locations.map(function (l) { return l.id; });
+      var anyExpanded = allIds.some(function (id) { return !collapsedLocationIds.has(id); });
+      setCollapsedLocationIds(anyExpanded ? new Set(allIds) : new Set());
     },
-    allTopLevelCollapsed: function () {
-      var topLevelIds = childLocations(data, null)
-        .filter(function (l) { return l.type === 'storage_space'; })
-        .map(function (l) { return l.id; });
-      return topLevelIds.length > 0 && topLevelIds.every(function (id) { return collapsedLocationIds.has(id); });
+    allCollapsed: function () {
+      var allIds = data.locations.map(function (l) { return l.id; });
+      return allIds.length > 0 && allIds.every(function (id) { return collapsedLocationIds.has(id); });
     },
     setTheme: setThemeState,
     setFloorplanMode: setFloorplanModeState,

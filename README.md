@@ -85,13 +85,13 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   one inside another (e.g. "Port Locker" inside "Aft Cabin") — storage
   spaces can be mapped to a floorplan area at any depth, not just at the
   top level.
-- Top-level storage spaces are collapsible (expanded by default) — click
-  the ▾/▸ arrow next to the name to fold one up. Collapsed, it shows a
-  summary instead of its contents: "*n* spaces, *n* containers, *n*
-  items" (nested storage spaces/containers at any depth, and items
-  anywhere in the subtree — a split item counts once even if only some of
-  its placements fall inside). "Collapse All"/"Expand All" in the toolbar
-  toggles every top-level space at once.
+- Every node (storage space or container, at any depth) is collapsible
+  (expanded by default) — click the ▾/▸ arrow next to the name to fold it
+  up. Collapsed, it shows a summary instead of its contents: "*n* spaces,
+  *n* containers, *n* items" (nested storage spaces/containers at any
+  depth, and items anywhere in the subtree — a split item counts once
+  even if only some of its placements fall inside). "Collapse All"/
+  "Expand All" in the toolbar toggles every node at once.
 - Per node: "+ Container" (nestable to any depth), "+ Item", plus icon
   buttons on each item: edit (properties), photo, split, move, delete,
   add category (collapsed behind "..." unless Edit mode is on — see
@@ -104,9 +104,13 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   re-parenting one takes deleting and recreating it under the new parent.
 - Items show actual quantity (click to edit inline, with +/- steppers) and
   target quantity, if set, as "×3 / 6".
-- "Export as Markdown" renders the whole inventory tree (storage spaces,
-  nested containers, items with quantities/targets/categories, plus a "Not
-  Stored" section for orphans) into a copyable markdown document.
+- "Export as Markdown" renders the whole inventory tree — every storage
+  space and container (marked `*S*`/`*C*` after its name, so the type
+  survives being flattened into plain headings), including empty ones,
+  nested to any depth, with items with quantities/targets, plus a "Not
+  Stored" section for orphans — into a copyable markdown document. Doesn't
+  include categories, notes, expiration dates, photos, or attachments;
+  use "Export to JSON" for a complete, lossless snapshot instead.
 - "Export to JSON" downloads a full snapshot (see the API table below for
   exactly what's in it); "Import from JSON" **replaces** the current
   inventory with a previously exported file, after a confirmation dialog —

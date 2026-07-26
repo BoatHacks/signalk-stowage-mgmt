@@ -202,7 +202,7 @@ test('extractSourceFromNotes: pulls a "source: X" line, case-insensitively, or n
   assert.equal(extractSourceFromNotes(null), null)
 })
 
-test('buildInventoryMarkdown: renders headings per storage space and a Not Stored section', () => {
+test('buildInventoryMarkdown: renders headings per storage space (with an *S* marker) and a Not Stored section', () => {
   const data = makeData({
     locations: [{ id: 'a', name: 'Aft Cabin', type: 'storage_space', parent_id: null }],
     items: [
@@ -211,10 +211,38 @@ test('buildInventoryMarkdown: renders headings per storage space and a Not Store
     ]
   })
   const md = buildInventoryMarkdown(data)
-  assert.match(md, /# Aft Cabin/)
+  assert.match(md, /# Aft Cabin \*S\*/)
   assert.match(md, /Fuse.*\u00d73/)
   assert.match(md, /# Not Stored/)
   assert.match(md, /Loose Item/)
+})
+
+test('buildInventoryMarkdown: marks containers with *C*, nested under their parent storage space', () => {
+  const data = makeData({
+    locations: [
+      { id: 'a', name: 'Aft Cabin', type: 'storage_space', parent_id: null },
+      { id: 'b', name: 'Tool Box', type: 'container', parent_id: 'a' }
+    ],
+    items: [{ id: '1', name: 'Wrench', location_id: 'b', actual_quantity: 1 }]
+  })
+  const md = buildInventoryMarkdown(data)
+  assert.match(md, /# Aft Cabin \*S\*/)
+  assert.match(md, /## Tool Box \*C\*/)
+})
+
+test('buildInventoryMarkdown: includes empty top-level storage spaces and empty nested containers', () => {
+  const data = makeData({
+    locations: [
+      { id: 'a', name: 'Empty Cabin', type: 'storage_space', parent_id: null },
+      { id: 'b', name: 'Cabin With Empty Box', type: 'storage_space', parent_id: null },
+      { id: 'c', name: 'Empty Box', type: 'container', parent_id: 'b' }
+    ],
+    items: []
+  })
+  const md = buildInventoryMarkdown(data)
+  assert.match(md, /# Empty Cabin \*S\*/)
+  assert.match(md, /# Cabin With Empty Box \*S\*/)
+  assert.match(md, /## Empty Box \*C\*/)
 })
 
 test('buildInventoryMarkdown: bolds understocked items', () => {

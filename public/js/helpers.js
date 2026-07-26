@@ -177,7 +177,8 @@ export function buildInventoryMarkdown(data) {
 
   function renderLocation(loc, depth) {
     var headingLevel = Math.min(depth, 6);
-    lines.push('#'.repeat(headingLevel) + ' ' + loc.name);
+    var marker = loc.type === 'container' ? 'C' : 'S';
+    lines.push('#'.repeat(headingLevel) + ' ' + loc.name + ' *' + marker + '*');
     lines.push('');
     var items = resolvedItemsIn(data, loc.id);
     items.forEach(function (item) { lines.push(itemMarkdownLine(item)); });
@@ -186,9 +187,7 @@ export function buildInventoryMarkdown(data) {
   }
 
   var topLevel = childLocations(data, null).filter(function (l) { return l.type === 'storage_space'; });
-  topLevel.forEach(function (loc) {
-    if (locationHasAnyItems(data, loc.id)) renderLocation(loc, 1);
-  });
+  topLevel.forEach(function (loc) { renderLocation(loc, 1); });
 
   var orphanedContainers = childLocations(data, null).filter(function (l) { return l.type === 'container'; });
   var unassignedItems = resolvedItemsIn(data, null);
