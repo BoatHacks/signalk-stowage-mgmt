@@ -47,6 +47,17 @@ function ChipActionsMenu (props) {
   `;
 }
 
+// A click handler for a wrapper around an ItemChip that should locate the
+// item on the floorplan when the chip's main body is clicked, but not when
+// one of the chip's own interactive bits is (edit/photo/split/move/delete,
+// category add/remove, the quantity stepper's click-to-edit).
+function makeLocateOnChipClick (app, item) {
+  return function (e) {
+    if (e.target.closest('.item-actions, .item-categories, .qty, button, input')) return;
+    app.locateItem(item);
+  };
+}
+
 function Toast() {
   var app = useApp();
   if (!app.toastMessage) return null;
@@ -126,4 +137,4 @@ function QuantityEditor(props) {
   `;
 }
 
-export { AppCtx, useApp, Icon, IconBtn, Toast, QuantityEditor, ChipActionsMenu, POLL_INTERVAL_MS, PHOTO_VIEWPORT_SIZE, PHOTO_OUTPUT_SIZE };
+export { AppCtx, useApp, Icon, IconBtn, Toast, QuantityEditor, ChipActionsMenu, makeLocateOnChipClick, POLL_INTERVAL_MS, PHOTO_VIEWPORT_SIZE, PHOTO_OUTPUT_SIZE };

@@ -1,5 +1,5 @@
 import { html, useState } from '../vendor/preact-htm-standalone.js';
-import { useApp, IconBtn, Icon } from './app-core.js';
+import { useApp, IconBtn, Icon, makeLocateOnChipClick } from './app-core.js';
 import { ItemChip } from './app-nodes.js';
 import { pathToRoot } from './helpers.js';
 
@@ -56,7 +56,7 @@ export function CategoriesTab() {
                 <div class="category-fold-body">
                   ${!items.length ? html`<p class="hint">No items in this category.</p>` : null}
                   ${items.map(function (item) { return html`
-                    <div class="category-fold-item" key=${item.id}>
+                    <div class="category-fold-item" key=${item.id} onClick=${makeLocateOnChipClick(app, item)}>
                       <div class="category-fold-item-location hint">${item.location_id ? pathToRoot(app.data, item.location_id) : 'no location'}</div>
                       <${ItemChip} item=${item} />
                     </div>

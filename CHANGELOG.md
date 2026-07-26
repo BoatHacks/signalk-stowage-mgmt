@@ -12,6 +12,16 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- Clicking an item on the Categories tab (its location text or the
+  chip's body — not one of its own action buttons) now jumps to the
+  Floorplan tab and blinks the matching area, same as the Overview
+  table and search. Extracted the click-vs-own-buttons logic (already
+  used by the Found popup) into a shared `makeLocateOnChipClick`
+  helper so both places use identical logic instead of a duplicated
+  copy.
+
+### Added
+
 - Overview table: actual quantity is now editable inline (click to
   edit, same `QuantityEditor` control used everywhere else — a split
   item stays read-only there too, with the usual "use Split instead"

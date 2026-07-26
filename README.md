@@ -209,7 +209,10 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
 - Each category is a collapsible fold-down; click its header to expand and
   see every item that carries it (with location and the full item row,
   fully interactive). Rename or delete from the header; the count shown is
-  how many items currently carry that category.
+  how many items currently carry that category. Clicking an item (its
+  location text or thumbnail/name — not one of its own action buttons)
+  jumps to the Floorplan tab and makes the matching area blink, same as
+  clicking a row on the Overview tab or picking a search result.
 - Deleting a category removes it from every item that had it — the items
   themselves are untouched.
 
