@@ -12,6 +12,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- New "Touch" view on the Overview tab (toggle next to "Table"), for
+  issue #27: every item as a big chip with always-visible −/+ buttons
+  for quick stock adjustment (no click-to-reveal step, unlike the
+  table view's inline editor) — disabled for a split item, same
+  reasoning as everywhere else. Sort by Recent Activity (default —
+  most actual-quantity changes in the last 30 days first) or
+  Alphabetical, plus a location dropdown to filter to only items
+  stored at or below a chosen storage space/container at any depth.
+  Tapping a chip locates it on the floorplan, same as the table view.
 - Split items can now have an optional **default storage location**,
   set in Item Properties — e.g. beans mostly live in the galley, but
   a few cans are in the bilge too, so "Galley" is the default. With
@@ -27,18 +36,6 @@ was renamed to `signalk-stowage-mgmt`.
   column on items (validated server-side to only ever point at one of
   the item's actual current placements); 4 new backend tests plus 2
   new frontend helper tests.
-
-### Added
-
-- New "Touch" view on the Overview tab (toggle next to "Table"), for
-  issue #27: every item as a big chip with always-visible −/+ buttons
-  for quick stock adjustment (no click-to-reveal step, unlike the
-  table view's inline editor) — disabled for a split item, same
-  reasoning as everywhere else. Sort by Recent Activity (default —
-  most actual-quantity changes in the last 30 days first) or
-  Alphabetical, plus a location dropdown to filter to only items
-  stored at or below a chosen storage space/container at any depth.
-  Tapping a chip locates it on the floorplan, same as the table view.
 
 ## [0.8.14] - 2026-07-26
 
