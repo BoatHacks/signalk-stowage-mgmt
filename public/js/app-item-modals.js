@@ -72,6 +72,7 @@ export function ItemPropertiesModal() {
   var expiresAtState = useState('');
   var changeNoteState = useState('');
   var noteViewState = useState('show'); // 'show' | 'edit'
+  var defaultLocationState = useState('');
 
   useEffect(function () {
     if (!item) return;
@@ -82,6 +83,7 @@ export function ItemPropertiesModal() {
     expiresAtState[1](item.expires_at || '');
     changeNoteState[1]('');
     noteViewState[1]('show');
+    defaultLocationState[1](item.default_location_id || '');
   }, [item && item.id]);
 
   if (!item) return null;
@@ -93,6 +95,7 @@ export function ItemPropertiesModal() {
   var expiresAt = expiresAtState[0], setExpiresAt = expiresAtState[1];
   var changeNote = changeNoteState[0], setChangeNote = changeNoteState[1];
   var noteView = noteViewState[0], setNoteView = noteViewState[1];
+  var defaultLocationId = defaultLocationState[0], setDefaultLocationId = defaultLocationState[1];
 
   function save() {
     var trimmedName = (name || '').trim();
@@ -105,6 +108,7 @@ export function ItemPropertiesModal() {
       note: changeNote || null
     };
     if (!isSplit(item)) body.actual_quantity = Math.max(0, parseInt(actualQty, 10) || 0);
+    else body.default_location_id = defaultLocationId || null;
     app.updateItem(item.id, body).then(app.closePropertiesModal).catch(function () {});
   }
 
@@ -146,6 +150,20 @@ export function ItemPropertiesModal() {
             <input type="number" min="0" step="1" placeholder="none" value=${targetQty} onInput=${function (e) { setTargetQty(e.target.value); }} />
           </div>
         </div>
+
+        ${isSplit(item) ? html`
+          <div class="form-field">
+            <label>Default Storage Location <span class="hint">(optional)</span></label>
+            <select value=${defaultLocationId} onChange=${function (e) { setDefaultLocationId(e.target.value); }}>
+              <option value="">None — quick +/− edits stay disabled elsewhere</option>
+              ${item.placements.filter(function (p) { return p.location_id; }).map(function (p) {
+                return html`<option key=${p.location_id} value=${p.location_id}>${p.location_name || 'unnamed'}</option>`;
+              })}
+            </select>
+            <span class="hint">The quick +/− quantity editors on Overview, Categories, etc. act on the stock at
+              this location — e.g. beans mostly live in the galley, but there are a few cans in the bilge too.</span>
+          </div>
+        ` : null}
 
         <div class="form-field">
           <label>Expiration Date <span class="hint">(optional)</span></label>

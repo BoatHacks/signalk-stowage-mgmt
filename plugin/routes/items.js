@@ -129,12 +129,25 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const hasTargetQuantity = Object.prototype.hasOwnProperty.call(body, 'target_quantity')
     const hasNotes = Object.prototype.hasOwnProperty.call(body, 'notes')
     const hasExpiresAt = Object.prototype.hasOwnProperty.call(body, 'expires_at')
+    const hasDefaultLocationId = Object.prototype.hasOwnProperty.call(body, 'default_location_id')
     const newTargetQuantity = hasTargetQuantity ? (body.target_quantity ?? null) : null
+    const newDefaultLocationId = hasDefaultLocationId ? (body.default_location_id || null) : null
 
     if (actualQuantity != null && getPlacements(item.id).length > 0) {
       return res.status(400).json({
         error: 'this item is split across multiple locations — use POST /items/:id/split to change its quantity/allocation'
       })
+    }
+
+    // Only meaningful for a split item, and only pointing at one of its
+    // actual current placements — otherwise "the default location" would
+    // reference stock that doesn't exist there.
+    if (hasDefaultLocationId && newDefaultLocationId) {
+      const placements = getPlacements(item.id)
+      const matches = placements.some(p => p.location_id === newDefaultLocationId)
+      if (!matches) {
+        return res.status(400).json({ error: 'default_location_id must match one of this item\'s current placement locations' })
+      }
     }
 
     runInTransaction(db(), () => {
@@ -144,7 +157,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
           actual_quantity = COALESCE(?, actual_quantity),
           target_quantity = CASE WHEN ? = 1 THEN ? ELSE target_quantity END,
           notes = CASE WHEN ? = 1 THEN ? ELSE notes END,
-          expires_at = CASE WHEN ? = 1 THEN ? ELSE expires_at END
+          expires_at = CASE WHEN ? = 1 THEN ? ELSE expires_at END,
+          default_location_id = CASE WHEN ? = 1 THEN ? ELSE default_location_id END
          WHERE id = ?`
       ).run(
         name ?? null,
@@ -152,6 +166,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
         hasTargetQuantity ? 1 : 0, newTargetQuantity,
         hasNotes ? 1 : 0, hasNotes ? (body.notes ?? null) : null,
         hasExpiresAt ? 1 : 0, hasExpiresAt ? (body.expires_at ?? null) : null,
+        hasDefaultLocationId ? 1 : 0, newDefaultLocationId,
         item.id
       )
 
@@ -251,6 +266,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
         db().prepare('UPDATE item_placements SET location_id = ? WHERE id = ?').run(locationId || null, placement.id)
       }
       collapseIfSingleLocation(item.id)
+      reconcileDefaultLocation(item.id)
     })
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
@@ -285,6 +301,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       }
       db().prepare('UPDATE items SET actual_quantity = ? WHERE id = ?').run(newTotal, item.id)
       collapseIfSingleLocation(item.id)
+      reconcileDefaultLocation(item.id)
       if (newTotal !== oldTotal) {
         logItemEvent(db(), { itemId: item.id, itemName: item.name, event: 'actual_quantity', oldValue: oldTotal, newValue: newTotal, note })
       }
@@ -370,6 +387,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       }
 
       collapseIfSingleLocation(item.id)
+      reconcileDefaultLocation(item.id)
 
       const nameOf = (locId) => locId ? (db().prepare('SELECT name FROM locations WHERE id = ?').get(locId) || {}).name || null : null
       logSplitEvent(db(), {
@@ -382,6 +400,22 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
 
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
+
+  // Clears an item's default_location_id if it no longer matches any of its
+  // current placements — e.g. that placement was fully drained (quantity
+  // set to 0), merged into a different location via a move, or the item
+  // collapsed back to a single (plain, unsplit) location entirely. Rather
+  // than trying to cleverly follow the default along through every kind of
+  // placement change, this just falls back to "no default" and lets the
+  // user re-set one — simpler and harder to get subtly wrong.
+  function reconcileDefaultLocation (itemId) {
+    const current = db().prepare('SELECT default_location_id FROM items WHERE id = ?').get(itemId)
+    if (!current || !current.default_location_id) return
+    const stillValid = getPlacements(itemId).some(p => p.location_id === current.default_location_id)
+    if (!stillValid) {
+      db().prepare('UPDATE items SET default_location_id = NULL WHERE id = ?').run(itemId)
+    }
+  }
 
   // If an item's placements have collapsed down to a single location (e.g.
   // after moving everything back together), fold that back into the item's

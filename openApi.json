@@ -488,6 +488,11 @@
                     "type": "string",
                     "format": "date",
                     "nullable": true
+                  },
+                  "default_location_id": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Only settable on a split item, and only to a location_id matching one of its current placements (400 otherwise). Null clears it."
                   }
                 }
               }
@@ -1926,6 +1931,11 @@
             "format": "date",
             "nullable": true,
             "description": "Optional expiration date (YYYY-MM-DD). Not tracked in the item log."
+          },
+          "default_location_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Only meaningful for a split item; must match one of its current item_placements' location_id. The quick +/- quantity editors (Overview, Categories, the Touch view) act on this placement's quantity when set. Cleared automatically if that placement is drained, moved elsewhere, or the item collapses back to a single location."
           }
         }
       },

@@ -49,6 +49,7 @@ function initDb (dataDir) {
       location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
       thumbnail TEXT,
       expires_at TEXT,
+      default_location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -124,6 +125,9 @@ function initDb (dataDir) {
   }
   if (!itemColumnsAfterRename.includes('expires_at')) {
     db.exec('ALTER TABLE items ADD COLUMN expires_at TEXT')
+  }
+  if (!itemColumnsAfterRename.includes('default_location_id')) {
+    db.exec('ALTER TABLE items ADD COLUMN default_location_id TEXT')
   }
   if (itemColumnsAfterRename.includes('description')) {
     // Merge any existing description text into notes (description first,

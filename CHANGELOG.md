@@ -12,6 +12,24 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- Split items can now have an optional **default storage location**,
+  set in Item Properties — e.g. beans mostly live in the galley, but
+  a few cans are in the bilge too, so "Galley" is the default. With
+  one set, the quick +/− quantity editors elsewhere (Overview,
+  Categories, the Touch view's big buttons) act on that placement's
+  quantity specifically, instead of staying disabled the way a split
+  item's quantity normally does everywhere outside the Split dialog.
+  A tooltip on the quantity shows the total across all locations.
+  Automatically cleared if that placement is later fully drained,
+  merged into a different location via a move, or the item collapses
+  back to a single (plain) location — the quick editors just go back
+  to disabled in that case, nothing is lost. New `default_location_id`
+  column on items (validated server-side to only ever point at one of
+  the item's actual current placements); 4 new backend tests plus 2
+  new frontend helper tests.
+
+### Added
+
 - New "Touch" view on the Overview tab (toggle next to "Table"), for
   issue #27: every item as a big chip with always-visible −/+ buttons
   for quick stock adjustment (no click-to-reveal step, unlike the

@@ -205,3 +205,87 @@ test('locate: 404s when no mapped storage space is found, split items return per
   assert.equal(body.matches.length, 1) // only A is mapped; B has no match
   assert.equal(body.matches[0].svg_element_id, 'a')
 })
+
+test('default_location_id: can only be set to one of the item\'s current placement locations', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const locA = await makeLocation(server, 'Kitchen Cabinet')
+  const locB = await makeLocation(server, 'Bilge')
+  const locC = await makeLocation(server, 'Somewhere Else')
+  const item = await (await server.post('/items', { name: 'Beans', actual_quantity: 10, location_id: locA.id })).json()
+
+  // Not split yet -- setting a default is rejected (no placements to match against).
+  const beforeSplit = await server.patch(`/items/${item.id}`, { default_location_id: locA.id })
+  assert.equal(beforeSplit.status, 400)
+
+  await server.post(`/items/${item.id}/split`, { from_location_id: locA.id, to_location_id: locB.id, quantity: 4 })
+
+  // A location that isn't one of the current placements is rejected.
+  const wrongLoc = await server.patch(`/items/${item.id}`, { default_location_id: locC.id })
+  assert.equal(wrongLoc.status, 400)
+
+  // A real placement location is accepted.
+  const ok = await server.patch(`/items/${item.id}`, { default_location_id: locA.id })
+  assert.equal(ok.status, 200)
+  const body = await ok.json()
+  assert.equal(body.default_location_id, locA.id)
+
+  // Can be cleared back to null.
+  const cleared = await (await server.patch(`/items/${item.id}`, { default_location_id: null })).json()
+  assert.equal(cleared.default_location_id, null)
+})
+
+test('default_location_id: cleared when its placement is fully drained to 0', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const locA = await makeLocation(server, 'Kitchen Cabinet')
+  const locB = await makeLocation(server, 'Bilge')
+  const item = await (await server.post('/items', { name: 'Beans', actual_quantity: 10, location_id: locA.id })).json()
+  const split = await (await server.post(`/items/${item.id}/split`, {
+    from_location_id: locA.id, to_location_id: locB.id, quantity: 4
+  })).json()
+  await server.patch(`/items/${item.id}`, { default_location_id: locB.id })
+
+  const placementB = split.placements.find((p) => p.location_id === locB.id)
+  const res = await server.patch(`/items/${item.id}/placements/${placementB.id}`, { quantity: 0 })
+  const body = await res.json()
+  assert.equal(body.default_location_id, null)
+})
+
+test('default_location_id: cleared when the item collapses back to a single (plain) location', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const locA = await makeLocation(server, 'Kitchen Cabinet')
+  const locB = await makeLocation(server, 'Bilge')
+  const item = await (await server.post('/items', { name: 'Beans', actual_quantity: 10, location_id: locA.id })).json()
+  await server.post(`/items/${item.id}/split`, { from_location_id: locA.id, to_location_id: locB.id, quantity: 4 })
+  await server.patch(`/items/${item.id}`, { default_location_id: locB.id })
+
+  // Move all remaining stock from A to B -> collapses back to a plain item at B.
+  const res = await server.post(`/items/${item.id}/split`, { from_location_id: locA.id, to_location_id: locB.id, quantity: 6 })
+  const body = await res.json()
+  assert.equal(body.placements.length, 0)
+  assert.equal(body.default_location_id, null)
+})
+
+test('default_location_id: cleared when its placement is moved to a different location', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const locA = await makeLocation(server, 'Kitchen Cabinet')
+  const locB = await makeLocation(server, 'Bilge')
+  const locC = await makeLocation(server, 'Aft Locker')
+  const item = await (await server.post('/items', { name: 'Beans', actual_quantity: 10, location_id: locA.id })).json()
+  const split = await (await server.post(`/items/${item.id}/split`, {
+    from_location_id: locA.id, to_location_id: locB.id, quantity: 4
+  })).json()
+  await server.patch(`/items/${item.id}`, { default_location_id: locB.id })
+
+  const placementB = split.placements.find((p) => p.location_id === locB.id)
+  const res = await server.patch(`/items/${item.id}/placements/${placementB.id}/move`, { location_id: locC.id })
+  const body = await res.json()
+  assert.equal(body.default_location_id, null)
+})

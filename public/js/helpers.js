@@ -31,6 +31,17 @@ export function isSplit(item) {
   return !!(item.placements && item.placements.length > 0);
 }
 
+// For a split item with a default_location_id that matches one of its
+// current placements, returns that placement ({ id, location_id,
+// location_name, quantity }); otherwise null (including for a plain item,
+// or a split item with no default set, or a default that's gone stale --
+// the backend already clears default_location_id whenever that happens,
+// but this stays defensive in case the frontend has a moment-stale copy).
+export function defaultPlacementFor(item) {
+  if (!isSplit(item) || !item.default_location_id) return null;
+  return item.placements.find(function (p) { return p.location_id === item.default_location_id; }) || null;
+}
+
 // Like itemsIn, but also surfaces split items: for each of an item's
 // placements that matches this location, returns a "chip view" — a shallow
 // copy of the item with actual_quantity replaced by that placement's

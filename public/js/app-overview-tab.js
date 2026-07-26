@@ -1,6 +1,6 @@
 import { html, useState, useMemo, useEffect } from '../vendor/preact-htm-standalone.js';
 import { useApp, QuantityEditor } from './app-core.js';
-import { pathToRoot, isSplit, descendantIds } from './helpers.js';
+import { pathToRoot, isSplit, descendantIds, defaultPlacementFor } from './helpers.js';
 
 function isoDate (d) {
   return d.toISOString().slice(0, 10);
@@ -143,6 +143,13 @@ export function OverviewTab() {
   });
 
   function adjustQty (item, delta) {
+    var defaultPlacement = defaultPlacementFor(item);
+    if (defaultPlacement) {
+      var nextPlacementQty = Math.max(0, defaultPlacement.quantity + delta);
+      if (nextPlacementQty === defaultPlacement.quantity) return;
+      app.setPlacementQuantity(item.id, defaultPlacement.id, nextPlacementQty, null).catch(function () {});
+      return;
+    }
     var next = Math.max(0, item.actual_quantity + delta);
     if (next === item.actual_quantity) return;
     app.updateItem(item.id, { actual_quantity: next }).catch(function () {});
@@ -213,29 +220,35 @@ export function OverviewTab() {
         </table>
         </div>
       ` : html`
-        <p class="hint">Tap a chip to jump to the floorplan (if assigned); tap −/+ to adjust stock. A split item's
-          quantity can't be adjusted here — use Split instead.</p>
+        <p class="hint">Tap a chip to jump to the floorplan (if assigned); tap −/+ to adjust stock. A split item
+          with no default storage location set (see Item Properties) can't be adjusted here — use Split instead.</p>
         <div class="touch-grid">
           ${!touchSorted.length ? html`<p class="hint">No items found.</p>` : null}
           ${touchSorted.map(function (r) {
             var thumb = r.thumbnail
               ? html`<img class="touch-chip-thumb" src=${r.thumbnail} alt="" />`
               : html`<span class="touch-chip-thumb touch-chip-thumb-placeholder"></span>`;
-            var split = isSplit(r.item);
+            var defaultPlacement = defaultPlacementFor(r.item);
+            var split = isSplit(r.item) && !defaultPlacement;
+            var displayQty = defaultPlacement ? defaultPlacement.quantity : r.actualQuantity;
+            var splitTooltip = 'This item is split across multiple locations — use Split to change its quantity, ' +
+              'or set a default storage location in Item Properties to enable quick edits here.';
             return html`
               <div class="touch-chip" key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
                 ${thumb}
                 <div class="touch-chip-name">${r.name}</div>
-                <div class="touch-chip-location hint">${r.directLocation}</div>
+                <div class="touch-chip-location hint">
+                  ${defaultPlacement ? 'Default: ' + (defaultPlacement.location_name || 'unnamed') : r.directLocation}
+                </div>
                 <div class="touch-chip-qty-row">
                   <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? "This item is split across multiple locations — use Split to change its quantity." : 'Remove one'}
+                          title=${split ? splitTooltip : 'Remove one'}
                           onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -1); }}>\u2212</button>
-                  <span class="touch-chip-qty">
-                    \u00d7${r.actualQuantity}${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
+                  <span class="touch-chip-qty" title=${defaultPlacement ? 'Total across all locations: ' + r.actualQuantity : ''}>
+                    \u00d7${displayQty}${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
                   </span>
                   <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? "This item is split across multiple locations — use Split to change its quantity." : 'Add one'}
+                          title=${split ? splitTooltip : 'Add one'}
                           onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, 1); }}>+</button>
                 </div>
               </div>

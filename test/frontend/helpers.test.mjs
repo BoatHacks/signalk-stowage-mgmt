@@ -4,7 +4,7 @@ import {
   childLocations, itemsIn, formatBytes, isSplit, resolvedItemsIn, descendantIds,
   pathToRoot, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
-  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary
+  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -56,6 +56,26 @@ test('isSplit: true only when placements is a non-empty array', () => {
   assert.equal(isSplit({ placements: [] }), false)
   assert.equal(isSplit({ placements: [{ id: 'p1' }] }), true)
   assert.equal(isSplit({}), false)
+})
+
+test('defaultPlacementFor: finds the placement matching default_location_id', () => {
+  const item = {
+    default_location_id: 'loc-b',
+    placements: [
+      { id: 'p1', location_id: 'loc-a', quantity: 6 },
+      { id: 'p2', location_id: 'loc-b', quantity: 4 }
+    ]
+  }
+  assert.deepEqual(defaultPlacementFor(item), { id: 'p2', location_id: 'loc-b', quantity: 4 })
+})
+
+test('defaultPlacementFor: null for a plain item, no default set, or a stale default', () => {
+  assert.equal(defaultPlacementFor({ placements: [] }), null)
+  assert.equal(defaultPlacementFor({ placements: [{ id: 'p1', location_id: 'loc-a', quantity: 1 }] }), null)
+  assert.equal(defaultPlacementFor({
+    default_location_id: 'loc-gone',
+    placements: [{ id: 'p1', location_id: 'loc-a', quantity: 1 }]
+  }), null)
 })
 
 test('resolvedItemsIn: plain items pass through, split items produce one view per matching placement', () => {

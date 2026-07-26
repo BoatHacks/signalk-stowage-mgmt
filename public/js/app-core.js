@@ -3,7 +3,7 @@ import {
   useState, useEffect, useRef, useContext
 } from '../vendor/preact-htm-standalone.js';
 import { ICONS } from './icons.js';
-import { isSplit } from './helpers.js';
+import { isSplit, defaultPlacementFor } from './helpers.js';
 
 var POLL_INTERVAL_MS = 5000;
 var PHOTO_VIEWPORT_SIZE = 280;
@@ -69,17 +69,27 @@ function Toast() {
 function QuantityEditor(props) {
   var item = props.item;
   var app = useApp();
+  // A split item with a default storage location set edits/displays that
+  // placement's own quantity here, exactly as if it had been passed
+  // explicitly via props.placementId — this is what lets the quick +/-
+  // editors on Overview/Categories/etc. act on "the usual place" for an
+  // item that's also got some stock elsewhere (e.g. beans mostly in the
+  // galley, a few extra in the bilge).
+  var defaultPlacement = props.placementId ? null : defaultPlacementFor(item);
+  var effectivePlacementId = props.placementId || (defaultPlacement && defaultPlacement.id) || null;
+  var effectiveQuantity = defaultPlacement ? defaultPlacement.quantity : item.actual_quantity;
+
   var editing = useState(false);
   var isEditing = editing[0];
   var setEditing = editing[1];
-  var valueState = useState(item.actual_quantity);
+  var valueState = useState(effectiveQuantity);
   var value = valueState[0];
   var setValue = valueState[1];
   var inputRef = useRef(null);
 
   useEffect(function () {
-    if (!isEditing) setValue(item.actual_quantity);
-  }, [item.actual_quantity, isEditing]);
+    if (!isEditing) setValue(effectiveQuantity);
+  }, [effectiveQuantity, isEditing]);
 
   useEffect(function () {
     if (isEditing && inputRef.current) {
@@ -91,27 +101,31 @@ function QuantityEditor(props) {
   function commit() {
     var v = Math.max(0, parseInt(value, 10) || 0);
     setEditing(false);
-    if (v === item.actual_quantity) return;
-    if (props.placementId) {
-      app.setPlacementQuantity(item.id, props.placementId, v, null).catch(function () {});
+    if (v === effectiveQuantity) return;
+    if (effectivePlacementId) {
+      app.setPlacementQuantity(item.id, effectivePlacementId, v, null).catch(function () {});
     } else {
       app.updateItem(item.id, { actual_quantity: v }).catch(function () {});
     }
   }
 
   if (!isEditing) {
-    var label = (props.prefix || '') + '\u00d7' + item.actual_quantity;
-    if (isSplit(item) && !props.placementId) {
+    var label = (props.prefix || '') + '\u00d7' + effectiveQuantity;
+    if (isSplit(item) && !effectivePlacementId) {
       return html`
         <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
-              title="This item is split across multiple locations — use Split to change its quantity.">
+              title="This item is split across multiple locations — use Split to change its quantity, or set a default storage location in Item Properties to enable quick edits here.">
           ${label}
         </span>
       `;
     }
+    var title = defaultPlacement
+      ? 'Quantity at its default location (' + (defaultPlacement.location_name || 'unnamed') + '). ' +
+        'Click to edit — total across all locations: ' + item.actual_quantity + '.'
+      : 'Click to edit quantity';
     return html`
       <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
-            title="Click to edit quantity"
+            title=${title}
             onClick=${function (e) { e.stopPropagation(); setEditing(true); }}>
         ${label}
       </span>

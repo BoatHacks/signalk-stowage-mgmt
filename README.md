@@ -143,12 +143,25 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
 
 **Item properties (edit icon on any item):**
 - Name, actual quantity, target quantity (leave blank for "no target").
+- **Default Storage Location** (split items only, optional): pick one of
+  the item's current placement locations — e.g. beans mostly live in the
+  galley, but there are a few extra cans in the bilge too, so "Galley" is
+  the default. The quick +/− quantity editors elsewhere (Overview,
+  Categories, the Touch view's big buttons) act on the stock at this
+  location specifically, showing its quantity rather than the total
+  across all locations (a tooltip on the quantity gives the total).
+  Without a default set, those quick editors stay disabled for a split
+  item — same as always, use Split instead. Automatically cleared if that
+  placement is later fully drained, merged into a different location via
+  a move, or the item collapses back to a single (plain) location
+  entirely — the "use Split instead" quick editors just go back to being
+  disabled in that case, nothing is lost.
 - Notes: a small dependency-free markdown editor with **Show** (rendered
   preview, default) and **Edit** (raw markdown) tabs. Supports headings,
   **bold**, _italic_, `code`, links, and lists.
 - Photo (separate camera icon): upload an image, drag to pan and use the
   slider to zoom, then save a square-cropped thumbnail. Shown on the item
-  row, the Overview table, and the Understocked page.
+  row, the Overview table, and the Stock Alerts tab.
 - Attachments: upload any file (manuals, spec sheets, receipts — no size
   limit or type restriction). Click one to open/download it via the
   browser's native handling. Stored on disk, not in the database.
@@ -357,11 +370,12 @@ uploaded, so in practice this table normally holds at most one row.
 | `id` | TEXT, PK | |
 | `name` | TEXT | |
 | `actual_quantity` | INTEGER, default 1 | How many you actually have. For a split item (see `item_placements` below), this is the sum of its placements' quantities and can only change via `POST /items/:id/split` (reallocating between locations) or `PATCH /items/:id/placements/:placementId` (changing one placement's quantity directly) |
-| `target_quantity` | INTEGER, nullable | Desired stock level; `NULL` means "no target set" and excludes the item from the Understocked page regardless of `actual_quantity` |
+| `target_quantity` | INTEGER, nullable | Desired stock level; `NULL` means "no target set" and excludes the item from the Stock Alerts tab's understocked check regardless of `actual_quantity` |
 | `notes` | TEXT, nullable | Free-text, rendered as markdown in the UI. (Earlier versions had a separate `description` column; it was merged into `notes` and dropped.) |
 | `location_id` | TEXT, FK → `locations.id` | `ON DELETE SET NULL`. `NULL` means "not stored anywhere" **or** "this item is split across locations" — check `item_placements` to tell which |
 | `thumbnail` | TEXT, nullable | Square-cropped photo as a `data:` URI (JPEG), or `NULL` |
 | `expires_at` | TEXT, nullable | Optional expiration date (`YYYY-MM-DD`). Not tracked in `item_log` |
+| `default_location_id` | TEXT, FK → `locations.id`, nullable | `ON DELETE SET NULL`. Only meaningful for a split item — must match one of its current `item_placements`' `location_id` (enforced on write). The quick +/− quantity editors (Overview, Categories, the Touch view) act on this placement's quantity when set, instead of staying disabled. Automatically cleared back to `NULL` whenever that placement is drained to 0, merged elsewhere via a move, or the item collapses back to a single (plain) location |
 
 **`item_placements`**
 
@@ -491,7 +505,7 @@ no versioning/deprecation process beyond this is planned for now.)
 | `GET /items` | List all items, each with a `categories` array (`[{ id, name }]`) and a `placements` array (empty unless split — see below). Optional `?q=<text>` filters to items whose **name** contains the text (case-insensitive substring match; notes aren't searched). Returns every match, unbounded |
 | `GET /items/:id` | Get a single item, same shape as an entry in the list above |
 | `POST /items` | Create. Body: `{ name, actual_quantity?, target_quantity?, notes?, location_id?, category_ids?, note?, expires_at? }`. `note` is recorded in the item log for the initial quantity, not stored on the item itself |
-| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note, expires_at }`. `target_quantity`/`notes`/`expires_at` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. `expires_at` changes are not logged. **`actual_quantity` is rejected with 400 if the item is split** — use `PATCH /items/:id/placements/:placementId` (change one placement's quantity) or `POST /items/:id/split` (reallocate between locations) instead |
+| `PATCH /items/:id` | Partial update. Body: any of `{ name, actual_quantity, target_quantity, notes, note, expires_at, default_location_id }`. `target_quantity`/`notes`/`expires_at`/`default_location_id` support explicit `null` to clear them (distinct from omitting the key, which leaves them unchanged). `note` is logged against whichever of `actual_quantity`/`target_quantity` changed in this request (both, if both changed) — it isn't a field on the item itself. `expires_at` and `default_location_id` changes are not logged. **`actual_quantity` is rejected with 400 if the item is split** — use `PATCH /items/:id/placements/:placementId` (change one placement's quantity) or `POST /items/:id/split` (reallocate between locations) instead. **`default_location_id` is rejected with 400 unless it's `null`/omitted or matches one of the item's current placement locations** |
 | `PATCH /items/:id/thumbnail` | Set/clear the photo. Body: `{ thumbnail }` — a `data:` URI string, or `null`/omitted to remove it |
 | `PATCH /items/:id/move` | Move a whole (unsplit) item to a different location. Body: `{ location_id }` (omit/null to unassign). Not logged. **Rejected with 400 if the item is split** — move a specific placement via the endpoint below instead |
 | `GET /items/:id/placements` | List an item's placements (`[{ id, location_id, location_name, quantity }]`). Empty array means it isn't split |
