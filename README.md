@@ -235,6 +235,17 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   direct location, and path.
 - Clicking a row jumps to the Floorplan tab and makes the area blink, same
   as search (if it's mapped).
+- **Touch view** (toggle next to "Table" in the toolbar): a
+  touchscreen-friendly alternative — every item as a big square chip
+  (thumbnail, name, direct location) with its own always-visible −/+
+  buttons for quick stock adjustment, no click-to-reveal step (a split
+  item's buttons are disabled, same "use Split instead" reasoning as the
+  table view). Sort by **Recent Activity** (default — items with the most
+  actual-quantity changes in the last 30 days first, ties broken
+  alphabetically) or **Alphabetical**. A location dropdown filters to only
+  items stored at or below a chosen storage space/container, at any
+  depth. Tapping a chip's body (not its −/+ buttons) locates it on the
+  floorplan, same as the table view.
 
 **Stock Alerts (tab):**
 

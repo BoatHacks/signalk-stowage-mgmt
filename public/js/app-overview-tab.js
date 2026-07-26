@@ -1,6 +1,18 @@
-import { html, useState, useMemo } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useMemo, useEffect } from '../vendor/preact-htm-standalone.js';
 import { useApp, QuantityEditor } from './app-core.js';
-import { pathToRoot, isSplit } from './helpers.js';
+import { pathToRoot, isSplit, descendantIds } from './helpers.js';
+
+function isoDate (d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function daysAgo (n) {
+  var d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+var ACTIVITY_WINDOW_DAYS = 30;
 
 // True if this location, or any of its storage-space ancestors, is mapped
 // to the current floorplan.
@@ -20,6 +32,30 @@ export function OverviewTab() {
   var filter = filterState[0], setFilter = filterState[1];
   var sortState = useState({ key: 'fullPath', dir: 1 });
   var sort = sortState[0], setSort = sortState[1];
+
+  var viewModeState = useState('table');
+  var viewMode = viewModeState[0], setViewMode = viewModeState[1];
+  var touchSortState = useState('activity');
+  var touchSort = touchSortState[0], setTouchSort = touchSortState[1];
+  var locationFilterState = useState('');
+  var locationFilter = locationFilterState[0], setLocationFilter = locationFilterState[1];
+  var activityCountsState = useState({});
+  var activityCounts = activityCountsState[0], setActivityCounts = activityCountsState[1];
+
+  // Recent-activity sort needs a count of how often each item's quantity
+  // has actually changed lately — fetched on demand (not part of the
+  // regular poll) since it's only needed for this one sort mode.
+  useEffect(function () {
+    if (viewMode !== 'touch' || touchSort !== 'activity') return;
+    app.getItemLog(isoDate(daysAgo(ACTIVITY_WINDOW_DAYS)), isoDate(new Date())).then(function (log) {
+      var counts = {};
+      log.forEach(function (entry) {
+        if (entry.event !== 'actual_quantity') return;
+        counts[entry.item_id] = (counts[entry.item_id] || 0) + 1;
+      });
+      setActivityCounts(counts);
+    }).catch(function () {});
+  }, [viewMode, touchSort]);
 
   var rows = useMemo(function () {
     var floorplanId = app.data.floorplans.length ? app.data.floorplans[0].id : null;
@@ -82,6 +118,36 @@ export function OverviewTab() {
     return sort.dir === 1 ? ' \u2191' : ' \u2193';
   }
 
+  var locationOptions = useMemo(function () {
+    return app.data.locations.map(function (l) {
+      return { id: l.id, label: pathToRoot(app.data, l.id) };
+    }).sort(function (a, b) { return a.label.localeCompare(b.label); });
+  }, [app.data.locations]);
+
+  function isUnderLocation (item, locId) {
+    if (!locId) return true;
+    var allowed = new Set(descendantIds(app.data, locId));
+    allowed.add(locId);
+    if (isSplit(item)) return item.placements.some(function (p) { return allowed.has(p.location_id); });
+    return !!item.location_id && allowed.has(item.location_id);
+  }
+
+  var touchRows = rows.filter(function (r) { return isUnderLocation(r.item, locationFilter); });
+
+  var touchSorted = touchRows.slice().sort(function (a, b) {
+    if (touchSort === 'alphabetical') return a.name.localeCompare(b.name);
+    var ac = activityCounts[a.item.id] || 0;
+    var bc = activityCounts[b.item.id] || 0;
+    if (ac !== bc) return bc - ac;
+    return a.name.localeCompare(b.name);
+  });
+
+  function adjustQty (item, delta) {
+    var next = Math.max(0, item.actual_quantity + delta);
+    if (next === item.actual_quantity) return;
+    app.updateItem(item.id, { actual_quantity: next }).catch(function () {});
+  }
+
   var columns = [
     { key: null, label: 'Photo' },
     { key: 'name', label: 'Item' },
@@ -96,44 +162,87 @@ export function OverviewTab() {
   return html`
     <section class="tab-panel active">
       <div class="toolbar">
-        <input type="text" placeholder="Filter table…" value=${filter} onInput=${function (e) { setFilter(e.target.value); }} />
+        <button type="button" class=${viewMode === 'table' ? 'active' : ''} onClick=${function () { setViewMode('table'); }}>Table</button>
+        <button type="button" class=${viewMode === 'touch' ? 'active' : ''} onClick=${function () { setViewMode('touch'); }}>Touch</button>
+        ${viewMode === 'table' ? html`
+          <input type="text" placeholder="Filter table…" value=${filter} onInput=${function (e) { setFilter(e.target.value); }} />
+        ` : html`
+          <button type="button" class=${touchSort === 'activity' ? 'active' : ''} onClick=${function () { setTouchSort('activity'); }}>Recent Activity</button>
+          <button type="button" class=${touchSort === 'alphabetical' ? 'active' : ''} onClick=${function () { setTouchSort('alphabetical'); }}>Alphabetical</button>
+          <select onChange=${function (e) { setLocationFilter(e.target.value); }}>
+            <option value="">All locations</option>
+            ${locationOptions.map(function (l) { return html`<option key=${l.id} value=${l.id}>${l.label}</option>`; })}
+          </select>
+        `}
       </div>
-      <p class="hint">Clicking a row jumps to the floorplan (if assigned).</p>
-      <div class="table-scroll">
-      <table class="overview-table">
-        <thead>
-          <tr>
-            ${columns.map(function (col) {
+      ${viewMode === 'table' ? html`
+        <p class="hint">Clicking a row jumps to the floorplan (if assigned).</p>
+        <div class="table-scroll">
+        <table class="overview-table">
+          <thead>
+            <tr>
+              ${columns.map(function (col) {
+                return html`
+                  <th key=${col.label} onClick=${col.key ? function () { toggleSort(col.key); } : null}>
+                    ${col.label}${col.key ? arrow(col.key) : ''}
+                  </th>
+                `;
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            ${!sorted.length ? html`<tr class="empty-row"><td colspan="8">No items found.</td></tr>` : null}
+            ${sorted.map(function (r) {
+              var thumb = r.thumbnail
+                ? html`<img class="item-thumb" src=${r.thumbnail} alt="" />`
+                : html`<span class="item-thumb item-thumb-placeholder"></span>`;
               return html`
-                <th key=${col.label} onClick=${col.key ? function () { toggleSort(col.key); } : null}>
-                  ${col.label}${col.key ? arrow(col.key) : ''}
-                </th>
+                <tr key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
+                  <td>${thumb}</td>
+                  <td>${r.name}</td>
+                  <td><${QuantityEditor} item=${r.item} /></td>
+                  <td>${r.targetQuantity != null ? r.targetQuantity : '\u2014'}</td>
+                  <td>${r.directLocation}${r.directType ? html` <span class="node-type">${r.directType}</span>` : null}</td>
+                  <td>${r.fullPath}</td>
+                  <td>${r.categoryNames}</td>
+                  <td>${r.onFloorplan ? html`<span class="badge-yes">yes</span>` : html`<span class="badge-no">no</span>`}</td>
+                </tr>
               `;
             })}
-          </tr>
-        </thead>
-        <tbody>
-          ${!sorted.length ? html`<tr class="empty-row"><td colspan="8">No items found.</td></tr>` : null}
-          ${sorted.map(function (r) {
+          </tbody>
+        </table>
+        </div>
+      ` : html`
+        <p class="hint">Tap a chip to jump to the floorplan (if assigned); tap −/+ to adjust stock. A split item's
+          quantity can't be adjusted here — use Split instead.</p>
+        <div class="touch-grid">
+          ${!touchSorted.length ? html`<p class="hint">No items found.</p>` : null}
+          ${touchSorted.map(function (r) {
             var thumb = r.thumbnail
-              ? html`<img class="item-thumb" src=${r.thumbnail} alt="" />`
-              : html`<span class="item-thumb item-thumb-placeholder"></span>`;
+              ? html`<img class="touch-chip-thumb" src=${r.thumbnail} alt="" />`
+              : html`<span class="touch-chip-thumb touch-chip-thumb-placeholder"></span>`;
+            var split = isSplit(r.item);
             return html`
-              <tr key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
-                <td>${thumb}</td>
-                <td>${r.name}</td>
-                <td><${QuantityEditor} item=${r.item} /></td>
-                <td>${r.targetQuantity != null ? r.targetQuantity : '\u2014'}</td>
-                <td>${r.directLocation}${r.directType ? html` <span class="node-type">${r.directType}</span>` : null}</td>
-                <td>${r.fullPath}</td>
-                <td>${r.categoryNames}</td>
-                <td>${r.onFloorplan ? html`<span class="badge-yes">yes</span>` : html`<span class="badge-no">no</span>`}</td>
-              </tr>
+              <div class="touch-chip" key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
+                ${thumb}
+                <div class="touch-chip-name">${r.name}</div>
+                <div class="touch-chip-location hint">${r.directLocation}</div>
+                <div class="touch-chip-qty-row">
+                  <button type="button" class="touch-qty-btn" disabled=${split}
+                          title=${split ? "This item is split across multiple locations — use Split to change its quantity." : 'Remove one'}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -1); }}>\u2212</button>
+                  <span class="touch-chip-qty">
+                    \u00d7${r.actualQuantity}${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
+                  </span>
+                  <button type="button" class="touch-qty-btn" disabled=${split}
+                          title=${split ? "This item is split across multiple locations — use Split to change its quantity." : 'Add one'}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, 1); }}>+</button>
+                </div>
+              </div>
             `;
           })}
-        </tbody>
-      </table>
-      </div>
+        </div>
+      `}
     </section>
   `;
 }
