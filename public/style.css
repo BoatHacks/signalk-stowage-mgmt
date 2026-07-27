@@ -876,6 +876,22 @@ select {
 .touch-chip-qty { font-size: 15px; font-weight: 600; min-width: 3em; }
 .touch-chip-target { color: var(--text-muted); font-weight: 400; }
 
+.touch-chip-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 4.5em;
+}
+.touch-chip-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 12px;
+}
+.touch-chip-stat-label { color: var(--text-muted); }
+.touch-chip-stat-value { font-weight: 600; font-size: 13px; }
+
 .touch-qty-btn {
   width: 44px;
   height: 44px;

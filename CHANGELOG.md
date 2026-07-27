@@ -12,6 +12,9 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Changed
 
+- Overview touch-mode chips for split items now show labeled "Default",
+  "Total", and "Target" quantities (or just "Total" and "Target" when no
+  default storage location is set), instead of a single ambiguous number.
 - Overview (table view) and Categories tabs now show a split item's total
   quantity across all its storage locations, instead of just the quantity
   at its default storage location. Clicking to edit still edits the

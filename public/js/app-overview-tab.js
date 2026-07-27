@@ -229,10 +229,36 @@ export function OverviewTab() {
               ? html`<img class="touch-chip-thumb" src=${r.thumbnail} alt="" />`
               : html`<span class="touch-chip-thumb touch-chip-thumb-placeholder"></span>`;
             var defaultPlacement = defaultPlacementFor(r.item);
-            var split = isSplit(r.item) && !defaultPlacement;
-            var displayQty = defaultPlacement ? defaultPlacement.quantity : r.actualQuantity;
+            var itemIsSplit = isSplit(r.item);
+            var split = itemIsSplit && !defaultPlacement;
             var splitTooltip = 'This item is split across multiple locations — use Split to change its quantity, ' +
               'or set a default storage location in Item Properties to enable quick edits here.';
+            var qtyContent = itemIsSplit
+              ? html`
+                  <span class="touch-chip-stats">
+                    ${defaultPlacement ? html`
+                      <span class="touch-chip-stat">
+                        <span class="touch-chip-stat-label">Default</span>
+                        <span class="touch-chip-stat-value">\u00d7${defaultPlacement.quantity}</span>
+                      </span>
+                    ` : null}
+                    <span class="touch-chip-stat">
+                      <span class="touch-chip-stat-label">Total</span>
+                      <span class="touch-chip-stat-value">\u00d7${r.actualQuantity}</span>
+                    </span>
+                    ${r.targetQuantity != null ? html`
+                      <span class="touch-chip-stat">
+                        <span class="touch-chip-stat-label">Target</span>
+                        <span class="touch-chip-stat-value">${r.targetQuantity}</span>
+                      </span>
+                    ` : null}
+                  </span>
+                `
+              : html`
+                  <span class="touch-chip-qty">
+                    \u00d7${r.actualQuantity}${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
+                  </span>
+                `;
             return html`
               <div class="touch-chip" key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
                 ${thumb}
@@ -244,9 +270,7 @@ export function OverviewTab() {
                   <button type="button" class="touch-qty-btn" disabled=${split}
                           title=${split ? splitTooltip : 'Remove one'}
                           onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -1); }}>\u2212</button>
-                  <span class="touch-chip-qty" title=${defaultPlacement ? 'Total across all locations: ' + r.actualQuantity : ''}>
-                    \u00d7${displayQty}${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
-                  </span>
+                  ${qtyContent}
                   <button type="button" class="touch-qty-btn" disabled=${split}
                           title=${split ? splitTooltip : 'Add one'}
                           onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, 1); }}>+</button>
