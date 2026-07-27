@@ -1,6 +1,6 @@
 {
   "name": "signalk-stowage-mgmt",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Organize items into containers and storage spaces, locate them, track item consumption, and lots more.",
   "keywords": [
     "signalk-node-server-plugin",
