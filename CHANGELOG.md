@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-07-27
+
 ### Added
 
 - Store Log's **Individual Movements** table (and its matching markdown
