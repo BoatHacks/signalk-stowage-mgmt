@@ -10,6 +10,14 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- Refreshed all 6 screenshots in `docs/screenshots/`, and added a new
+  one for the Overview tab's Touch view — the header/UI had changed
+  since the originals were taken. Both added to the README's Usage
+  section and registered under `signalk.screenshots` in
+  `package.json`.
+
 ## [0.9.0] - 2026-07-26
 
 ### Added

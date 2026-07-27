@@ -248,8 +248,11 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   direct location, and path.
 - Clicking a row jumps to the Floorplan tab and makes the area blink, same
   as search (if it's mapped).
-- **Touch view** (toggle next to "Table" in the toolbar): a
-  touchscreen-friendly alternative — every item as a big square chip
+- **Touch view** (toggle next to "Table" in the toolbar):
+
+  ![Overview tab, Touch view](docs/screenshots/overview-touch.png)
+
+  A touchscreen-friendly alternative — every item as a big square chip
   (thumbnail, name, direct location) with its own always-visible −/+
   buttons for quick stock adjustment, no click-to-reveal step (a split
   item's buttons are disabled, same "use Split instead" reasoning as the
