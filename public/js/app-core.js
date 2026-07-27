@@ -78,6 +78,12 @@ function QuantityEditor(props) {
   var defaultPlacement = props.placementId ? null : defaultPlacementFor(item);
   var effectivePlacementId = props.placementId || (defaultPlacement && defaultPlacement.id) || null;
   var effectiveQuantity = defaultPlacement ? defaultPlacement.quantity : item.actual_quantity;
+  // On overview-style listings (props.showTotal) the pre-edit number should
+  // always be the item's total across all locations, even when a default
+  // placement is set — that's what "how much of this do I have" means in a
+  // list of items. Editing still targets the default placement's own
+  // quantity, exactly as before; only the displayed label changes.
+  var displayQuantity = props.showTotal ? item.actual_quantity : effectiveQuantity;
 
   var editing = useState(false);
   var isEditing = editing[0];
@@ -110,7 +116,7 @@ function QuantityEditor(props) {
   }
 
   if (!isEditing) {
-    var label = (props.prefix || '') + '\u00d7' + effectiveQuantity;
+    var label = (props.prefix || '') + '\u00d7' + displayQuantity;
     if (isSplit(item) && !effectivePlacementId) {
       return html`
         <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}
@@ -120,8 +126,11 @@ function QuantityEditor(props) {
       `;
     }
     var title = defaultPlacement
-      ? 'Quantity at its default location (' + (defaultPlacement.location_name || 'unnamed') + '). ' +
-        'Click to edit — total across all locations: ' + item.actual_quantity + '.'
+      ? (props.showTotal
+        ? 'Total across all locations. Click to edit its default location (' +
+          (defaultPlacement.location_name || 'unnamed') + '): ' + defaultPlacement.quantity + '.'
+        : 'Quantity at its default location (' + (defaultPlacement.location_name || 'unnamed') + '). ' +
+          'Click to edit — total across all locations: ' + item.actual_quantity + '.')
       : 'Click to edit quantity';
     return html`
       <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}

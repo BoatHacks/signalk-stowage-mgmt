@@ -207,7 +207,7 @@ export function OverviewTab() {
                 <tr key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
                   <td>${thumb}</td>
                   <td>${r.name}</td>
-                  <td><${QuantityEditor} item=${r.item} /></td>
+                  <td><${QuantityEditor} item=${r.item} showTotal=${true} /></td>
                   <td>${r.targetQuantity != null ? r.targetQuantity : '\u2014'}</td>
                   <td>${r.directLocation}${r.directType ? html` <span class="node-type">${r.directType}</span>` : null}</td>
                   <td>${r.fullPath}</td>

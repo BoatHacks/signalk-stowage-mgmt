@@ -52,7 +52,7 @@ export function ItemChip(props) {
           ${thumb}<span class="type-icon"><${Icon} name="dot" title="Item" /></span>${item.name}
           ${isPlacementRow
             ? html`<${QuantityEditor} item=${item} placementId=${item.placementId} className="qty split-qty" />`
-            : html`<${QuantityEditor} item=${item} className="qty" />`}
+            : html`<${QuantityEditor} item=${item} className="qty" showTotal=${props.showTotal} />`}
           ${item.target_quantity !== null && item.target_quantity !== undefined
             ? html`<span class="qty-target-inline"> / ${item.target_quantity}</span>`
             : null}

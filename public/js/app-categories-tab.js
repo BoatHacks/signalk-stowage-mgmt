@@ -58,7 +58,7 @@ export function CategoriesTab() {
                   ${items.map(function (item) { return html`
                     <div class="category-fold-item" key=${item.id} onClick=${makeLocateOnChipClick(app, item)}>
                       <div class="category-fold-item-location hint">${item.location_id ? pathToRoot(app.data, item.location_id) : 'no location'}</div>
-                      <${ItemChip} item=${item} />
+                      <${ItemChip} item=${item} showTotal=${true} />
                     </div>
                   `; })}
                 </div>

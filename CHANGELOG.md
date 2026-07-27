@@ -12,6 +12,11 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Changed
 
+- Overview (table view) and Categories tabs now show a split item's total
+  quantity across all its storage locations, instead of just the quantity
+  at its default storage location. Clicking to edit still edits the
+  default location's own quantity, as before.
+
 - The Default Storage Location dropdown (Item Properties, split items)
   now lists each placement location by its full breadcrumb path (e.g.
   "Aft Cabin → Locker") instead of just the bare name, matching the
