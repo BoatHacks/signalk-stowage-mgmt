@@ -10,6 +10,20 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Store Log's **Individual Movements** table (and its matching markdown
+  export) now shows the location an item was added to or used from —
+  the item's own location for a plain item, or the specific
+  placement's location for a split item's quantity change. Deleting a
+  split item records a descriptive `"Split (N locations)"` fallback,
+  since there's no single location to point at. **Aggregate Movements**
+  deliberately does *not* get a location column — it's a per-item
+  summary, not a per-event one, so there's no single location to show.
+  Reuses the `from_location_id`/`to_location_id` columns `item_log`
+  already had (previously only populated for `split` events) rather
+  than adding new ones. 5 new backend tests.
+
 ### Changed
 
 - Refreshed all 6 screenshots in `docs/screenshots/`, and added a new

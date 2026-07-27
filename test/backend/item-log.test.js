@@ -34,3 +34,86 @@ test('item-log: start/end range filters are inclusive of the whole end day', asy
   const fromToday = await (await server.get(`/item-log?start=${today}`)).json()
   assert.equal(fromToday.length, 1)
 })
+
+test('item-log: records the location an item was created into (to_location)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const loc = await (await server.post('/locations', { name: 'Galley', type: 'storage_space' })).json()
+  const item = await (await server.post('/items', { name: 'Fuse', location_id: loc.id })).json()
+
+  const log = await (await server.get('/item-log')).json()
+  const created = log.find((e) => e.item_id === item.id && e.event === 'created')
+  assert.equal(created.to_location_id, loc.id)
+  assert.equal(created.to_location_name, 'Galley')
+  assert.equal(created.from_location_id, null)
+})
+
+test('item-log: a quantity increase records to_location, a decrease records from_location', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const loc = await (await server.post('/locations', { name: 'Galley', type: 'storage_space' })).json()
+  const item = await (await server.post('/items', { name: 'Fuse', actual_quantity: 5, location_id: loc.id })).json()
+
+  await server.patch(`/items/${item.id}`, { actual_quantity: 8 })
+  await server.patch(`/items/${item.id}`, { actual_quantity: 3 })
+
+  const log = await (await server.get('/item-log')).json()
+  const events = log.filter((e) => e.item_id === item.id && e.event === 'actual_quantity')
+  assert.equal(events.length, 2)
+
+  const increase = events.find((e) => e.new_value === 8)
+  assert.equal(increase.to_location_id, loc.id)
+  assert.equal(increase.to_location_name, 'Galley')
+  assert.equal(increase.from_location_id, null)
+
+  const decrease = events.find((e) => e.new_value === 3)
+  assert.equal(decrease.from_location_id, loc.id)
+  assert.equal(decrease.from_location_name, 'Galley')
+  assert.equal(decrease.to_location_id, null)
+})
+
+test('item-log: a placement quantity change records that specific placement\'s location', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const locA = await (await server.post('/locations', { name: 'Galley', type: 'storage_space' })).json()
+  const locB = await (await server.post('/locations', { name: 'Bilge', type: 'storage_space' })).json()
+  const item = await (await server.post('/items', { name: 'Beans', actual_quantity: 10, location_id: locA.id })).json()
+  const split = await (await server.post(`/items/${item.id}/split`, {
+    from_location_id: locA.id, to_location_id: locB.id, quantity: 4
+  })).json()
+  const placementB = split.placements.find((p) => p.location_id === locB.id)
+
+  await server.patch(`/items/${item.id}/placements/${placementB.id}`, { quantity: 6 }) // +2 at Bilge
+
+  const log = await (await server.get('/item-log')).json()
+  const event = log.find((e) => e.item_id === item.id && e.event === 'actual_quantity' && e.new_value === 12)
+  assert.equal(event.to_location_id, locB.id)
+  assert.equal(event.to_location_name, 'Bilge')
+})
+
+test('item-log: deleting a plain item records its location; deleting a split item records a descriptive fallback', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const locA = await (await server.post('/locations', { name: 'Galley', type: 'storage_space' })).json()
+  const locB = await (await server.post('/locations', { name: 'Bilge', type: 'storage_space' })).json()
+
+  const plain = await (await server.post('/items', { name: 'Fuse', location_id: locA.id })).json()
+  await server.delete(`/items/${plain.id}`)
+
+  const splitItem = await (await server.post('/items', { name: 'Beans', actual_quantity: 10, location_id: locA.id })).json()
+  await server.post(`/items/${splitItem.id}/split`, { from_location_id: locA.id, to_location_id: locB.id, quantity: 4 })
+  await server.delete(`/items/${splitItem.id}`)
+
+  const log = await (await server.get('/item-log')).json()
+  const plainDeleted = log.find((e) => e.item_id === plain.id && e.event === 'deleted')
+  assert.equal(plainDeleted.from_location_id, locA.id)
+  assert.equal(plainDeleted.from_location_name, 'Galley')
+
+  const splitDeleted = log.find((e) => e.item_id === splitItem.id && e.event === 'deleted')
+  assert.equal(splitDeleted.from_location_id, null)
+  assert.equal(splitDeleted.from_location_name, 'Split (2 locations)')
+})

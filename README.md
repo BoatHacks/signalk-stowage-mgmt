@@ -303,9 +303,12 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   pickers set the range shown, shared across all five sections below.
 - **Individual Movements**: one row per movement event (item creation,
   quantity increase/decrease, or deletion), newest first — item, Added or
-  Used amount, timestamp, and note.
+  Used amount, the location it was added to or used from (the specific
+  placement's location for a split item; blank for events before this
+  was added), timestamp, and note.
 - **Aggregate Movements**: Added/Used totals per item across the whole
-  date range, sorted by Used, descending.
+  date range, sorted by Used, descending. No location column — it's a
+  per-item summary, not a per-event one.
 - **Target Adjustments**: a plain chronological list (target quantity is a
   goal, not a consumed resource, so it isn't aggregated) — From, To, date,
   and the note if one was left.
@@ -408,8 +411,8 @@ the item reverts to the plain representation automatically.
 | `old_value` / `new_value` | INTEGER, nullable | The quantity before/after. `NULL` for a target quantity that was unset, or for a `split` event (see `from_location_id` etc. below instead) |
 | `delta` | INTEGER | `new_value - old_value`. Always `0` for a `split` event, since splitting reallocates existing stock rather than adding or removing it |
 | `note` | TEXT, nullable | Optional, set via the Item Properties dialog (quantity changes) or the Split dialog (splits) |
-| `from_location_id` / `from_location_name` | TEXT, nullable | Set only for `split` events. Name is snapshotted, same reasoning as `item_name`. `NULL` means "no location" |
-| `to_location_id` / `to_location_name` | TEXT, nullable | Set only for `split` events, same conventions as `from_location_id` |
+| `from_location_id` / `from_location_name` | TEXT, nullable | The location for a "used from" movement: the `from` side of a `split` event, or the item's (or specific placement's) location for an `actual_quantity` decrease or a `deleted` event. `NULL` for an `actual_quantity` increase, a `created` event, an unlocated item, or a row written before this was added. Deleting a *split* item sets `from_location_name` to a descriptive `"Split (N locations)"` with `from_location_id` left `NULL`, since there's no single location to point at. Name is snapshotted, same reasoning as `item_name` |
+| `to_location_id` / `to_location_name` | TEXT, nullable | The location for an "added to" movement: the `to` side of a `split` event, or the item's (or specific placement's) location for an `actual_quantity` increase or a `created` event. Same nullability/snapshotting conventions as `from_location_id` |
 | `quantity` | INTEGER, nullable | Set only for `split` events — how many units moved |
 | `created_at` | TEXT | |
 

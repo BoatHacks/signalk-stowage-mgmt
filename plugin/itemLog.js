@@ -2,11 +2,22 @@ const { randomUUID } = require('crypto')
 
 // Records one row in item_log. item_name is snapshotted (not a foreign key
 // to items) so the log stays meaningful after an item is renamed or deleted.
-function logItemEvent (db, { itemId, itemName, event, oldValue, newValue, note }) {
+// fromLocation*/toLocation* are optional and only meaningful for a
+// 'created'/'actual_quantity'/'deleted' event — "added to" (an increase, or
+// a creation) sets the to_location fields; "used from" (a decrease, or a
+// deletion) sets the from_location fields. Reuses the same columns
+// logSplitEvent below already writes, snapshotted by name the same way.
+function logItemEvent (db, { itemId, itemName, event, oldValue, newValue, note, fromLocationId, fromLocationName, toLocationId, toLocationName }) {
   const delta = (newValue == null ? 0 : newValue) - (oldValue == null ? 0 : oldValue)
   db.prepare(
-    'INSERT INTO item_log (id, item_id, item_name, event, old_value, new_value, delta, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(randomUUID(), itemId, itemName, event, oldValue ?? null, newValue ?? null, delta, note || null)
+    `INSERT INTO item_log (
+      id, item_id, item_name, event, old_value, new_value, delta, note,
+      from_location_id, from_location_name, to_location_id, to_location_name
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    randomUUID(), itemId, itemName, event, oldValue ?? null, newValue ?? null, delta, note || null,
+    fromLocationId || null, fromLocationName || null, toLocationId || null, toLocationName || null
+  )
 }
 
 // Records a 'split' event: moving `quantity` units of an item from one

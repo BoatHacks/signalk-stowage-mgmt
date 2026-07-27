@@ -74,6 +74,12 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     return db().prepare('SELECT * FROM item_placements WHERE item_id = ?').all(itemId)
   }
 
+  function locationName (locationId) {
+    if (!locationId) return null
+    const loc = db().prepare('SELECT name FROM locations WHERE id = ?').get(locationId)
+    return loc ? loc.name : null
+  }
+
   router.get('/items', (req, res) => {
     const { q } = req.query || {}
     let items
@@ -116,7 +122,10 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null, expiresAt || null)
       const link = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
       for (const catId of ids) link.run(id, catId)
-      logItemEvent(db(), { itemId: id, itemName: name, event: 'created', oldValue: 0, newValue: startingQuantity, note })
+      logItemEvent(db(), {
+        itemId: id, itemName: name, event: 'created', oldValue: 0, newValue: startingQuantity, note,
+        toLocationId: locationId || null, toLocationName: locationName(locationId)
+      })
     })
     res.status(201).json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(id)))
   })
@@ -172,9 +181,12 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
 
       const logName = name || item.name
       if (actualQuantity != null && actualQuantity !== item.actual_quantity) {
+        const delta = actualQuantity - item.actual_quantity
         logItemEvent(db(), {
           itemId: item.id, itemName: logName, event: 'actual_quantity',
-          oldValue: item.actual_quantity, newValue: actualQuantity, note
+          oldValue: item.actual_quantity, newValue: actualQuantity, note,
+          toLocationId: delta > 0 ? item.location_id : null, toLocationName: delta > 0 ? locationName(item.location_id) : null,
+          fromLocationId: delta < 0 ? item.location_id : null, fromLocationName: delta < 0 ? locationName(item.location_id) : null
         })
       }
       if (hasTargetQuantity && newTargetQuantity !== item.target_quantity) {
@@ -303,7 +315,12 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       collapseIfSingleLocation(item.id)
       reconcileDefaultLocation(item.id)
       if (newTotal !== oldTotal) {
-        logItemEvent(db(), { itemId: item.id, itemName: item.name, event: 'actual_quantity', oldValue: oldTotal, newValue: newTotal, note })
+        const delta = newTotal - oldTotal
+        logItemEvent(db(), {
+          itemId: item.id, itemName: item.name, event: 'actual_quantity', oldValue: oldTotal, newValue: newTotal, note,
+          toLocationId: delta > 0 ? placement.location_id : null, toLocationName: delta > 0 ? locationName(placement.location_id) : null,
+          fromLocationId: delta < 0 ? placement.location_id : null, fromLocationName: delta < 0 ? locationName(placement.location_id) : null
+        })
       }
     })
 
@@ -434,9 +451,15 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const item = getItemOr404(req.params.id, res)
     if (!item) return
     runInTransaction(db(), () => {
+      const placements = getPlacements(item.id)
+      const fromLocationId = placements.length ? null : item.location_id
+      const fromLocationName = placements.length
+        ? `Split (${placements.length} locations)`
+        : locationName(item.location_id)
       logItemEvent(db(), {
         itemId: item.id, itemName: item.name, event: 'deleted',
-        oldValue: item.actual_quantity, newValue: 0, note: null
+        oldValue: item.actual_quantity, newValue: 0, note: null,
+        fromLocationId, fromLocationName
       })
       db().prepare('DELETE FROM items WHERE id = ?').run(item.id)
     })
