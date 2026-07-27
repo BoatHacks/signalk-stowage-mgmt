@@ -1,7 +1,7 @@
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
 import { useApp, Icon, IconBtn } from './app-core.js';
 import { renderMarkdown } from './markdown.js';
-import { isSplit, formatBytes } from './helpers.js';
+import { isSplit, formatBytes, pathToRoot } from './helpers.js';
 
 // ---------- attachments (lives inside the Item Properties modal) ----------
 
@@ -157,7 +157,7 @@ export function ItemPropertiesModal() {
             <select value=${defaultLocationId} onChange=${function (e) { setDefaultLocationId(e.target.value); }}>
               <option value="">None — quick +/− edits stay disabled elsewhere</option>
               ${item.placements.filter(function (p) { return p.location_id; }).map(function (p) {
-                return html`<option key=${p.location_id} value=${p.location_id}>${p.location_name || 'unnamed'}</option>`;
+                return html`<option key=${p.location_id} value=${p.location_id}>${pathToRoot(app.data, p.location_id) || p.location_name || 'unnamed'}</option>`;
               })}
             </select>
             <span class="hint">The quick +/− quantity editors on Overview, Categories, etc. act on the stock at

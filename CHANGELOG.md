@@ -10,6 +10,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- The Default Storage Location dropdown (Item Properties, split items)
+  now lists each placement location by its full breadcrumb path (e.g.
+  "Aft Cabin → Locker") instead of just the bare name, matching the
+  floorplan "Assign area" picker's existing convention — nested
+  storage spaces can share a name at different depths (e.g. two
+  "Locker"s), which was ambiguous with just the bare name.
+
 ## [0.9.1] - 2026-07-27
 
 ### Added

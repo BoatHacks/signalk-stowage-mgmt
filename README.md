@@ -144,8 +144,11 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
 **Item properties (edit icon on any item):**
 - Name, actual quantity, target quantity (leave blank for "no target").
 - **Default Storage Location** (split items only, optional): pick one of
-  the item's current placement locations — e.g. beans mostly live in the
-  galley, but there are a few extra cans in the bilge too, so "Galley" is
+  the item's current placement locations — listed by full breadcrumb path
+  (e.g. "Aft Cabin → Locker"), not just the bare name, since nested
+  storage spaces can share a name at different depths — e.g. beans mostly
+  live in the galley, but there are a few extra cans in the bilge too, so
+  "Galley" is
   the default. The quick +/− quantity editors elsewhere (Overview,
   Categories, the Touch view's big buttons) act on the stock at this
   location specifically, showing its quantity rather than the total
