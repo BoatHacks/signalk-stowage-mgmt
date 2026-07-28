@@ -908,7 +908,7 @@ select {
 .touch-qty-btn:hover:not(:disabled) { background: var(--surface); border-color: var(--accent); }
 .touch-qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.touch-qty-btn-coarse { font-size: 14px; padding: 0 4px; color: var(--text-muted); }
+.touch-qty-btn-coarse { font-size: 14px; padding: 0 4px; }
 
 /* The shared QuantityEditor's default input/steppers are sized for compact
    table rows; on touch chips they need to be big enough to actually tap. */
