@@ -45,6 +45,13 @@ module.exports = function (app) {
         description:
           'Webapp follows vessels.self.environment.sun (preferred - dawn/sunrise/day/sunset/dusk/night) or vessels.self.environment.mode (simpler day/night fallback) instead of the manual light/dark toggle. Needs a plugin like signalk-derived-data publishing one of those paths.',
         default: false
+      },
+      dynamicQuantityScale: {
+        type: 'boolean',
+        title: 'Dynamic +/- scale for touch interface',
+        description:
+          'Overview tab Touch view: the -/+ buttons\u2019 step grows with the quantity (1 for small counts, 10 in the hundreds, 100 in the thousands, and so on) instead of always stepping by 1. Useful once you start tracking bulk goods by weight/volume (e.g. grams) rather than by piece.',
+        default: false
       }
     }
   }

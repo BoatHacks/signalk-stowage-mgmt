@@ -1,6 +1,6 @@
 import { html, useState, useMemo, useEffect } from '../vendor/preact-htm-standalone.js';
 import { useApp, QuantityEditor } from './app-core.js';
-import { pathToRoot, isSplit, descendantIds, defaultPlacementFor } from './helpers.js';
+import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepFor } from './helpers.js';
 
 function isoDate (d) {
   return d.toISOString().slice(0, 10);
@@ -233,6 +233,14 @@ export function OverviewTab() {
             var split = itemIsSplit && !defaultPlacement;
             var splitTooltip = 'This item is split across multiple locations — use Split to change its quantity, ' +
               'or set a default storage location in Item Properties to enable quick edits here.';
+            // The quantity the -/+ buttons actually adjust: the default
+            // placement's own count for a split item that has one, or the
+            // item's plain quantity otherwise. Also what the dynamic step
+            // (if enabled) is scaled from.
+            var editableQty = defaultPlacement ? defaultPlacement.quantity : r.actualQuantity;
+            var step = (app.config && app.config.dynamicQuantityScale) ? quantityStepFor(editableQty) : 1;
+            var minusLabel = step === 1 ? '\u2212' : '\u2212' + step;
+            var plusLabel = step === 1 ? '+' : '+' + step;
             var qtyContent = itemIsSplit
               ? html`
                   <span class="touch-chip-stats">
@@ -268,12 +276,12 @@ export function OverviewTab() {
                 </div>
                 <div class="touch-chip-qty-row">
                   <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? splitTooltip : 'Remove one'}
-                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -1); }}>\u2212</button>
+                          title=${split ? splitTooltip : 'Remove ' + step}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -step); }}>${minusLabel}</button>
                   ${qtyContent}
                   <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? splitTooltip : 'Add one'}
-                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, 1); }}>+</button>
+                          title=${split ? splitTooltip : 'Add ' + step}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, step); }}>${plusLabel}</button>
                 </div>
               </div>
             `;

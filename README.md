@@ -58,6 +58,14 @@ Set in the plugin's config page in the SignalK Admin UI
   "Header controls" below) while it's on; if neither path has a
   recognized value yet, the manual/OS-preference theme is left alone.
 
+- **Dynamic +/- scale for touch interface** (off by default). When on,
+  the Overview tab's Touch view scales the −/+ buttons' step to the
+  quantity being adjusted, instead of always stepping by 1: 1 for counts
+  under 100, 10 in the hundreds, 100 in the thousands, and so on (based
+  on digit count, so a round number like 5000 doesn't get an oversized
+  step just for being round). Useful once you're tracking bulk goods by
+  weight or volume (e.g. grams) rather than by piece.
+
 ## Usage
 
 **Header controls (present on every tab):** a search box (see "Search"
@@ -577,7 +585,7 @@ merge/append mode (see issue #26).
 
 | Method & path | Purpose |
 |---|---|
-| `GET /config` | `{ autoTheme, themeRecommendation }` — the current value of the "Automatically switch light/dark theme" plugin option, and the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet). Polled by the webapp alongside its regular data refresh; see "Configuration" above |
+| `GET /config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), and the current value of the "Dynamic +/- scale for touch interface" plugin option. Polled by the webapp alongside its regular data refresh; see "Configuration" above |
 
 ## Known limitations / possible next steps
 

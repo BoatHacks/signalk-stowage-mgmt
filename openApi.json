@@ -1778,8 +1778,8 @@
         "tags": [
           "Config"
         ],
-        "summary": "Get the current theme-automation config/recommendation",
-        "description": "Reflects the plugin's 'Automatically switch light/dark theme based on sun position' option (set in the SignalK Admin UI's Plugin Config page) and, when it's on, the theme currently recommended based on vessels.self.environment.sun (preferred) or vessels.self.environment.mode (fallback).",
+        "summary": "Get plugin-level webapp config: theme automation and quantity-step scaling",
+        "description": "Reflects two plugin options (set in the SignalK Admin UI's Plugin Config page): 'Automatically switch light/dark theme based on sun position' (autoTheme, plus the currently recommended theme based on vessels.self.environment.sun/mode when it's on), and 'Dynamic +/- scale for touch interface' (dynamicQuantityScale).",
         "responses": {
           "200": {
             "description": "OK",
@@ -1798,6 +1798,9 @@
                         "dark"
                       ],
                       "nullable": true
+                    },
+                    "dynamicQuantityScale": {
+                      "type": "boolean"
                     }
                   }
                 }

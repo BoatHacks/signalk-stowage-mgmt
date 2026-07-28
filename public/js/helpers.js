@@ -42,6 +42,20 @@ export function defaultPlacementFor(item) {
   return item.placements.find(function (p) { return p.location_id === item.default_location_id; }) || null;
 }
 
+// For the Overview tab's Touch view "dynamic +/- scale" option: a bigger
+// on-hand quantity gets a bigger tap step, so nudging a 7450g bag of flour
+// doesn't take a thousand taps. The step is based on the number of digits
+// in the quantity, not on its trailing zeros, so a step never balloons just
+// because a number happens to be round (5000 and 5001 get the same step;
+// contrast with rounding to the first significant digit, which would make
+// 5000's step 1000x bigger than 5001's for no meaningful reason):
+// 0-99 -> 1, 100-999 -> 10, 1000-9999 -> 100, and so on.
+export function quantityStepFor(value) {
+  var whole = Math.floor(Math.abs(value || 0));
+  var digits = whole === 0 ? 1 : String(whole).length;
+  return digits <= 2 ? 1 : Math.pow(10, digits - 2);
+}
+
 // Like itemsIn, but also surfaces split items: for each of an item's
 // placements that matches this location, returns a "chip view" — a shallow
 // copy of the item with actual_quantity replaced by that placement's

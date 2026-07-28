@@ -56,7 +56,8 @@ module.exports = function registerConfigRoutes (router, app, getOptions) {
     const options = getOptions() || {}
     res.json({
       autoTheme: !!options.autoTheme,
-      themeRecommendation: computeThemeRecommendation()
+      themeRecommendation: computeThemeRecommendation(),
+      dynamicQuantityScale: !!options.dynamicQuantityScale
     })
   })
 }

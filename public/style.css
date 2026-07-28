@@ -893,14 +893,16 @@ select {
 .touch-chip-stat-value { font-weight: 600; font-size: 13px; }
 
 .touch-qty-btn {
-  width: 44px;
+  min-width: 44px;
   height: 44px;
+  padding: 0 6px;
   border-radius: 8px;
   border: 1px solid var(--border-strong);
   background: var(--surface-alt);
-  font-size: 20px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
+  white-space: nowrap;
 }
 .touch-qty-btn:hover:not(:disabled) { background: var(--surface); border-color: var(--accent); }
 .touch-qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }

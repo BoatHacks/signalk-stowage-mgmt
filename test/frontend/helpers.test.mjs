@@ -4,7 +4,7 @@ import {
   childLocations, itemsIn, formatBytes, isSplit, resolvedItemsIn, descendantIds,
   pathToRoot, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
-  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor
+  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepFor
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -76,6 +76,28 @@ test('defaultPlacementFor: null for a plain item, no default set, or a stale def
     default_location_id: 'loc-gone',
     placements: [{ id: 'p1', location_id: 'loc-a', quantity: 1 }]
   }), null)
+})
+
+test('quantityStepFor: steps by digit count, not by trailing zeros', () => {
+  assert.equal(quantityStepFor(0), 1)
+  assert.equal(quantityStepFor(7), 1)
+  assert.equal(quantityStepFor(99), 1)
+  assert.equal(quantityStepFor(100), 10)
+  assert.equal(quantityStepFor(450), 10)
+  assert.equal(quantityStepFor(999), 10)
+  assert.equal(quantityStepFor(1000), 100)
+  assert.equal(quantityStepFor(7450), 100)
+  assert.equal(quantityStepFor(9999), 100)
+  assert.equal(quantityStepFor(10000), 1000)
+  // A round number does not get a bigger step than its neighbor just for
+  // being round (contrast with "step by the first significant digit").
+  assert.equal(quantityStepFor(5000), quantityStepFor(5001))
+})
+
+test('quantityStepFor: treats missing/negative values as 0', () => {
+  assert.equal(quantityStepFor(undefined), 1)
+  assert.equal(quantityStepFor(null), 1)
+  assert.equal(quantityStepFor(-450), 10)
 })
 
 test('resolvedItemsIn: plain items pass through, split items produce one view per matching placement', () => {

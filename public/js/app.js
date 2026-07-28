@@ -36,7 +36,7 @@ function App() {
   var activeTab = tabState[0], setActiveTab = tabState[1];
   var themeState = useState(getPreferredTheme());
   var theme = themeState[0], setThemeState = themeState[1];
-  var configState = useState({ autoTheme: false, themeRecommendation: null });
+  var configState = useState({ autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false });
   var config = configState[0], setConfig = configState[1];
   var toastState = useState(null);
   var toastMessage = toastState[0], setToastMessage = toastState[1];
@@ -90,7 +90,7 @@ function App() {
     fetchInFlightRef.current = true;
     return Promise.all([
       api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(),
-      api.getConfig().catch(function () { return { autoTheme: false, themeRecommendation: null }; })
+      api.getConfig().catch(function () { return { autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false }; })
     ])
       .then(function (results) {
         setData({ locations: results[0], items: results[1], categories: results[2], floorplans: results[3] });
@@ -142,6 +142,7 @@ function App() {
     loaded: loaded,
     activeTab: activeTab,
     theme: theme,
+    config: config,
     dragActive: dragActive,
     floorplanMode: floorplanMode,
     toastMessage: toastMessage,

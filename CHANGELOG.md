@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [Unreleased]
+
+### Added
+
+- New plugin option: **Dynamic +/- scale for touch interface** (off by
+  default). When on, the Overview tab's Touch view scales the −/+
+  buttons' step to the quantity being adjusted (1 under 100, 10 in the
+  hundreds, 100 in the thousands, etc., based on digit count) instead of
+  always stepping by 1 — useful once bulk goods are tracked by weight or
+  volume rather than by piece. Button labels show the active step (e.g.
+  "+100") whenever it isn't 1.
+
 ## [0.9.2] - 2026-07-27
 
 ### Changed
