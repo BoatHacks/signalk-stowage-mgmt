@@ -2,12 +2,20 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { startTestServer } = require('../../test-helpers/server')
 
-test('config: autoTheme off by default, no recommendation', async (t) => {
+test('config: autoTheme and dynamicQuantityScale off by default, no recommendation', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())
 
   const body = await (await server.get('/webapp-config')).json()
-  assert.deepEqual(body, { autoTheme: false, themeRecommendation: null })
+  assert.deepEqual(body, { autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false })
+})
+
+test('config: dynamicQuantityScale reflects the plugin option when enabled', async (t) => {
+  const server = await startTestServer({ options: { dynamicQuantityScale: true } })
+  t.after(() => server.close())
+
+  const body = await (await server.get('/webapp-config')).json()
+  assert.equal(body.dynamicQuantityScale, true)
 })
 
 test('config: autoTheme on but no getSelfPath support -> no recommendation', async (t) => {
