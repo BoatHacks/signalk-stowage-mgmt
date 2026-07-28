@@ -910,6 +910,14 @@ select {
 
 .touch-qty-btn-coarse { font-size: 14px; padding: 0 4px; color: var(--text-muted); }
 
+/* The shared QuantityEditor's default input/steppers are sized for compact
+   table rows; on touch chips they need to be big enough to actually tap. */
+.touch-qty-editor-wrap { display: inline-flex; align-items: center; }
+.touch-qty-editor-wrap .qty-display { font-size: inherit; font-weight: inherit; padding: 2px 6px; }
+.touch-qty-editor-wrap .qty-editor { margin-left: 4px; }
+.touch-qty-editor-wrap .qty-input { width: 60px; font-size: 16px; padding: 6px; }
+.touch-qty-editor-wrap .qty-step { width: 32px; height: 22px; font-size: 12px; }
+
 /* ---------- photo capture / crop dialog ---------- */
 
 .photo-crop-viewport {

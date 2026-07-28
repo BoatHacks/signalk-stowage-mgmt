@@ -20,6 +20,16 @@ was renamed to `signalk-stowage-mgmt`.
   zeros so a round number doesn't get an oversized step just for being
   round. Useful once bulk goods are tracked by weight or volume rather
   than by piece. Chips grow a bit wider to fit the extra buttons.
+- Overview tab, Touch view: the quantity shown on a chip (a plain item's
+  count, or a split item's Default count) is now clickable, opening the
+  same numeric input with up/down steppers used elsewhere in the app,
+  instead of only being adjustable via the +/- buttons.
+
+### Changed
+
+- Overview tab, Touch view: the +/- (and, when dynamic scale is on,
+  coarse step) buttons now sit on their own row below the quantity,
+  instead of sharing a line with it.
 
 ### Fixed
 

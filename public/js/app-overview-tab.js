@@ -253,7 +253,9 @@ export function OverviewTab() {
                     ${defaultPlacement ? html`
                       <span class="touch-chip-stat">
                         <span class="touch-chip-stat-label">Default</span>
-                        <span class="touch-chip-stat-value">\u00d7${defaultPlacement.quantity}</span>
+                        <span class="touch-qty-editor-wrap">
+                          <${QuantityEditor} item=${r.item} className="touch-chip-stat-value" />
+                        </span>
                       </span>
                     ` : null}
                     <span class="touch-chip-stat">
@@ -270,7 +272,7 @@ export function OverviewTab() {
                 `
               : html`
                   <span class="touch-chip-qty">
-                    \u00d7${r.actualQuantity}${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
+                    <span class="touch-qty-editor-wrap"><${QuantityEditor} item=${r.item} /></span>${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
                   </span>
                 `;
             return html`
@@ -280,6 +282,7 @@ export function OverviewTab() {
                 <div class="touch-chip-location hint">
                   ${defaultPlacement ? 'Default: ' + (defaultPlacement.location_name || 'unnamed') : r.directLocation}
                 </div>
+                ${qtyContent}
                 <div class="touch-chip-qty-row">
                   ${showCoarse ? html`
                     <button type="button" class="touch-qty-btn touch-qty-btn-coarse" disabled=${split}
@@ -289,7 +292,6 @@ export function OverviewTab() {
                   <button type="button" class="touch-qty-btn" disabled=${split}
                           title=${split ? splitTooltip : 'Remove ' + steps.fine}
                           onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -steps.fine); }}>${fineMinusLabel}</button>
-                  ${qtyContent}
                   <button type="button" class="touch-qty-btn" disabled=${split}
                           title=${split ? splitTooltip : 'Add ' + steps.fine}
                           onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, steps.fine); }}>${finePlusLabel}</button>
