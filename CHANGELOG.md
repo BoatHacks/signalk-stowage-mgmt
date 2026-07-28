@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
-## [Unreleased]
+## [0.9.3] - 2026-07-28
 
 ### Added
 
