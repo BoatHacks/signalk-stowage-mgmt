@@ -94,7 +94,7 @@ export const api = {
   deleteAttachment: function (itemId, attachmentId) { return del('/items/' + itemId + '/attachments/' + attachmentId); },
   attachmentUrl: function (itemId, attachmentId) { return BASE + '/items/' + itemId + '/attachments/' + attachmentId; },
   exportSnapshot: function () { return get('/export'); },
-  getConfig: function () { return get('/config'); },
+  getConfig: function () { return get('/webapp-config'); },
   importSnapshot: function (payload) { return post('/import', payload); },
 
   // Categories

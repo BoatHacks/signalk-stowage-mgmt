@@ -1773,13 +1773,13 @@
         }
       }
     },
-    "/config": {
+    "/webapp-config": {
       "get": {
         "tags": [
           "Config"
         ],
         "summary": "Get plugin-level webapp config: theme automation and quantity-step scaling",
-        "description": "Reflects two plugin options (set in the SignalK Admin UI's Plugin Config page): 'Automatically switch light/dark theme based on sun position' (autoTheme, plus the currently recommended theme based on vessels.self.environment.sun/mode when it's on), and 'Dynamic +/- scale for touch interface' (dynamicQuantityScale).",
+        "description": "Reflects two plugin options (set in the SignalK Admin UI's Plugin Config page): 'Automatically switch light/dark theme based on sun position' (autoTheme, plus the currently recommended theme based on vessels.self.environment.sun/mode when it's on), and 'Dynamic +/- scale for touch interface' (dynamicQuantityScale). Named /webapp-config rather than /config to avoid colliding with signalk-server's own reserved GET /plugins/{id}/config endpoint (which returns the plugin's enabled/configuration metadata, not this).",
         "responses": {
           "200": {
             "description": "OK",

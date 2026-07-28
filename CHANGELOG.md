@@ -21,6 +21,16 @@ was renamed to `signalk-stowage-mgmt`.
   round. Useful once bulk goods are tracked by weight or volume rather
   than by piece. Chips grow a bit wider to fit the extra buttons.
 
+### Fixed
+
+- The webapp's own config endpoint was mounted at `/config`, which
+  collides with signalk-server's own reserved `GET /plugins/{id}/config`
+  endpoint (plugin enabled/configuration metadata) — the server's
+  built-in route was winning, so the frontend never actually saw
+  `autoTheme`/`themeRecommendation`/`dynamicQuantityScale` and both
+  features silently no-opped regardless of the checkboxes. Renamed to
+  `/webapp-config`.
+
 ## [0.9.2] - 2026-07-27
 
 ### Changed

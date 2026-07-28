@@ -6,7 +6,7 @@ test('config: autoTheme off by default, no recommendation', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())
 
-  const body = await (await server.get('/config')).json()
+  const body = await (await server.get('/webapp-config')).json()
   assert.deepEqual(body, { autoTheme: false, themeRecommendation: null })
 })
 
@@ -14,7 +14,7 @@ test('config: autoTheme on but no getSelfPath support -> no recommendation', asy
   const server = await startTestServer({ options: { autoTheme: true } })
   t.after(() => server.close())
 
-  const body = await (await server.get('/config')).json()
+  const body = await (await server.get('/webapp-config')).json()
   assert.equal(body.autoTheme, true)
   assert.equal(body.themeRecommendation, null)
 })
@@ -27,11 +27,11 @@ test('config: environment.sun "day" -> light, dark phases -> dark', async (t) =>
   })
   t.after(() => server.close())
 
-  assert.equal((await (await server.get('/config')).json()).themeRecommendation, 'light')
+  assert.equal((await (await server.get('/webapp-config')).json()).themeRecommendation, 'light')
 
   for (const phase of ['dawn', 'sunrise', 'sunset', 'dusk', 'night']) {
     sunValue = phase
-    const body = await (await server.get('/config')).json()
+    const body = await (await server.get('/webapp-config')).json()
     assert.equal(body.themeRecommendation, 'dark', `phase ${phase} should recommend dark`)
   }
 })
@@ -47,7 +47,7 @@ test('config: falls back to environment.mode (case-insensitive) when environment
   })
   t.after(() => server.close())
 
-  const body = await (await server.get('/config')).json()
+  const body = await (await server.get('/webapp-config')).json()
   assert.equal(body.themeRecommendation, 'dark')
 })
 
@@ -58,7 +58,7 @@ test('config: unwraps a {value, timestamp, $source}-shaped getSelfPath result', 
   })
   t.after(() => server.close())
 
-  const body = await (await server.get('/config')).json()
+  const body = await (await server.get('/webapp-config')).json()
   assert.equal(body.themeRecommendation, 'light')
 })
 
@@ -69,7 +69,7 @@ test('config: a throwing getSelfPath does not crash the endpoint', async (t) => 
   })
   t.after(() => server.close())
 
-  const res = await server.get('/config')
+  const res = await server.get('/webapp-config')
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.themeRecommendation, null)
@@ -82,7 +82,7 @@ test('config: autoTheme off overrides an otherwise-valid recommendation', async 
   })
   t.after(() => server.close())
 
-  const body = await (await server.get('/config')).json()
+  const body = await (await server.get('/webapp-config')).json()
   assert.equal(body.autoTheme, false)
   assert.equal(body.themeRecommendation, null)
 })

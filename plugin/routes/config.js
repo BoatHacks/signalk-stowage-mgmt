@@ -21,7 +21,7 @@ function unwrapPlainValue (raw) {
 module.exports = function registerConfigRoutes (router, app, getOptions) {
   // Recommends 'light' or 'dark', or null if autoTheme is off, there's no
   // app.getSelfPath support, or neither environment path has a recognized
-  // value yet. Read fresh on every /config call (already polled regularly
+  // value yet. Read fresh on every /webapp-config call (already polled regularly
   // by the frontend) rather than maintained via a subscription.
   function computeThemeRecommendation () {
     const options = getOptions() || {}
@@ -52,7 +52,7 @@ module.exports = function registerConfigRoutes (router, app, getOptions) {
     return null
   }
 
-  router.get('/config', (req, res) => {
+  router.get('/webapp-config', (req, res) => {
     const options = getOptions() || {}
     res.json({
       autoTheme: !!options.autoTheme,

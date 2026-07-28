@@ -587,7 +587,7 @@ merge/append mode (see issue #26).
 
 | Method & path | Purpose |
 |---|---|
-| `GET /config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), and the current value of the "Dynamic +/- scale for touch interface" plugin option. Polled by the webapp alongside its regular data refresh; see "Configuration" above |
+| `GET /webapp-config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), and the current value of the "Dynamic +/- scale for touch interface" plugin option. Polled by the webapp alongside its regular data refresh; see "Configuration" above. (Named `/webapp-config` rather than `/config` to avoid colliding with signalk-server's own reserved `GET /plugins/{id}/config` endpoint.) |
 
 ## Known limitations / possible next steps
 
