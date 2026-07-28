@@ -59,12 +59,14 @@ Set in the plugin's config page in the SignalK Admin UI
   recognized value yet, the manual/OS-preference theme is left alone.
 
 - **Dynamic +/- scale for touch interface** (off by default). When on,
-  the Overview tab's Touch view scales the −/+ buttons' step to the
-  quantity being adjusted, instead of always stepping by 1: 1 for counts
-  under 100, 10 in the hundreds, 100 in the thousands, and so on (based
-  on digit count, so a round number like 5000 doesn't get an oversized
-  step just for being round). Useful once you're tracking bulk goods by
-  weight or volume (e.g. grams) rather than by piece.
+  the Overview tab's Touch view shows up to four quick-adjust buttons per
+  chip instead of two: a coarse step and a fine step on each side (e.g.
+  −1000 / −100 / +100 / +1000 for a quantity in the thousands), scaled to
+  the quantity being adjusted based on digit count (so a round number
+  like 5000 doesn't get an oversized step just for being round). For
+  single-digit quantities the coarse and fine steps are the same, so only
+  one +/- pair is shown. Useful once you're tracking bulk goods by weight
+  or volume (e.g. grams) rather than by piece.
 
 ## Usage
 

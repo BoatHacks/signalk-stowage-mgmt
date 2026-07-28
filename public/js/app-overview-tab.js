@@ -1,6 +1,6 @@
 import { html, useState, useMemo, useEffect } from '../vendor/preact-htm-standalone.js';
 import { useApp, QuantityEditor } from './app-core.js';
-import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepFor } from './helpers.js';
+import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepsFor } from './helpers.js';
 
 function isoDate (d) {
   return d.toISOString().slice(0, 10);
@@ -233,14 +233,20 @@ export function OverviewTab() {
             var split = itemIsSplit && !defaultPlacement;
             var splitTooltip = 'This item is split across multiple locations — use Split to change its quantity, ' +
               'or set a default storage location in Item Properties to enable quick edits here.';
-            // The quantity the -/+ buttons actually adjust: the default
+            // The quantity the buttons actually adjust: the default
             // placement's own count for a split item that has one, or the
-            // item's plain quantity otherwise. Also what the dynamic step
-            // (if enabled) is scaled from.
+            // item's plain quantity otherwise. Also what the dynamic steps
+            // (if enabled) are scaled from.
             var editableQty = defaultPlacement ? defaultPlacement.quantity : r.actualQuantity;
-            var step = (app.config && app.config.dynamicQuantityScale) ? quantityStepFor(editableQty) : 1;
-            var minusLabel = step === 1 ? '\u2212' : '\u2212' + step;
-            var plusLabel = step === 1 ? '+' : '+' + step;
+            var dynamicScale = !!(app.config && app.config.dynamicQuantityScale);
+            var steps = dynamicScale ? quantityStepsFor(editableQty) : { fine: 1, coarse: 1 };
+            // A second, coarser pair of buttons only earns its place on the
+            // chip once it actually differs from the fine step (single-digit
+            // quantities have fine === coarse === 1) - otherwise it'd just be
+            // two redundant +/-1 buttons taking up space.
+            var showCoarse = dynamicScale && steps.coarse !== steps.fine;
+            var fineMinusLabel = steps.fine === 1 ? '\u2212' : '\u2212' + steps.fine;
+            var finePlusLabel = steps.fine === 1 ? '+' : '+' + steps.fine;
             var qtyContent = itemIsSplit
               ? html`
                   <span class="touch-chip-stats">
@@ -275,13 +281,23 @@ export function OverviewTab() {
                   ${defaultPlacement ? 'Default: ' + (defaultPlacement.location_name || 'unnamed') : r.directLocation}
                 </div>
                 <div class="touch-chip-qty-row">
+                  ${showCoarse ? html`
+                    <button type="button" class="touch-qty-btn touch-qty-btn-coarse" disabled=${split}
+                            title=${split ? splitTooltip : 'Remove ' + steps.coarse}
+                            onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -steps.coarse); }}>${'\u2212' + steps.coarse}</button>
+                  ` : null}
                   <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? splitTooltip : 'Remove ' + step}
-                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -step); }}>${minusLabel}</button>
+                          title=${split ? splitTooltip : 'Remove ' + steps.fine}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -steps.fine); }}>${fineMinusLabel}</button>
                   ${qtyContent}
                   <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? splitTooltip : 'Add ' + step}
-                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, step); }}>${plusLabel}</button>
+                          title=${split ? splitTooltip : 'Add ' + steps.fine}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, steps.fine); }}>${finePlusLabel}</button>
+                  ${showCoarse ? html`
+                    <button type="button" class="touch-qty-btn touch-qty-btn-coarse" disabled=${split}
+                            title=${split ? splitTooltip : 'Add ' + steps.coarse}
+                            onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, steps.coarse); }}>${'+' + steps.coarse}</button>
+                  ` : null}
                 </div>
               </div>
             `;

@@ -13,12 +13,13 @@ was renamed to `signalk-stowage-mgmt`.
 ### Added
 
 - New plugin option: **Dynamic +/- scale for touch interface** (off by
-  default). When on, the Overview tab's Touch view scales the −/+
-  buttons' step to the quantity being adjusted (1 under 100, 10 in the
-  hundreds, 100 in the thousands, etc., based on digit count) instead of
-  always stepping by 1 — useful once bulk goods are tracked by weight or
-  volume rather than by piece. Button labels show the active step (e.g.
-  "+100") whenever it isn't 1.
+  default). When on and the quantity is over 9, the Overview tab's Touch
+  view shows four quick-adjust buttons per chip instead of two: a coarse
+  step and a fine step on each side (e.g. −1000 / −100 / +100 / +1000 for
+  a quantity in the thousands), based on digit count rather than trailing
+  zeros so a round number doesn't get an oversized step just for being
+  round. Useful once bulk goods are tracked by weight or volume rather
+  than by piece. Chips grow a bit wider to fit the extra buttons.
 
 ## [0.9.2] - 2026-07-27
 

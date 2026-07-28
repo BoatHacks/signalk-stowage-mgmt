@@ -4,7 +4,7 @@ import {
   childLocations, itemsIn, formatBytes, isSplit, resolvedItemsIn, descendantIds,
   pathToRoot, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
-  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepFor
+  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -78,26 +78,25 @@ test('defaultPlacementFor: null for a plain item, no default set, or a stale def
   }), null)
 })
 
-test('quantityStepFor: steps by digit count, not by trailing zeros', () => {
-  assert.equal(quantityStepFor(0), 1)
-  assert.equal(quantityStepFor(7), 1)
-  assert.equal(quantityStepFor(99), 1)
-  assert.equal(quantityStepFor(100), 10)
-  assert.equal(quantityStepFor(450), 10)
-  assert.equal(quantityStepFor(999), 10)
-  assert.equal(quantityStepFor(1000), 100)
-  assert.equal(quantityStepFor(7450), 100)
-  assert.equal(quantityStepFor(9999), 100)
-  assert.equal(quantityStepFor(10000), 1000)
-  // A round number does not get a bigger step than its neighbor just for
+test('quantityStepsFor: fine/coarse steps by digit count, not by trailing zeros', () => {
+  assert.deepEqual(quantityStepsFor(0), { fine: 1, coarse: 1 })
+  assert.deepEqual(quantityStepsFor(7), { fine: 1, coarse: 1 })
+  assert.deepEqual(quantityStepsFor(99), { fine: 1, coarse: 10 })
+  assert.deepEqual(quantityStepsFor(450), { fine: 10, coarse: 100 })
+  assert.deepEqual(quantityStepsFor(999), { fine: 10, coarse: 100 })
+  assert.deepEqual(quantityStepsFor(1000), { fine: 100, coarse: 1000 })
+  assert.deepEqual(quantityStepsFor(7450), { fine: 100, coarse: 1000 })
+  assert.deepEqual(quantityStepsFor(9999), { fine: 100, coarse: 1000 })
+  assert.deepEqual(quantityStepsFor(10000), { fine: 1000, coarse: 10000 })
+  // A round number does not get bigger steps than its neighbor just for
   // being round (contrast with "step by the first significant digit").
-  assert.equal(quantityStepFor(5000), quantityStepFor(5001))
+  assert.deepEqual(quantityStepsFor(5000), quantityStepsFor(5001))
 })
 
-test('quantityStepFor: treats missing/negative values as 0', () => {
-  assert.equal(quantityStepFor(undefined), 1)
-  assert.equal(quantityStepFor(null), 1)
-  assert.equal(quantityStepFor(-450), 10)
+test('quantityStepsFor: treats missing/negative values as 0; fine === coarse for single digits', () => {
+  assert.deepEqual(quantityStepsFor(undefined), { fine: 1, coarse: 1 })
+  assert.deepEqual(quantityStepsFor(null), { fine: 1, coarse: 1 })
+  assert.deepEqual(quantityStepsFor(-450), { fine: 10, coarse: 100 })
 })
 
 test('resolvedItemsIn: plain items pass through, split items produce one view per matching placement', () => {
