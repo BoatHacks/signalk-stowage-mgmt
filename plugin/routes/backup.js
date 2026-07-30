@@ -170,8 +170,13 @@ module.exports = function registerBackupRoutes (router, getDb) {
             if (restoredCategoryIds.has(categoryId)) insertItemCategory.run(item.id, categoryId)
           });
           (item.placements || []).forEach((p) => {
-            if (!locationIds.has(p.location_id)) return
-            insertPlacement.run(p.id || randomUUID(), item.id, p.location_id, p.quantity)
+            // location_id is nullable — a placement can legitimately be
+            // "not stored anywhere". Set.has(null) is false, so that case
+            // must be let through explicitly rather than only dropping
+            // placements that reference a *non-null* location missing from
+            // this import.
+            if (p.location_id != null && !locationIds.has(p.location_id)) return
+            insertPlacement.run(p.id || randomUUID(), item.id, p.location_id ?? null, p.quantity)
           })
         })
       })

@@ -113,6 +113,33 @@ test('import: replaces (does not merge with) existing data', async (t) => {
   assert.equal(items[0].name, 'Imported Item')
 })
 
+test('import: preserves a split item\'s unlocated (location_id: null) placement (fixes #34)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const aft = await (await server.post('/locations', { name: 'Aft Cabin', type: 'storage_space' })).json()
+  const item = await (await server.post('/items', { name: 'Rope', actual_quantity: 10, location_id: aft.id })).json()
+  // Split some stock off to "no location" (to_location_id omitted) —
+  // a legitimate state for a split item's remainder.
+  await server.post(`/items/${item.id}/split`, { from_location_id: aft.id, to_location_id: null, quantity: 4 })
+
+  const beforeImport = await (await server.get(`/items/${item.id}`)).json()
+  const unlocatedBefore = beforeImport.placements.find((p) => p.location_id === null)
+  assert.ok(unlocatedBefore)
+  assert.equal(unlocatedBefore.quantity, 4)
+
+  const snapshot = await (await server.get('/export')).json()
+  await server.post('/import', snapshot)
+
+  const afterImport = await (await server.get(`/items/${item.id}`)).json()
+  assert.equal(afterImport.actual_quantity, 10)
+  const unlocatedAfter = afterImport.placements.find((p) => p.location_id === null)
+  assert.ok(unlocatedAfter, 'unlocated placement should survive import')
+  assert.equal(unlocatedAfter.quantity, 4)
+  const totalAfter = afterImport.placements.reduce((sum, p) => sum + p.quantity, 0)
+  assert.equal(totalAfter, afterImport.actual_quantity)
+})
+
 test('import: does not touch floorplans or existing attachment files', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())
