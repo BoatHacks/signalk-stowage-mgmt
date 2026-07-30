@@ -18,6 +18,20 @@ test('items: create requires a name, defaults actual_quantity to 1', async (t) =
   assert.deepEqual(item.placements, [])
 })
 
+test('items: create rejects a negative or non-numeric actual_quantity (fixes #33)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const negative = await server.post('/items', { name: 'X', actual_quantity: -5 })
+  assert.equal(negative.status, 400)
+
+  const nonNumeric = await server.post('/items', { name: 'X', actual_quantity: 'abc' })
+  assert.equal(nonNumeric.status, 400)
+
+  const items = await (await server.get('/items')).json()
+  assert.equal(items.length, 0)
+})
+
 test('items: create rejects a non-existent location_id', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())
@@ -64,6 +78,25 @@ test('items: patch updates fields and logs actual_quantity changes', async (t) =
   assert.equal(qtyEvents.length, 1)
   assert.equal(qtyEvents[0].old_value, 3)
   assert.equal(qtyEvents[0].new_value, 5)
+})
+
+test('items: patch rejects a negative or non-numeric actual_quantity, leaving the item unchanged (fixes #33)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const item = await (await server.post('/items', { name: 'Fuse', actual_quantity: 3 })).json()
+
+  const negative = await server.patch(`/items/${item.id}`, { actual_quantity: -5 })
+  assert.equal(negative.status, 400)
+
+  const nonNumeric = await server.patch(`/items/${item.id}`, { actual_quantity: 'abc' })
+  assert.equal(nonNumeric.status, 400)
+
+  const unchanged = await (await server.get(`/items/${item.id}`)).json()
+  assert.equal(unchanged.actual_quantity, 3)
+
+  const log = await (await server.get('/item-log')).json()
+  assert.equal(log.filter((e) => e.item_id === item.id && e.event === 'actual_quantity').length, 0)
 })
 
 test('items: categories can be assigned at creation and via endpoints', async (t) => {

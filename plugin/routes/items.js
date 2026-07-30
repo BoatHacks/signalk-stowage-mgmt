@@ -104,6 +104,14 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       location_id: locationId, category_ids: categoryIds, note, expires_at: expiresAt
     } = req.body || {}
     if (!name) return res.status(400).json({ error: 'name required' })
+    let startingQuantity = 1
+    if (actualQuantity != null) {
+      const parsedQuantity = parseInt(actualQuantity, 10)
+      if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
+        return res.status(400).json({ error: 'actual_quantity must be a non-negative integer' })
+      }
+      startingQuantity = parsedQuantity || 1 // 0 keeps the existing "starts at 1" default
+    }
     if (locationId) {
       const loc = db().prepare('SELECT id FROM locations WHERE id = ?').get(locationId)
       if (!loc) return res.status(400).json({ error: 'location_id does not exist' })
@@ -115,7 +123,6 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       }
     }
     const id = randomUUID()
-    const startingQuantity = actualQuantity || 1
     runInTransaction(db(), () => {
       db().prepare(
         'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -141,6 +148,14 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const hasDefaultLocationId = Object.prototype.hasOwnProperty.call(body, 'default_location_id')
     const newTargetQuantity = hasTargetQuantity ? (body.target_quantity ?? null) : null
     const newDefaultLocationId = hasDefaultLocationId ? (body.default_location_id || null) : null
+
+    let parsedActualQuantity = null
+    if (actualQuantity != null) {
+      parsedActualQuantity = parseInt(actualQuantity, 10)
+      if (!Number.isInteger(parsedActualQuantity) || parsedActualQuantity < 0) {
+        return res.status(400).json({ error: 'actual_quantity must be a non-negative integer' })
+      }
+    }
 
     if (actualQuantity != null && getPlacements(item.id).length > 0) {
       return res.status(400).json({
@@ -171,7 +186,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
          WHERE id = ?`
       ).run(
         name ?? null,
-        actualQuantity ?? null,
+        parsedActualQuantity,
         hasTargetQuantity ? 1 : 0, newTargetQuantity,
         hasNotes ? 1 : 0, hasNotes ? (body.notes ?? null) : null,
         hasExpiresAt ? 1 : 0, hasExpiresAt ? (body.expires_at ?? null) : null,
@@ -180,11 +195,11 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       )
 
       const logName = name || item.name
-      if (actualQuantity != null && actualQuantity !== item.actual_quantity) {
-        const delta = actualQuantity - item.actual_quantity
+      if (parsedActualQuantity != null && parsedActualQuantity !== item.actual_quantity) {
+        const delta = parsedActualQuantity - item.actual_quantity
         logItemEvent(db(), {
           itemId: item.id, itemName: logName, event: 'actual_quantity',
-          oldValue: item.actual_quantity, newValue: actualQuantity, note,
+          oldValue: item.actual_quantity, newValue: parsedActualQuantity, note,
           toLocationId: delta > 0 ? item.location_id : null, toLocationName: delta > 0 ? locationName(item.location_id) : null,
           fromLocationId: delta < 0 ? item.location_id : null, fromLocationName: delta < 0 ? locationName(item.location_id) : null
         })
