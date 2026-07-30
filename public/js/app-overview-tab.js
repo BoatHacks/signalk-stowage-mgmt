@@ -1,4 +1,4 @@
-import { html, useState, useMemo, useEffect } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useMemo, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
 import { useApp, QuantityEditor } from './app-core.js';
 import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepsFor } from './helpers.js';
 
@@ -41,6 +41,11 @@ export function OverviewTab() {
   var locationFilter = locationFilterState[0], setLocationFilter = locationFilterState[1];
   var activityCountsState = useState({});
   var activityCounts = activityCountsState[0], setActivityCounts = activityCountsState[1];
+  // Tracks in-flight quick-adjust requests per item/placement so a rapid
+  // second tap (well within a request round-trip) queues its delta instead
+  // of computing "next quantity" from the same now-stale snapshot the
+  // first tap already used — see adjustQty below.
+  var pendingAdjustRef = useRef({});
 
   // Recent-activity sort needs a count of how often each item's quantity
   // has actually changed lately — fetched on demand (not part of the
@@ -144,15 +149,39 @@ export function OverviewTab() {
 
   function adjustQty (item, delta) {
     var defaultPlacement = defaultPlacementFor(item);
-    if (defaultPlacement) {
-      var nextPlacementQty = Math.max(0, defaultPlacement.quantity + delta);
-      if (nextPlacementQty === defaultPlacement.quantity) return;
-      app.setPlacementQuantity(item.id, defaultPlacement.id, nextPlacementQty, null).catch(function () {});
+    var key = defaultPlacement ? 'placement:' + defaultPlacement.id : 'item:' + item.id;
+    var pending = pendingAdjustRef.current;
+
+    if (pending[key]) {
+      // A request for this target is already in flight — its data (fetched
+      // when that request started) is about to go stale the moment it
+      // resolves, so folding this tap's delta into a fresh computation now
+      // would race the response. Queue it instead; it's applied once the
+      // in-flight request settles.
+      pending[key].queuedDelta += delta;
       return;
     }
-    var next = Math.max(0, item.actual_quantity + delta);
-    if (next === item.actual_quantity) return;
-    app.updateItem(item.id, { actual_quantity: next }).catch(function () {});
+
+    var baseQuantity = defaultPlacement ? defaultPlacement.quantity : item.actual_quantity;
+
+    function send (targetQuantity) {
+      pending[key] = { queuedDelta: 0 };
+      var request = defaultPlacement
+        ? app.setPlacementQuantity(item.id, defaultPlacement.id, targetQuantity, null)
+        : app.updateItem(item.id, { actual_quantity: targetQuantity });
+      request.catch(function () {}).finally(function () {
+        var queuedDelta = pending[key] ? pending[key].queuedDelta : 0;
+        delete pending[key];
+        if (queuedDelta) {
+          var next = Math.max(0, targetQuantity + queuedDelta);
+          if (next !== targetQuantity) send(next);
+        }
+      });
+    }
+
+    var next = Math.max(0, baseQuantity + delta);
+    if (next === baseQuantity) return;
+    send(next);
   }
 
   var columns = [
