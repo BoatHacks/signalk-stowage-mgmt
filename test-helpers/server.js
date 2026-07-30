@@ -63,6 +63,10 @@ async function startTestServer (opts) {
     patch,
     delete: del,
     postRaw,
+    // Stops the plugin (closing its db handle) without tearing down the
+    // HTTP server itself — lets a test simulate "database not ready"
+    // mid-request the way plugin.stop() would during a real shutdown.
+    stopPlugin () { plugin.stop() },
     async close () {
       plugin.stop()
       await new Promise((resolve) => server.close(resolve))

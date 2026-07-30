@@ -81,10 +81,21 @@ module.exports = function registerAttachmentRoutes (router, getDb, getDataDir) {
     writeStream.on('finish', () => {
       if (settled) return
       settled = true
-      db().prepare(
-        'INSERT INTO item_attachments (id, item_id, filename, mime_type, size) VALUES (?, ?, ?, ?, ?)'
-      ).run(id, item.id, filename, mimeType, size)
-      res.status(201).json(db().prepare(`SELECT ${ATTACHMENT_FIELDS} FROM item_attachments WHERE id = ?`).get(id))
+      // This callback runs outside Express's own call stack (it's a stream
+      // event, not a route handler invocation), so a thrown error here
+      // would be an uncaught exception that crashes the whole process
+      // rather than just failing this request — hence the explicit
+      // try/catch instead of letting a DB error (or the server shutting
+      // down mid-upload) escape.
+      try {
+        db().prepare(
+          'INSERT INTO item_attachments (id, item_id, filename, mime_type, size) VALUES (?, ?, ?, ?, ?)'
+        ).run(id, item.id, filename, mimeType, size)
+        res.status(201).json(db().prepare(`SELECT ${ATTACHMENT_FIELDS} FROM item_attachments WHERE id = ?`).get(id))
+      } catch (err) {
+        fs.unlink(filePath, () => {})
+        if (!res.headersSent) res.status(err.statusCode || 500).json({ error: 'failed to save attachment: ' + err.message })
+      }
     })
     req.pipe(writeStream)
   })

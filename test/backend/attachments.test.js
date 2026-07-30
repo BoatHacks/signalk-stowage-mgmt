@@ -81,3 +81,37 @@ test('attachments: deleting the item cleans up its attachment files on disk', as
   await new Promise((resolve) => setTimeout(resolve, 100))
   assert.ok(!fs.existsSync(itemAttachmentDir))
 })
+
+test('attachments: the database going away mid-upload fails the request instead of crashing the server (regression for #32)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const item = await (await server.post('/items', { name: 'Fuse' })).json()
+
+  // Expose the stream's controller so we can hold the upload open, stop the
+  // plugin (simulating the db going away mid-upload), and only then close
+  // the stream to let the route's 'finish' handler run against a dead db.
+  let controllerRef
+  const controlledBody = new ReadableStream({
+    start (controller) { controllerRef = controller; controller.enqueue(new TextEncoder().encode('partial')) }
+  })
+
+  const uploadPromise = fetch(`${server.baseUrl}/items/${item.id}/attachments`, {
+    method: 'POST',
+    duplex: 'half',
+    body: controlledBody
+  })
+
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  server.stopPlugin() // db() will now throw 'database not ready' inside the finish handler
+  controllerRef.close()
+
+  const res = await uploadPromise
+  assert.equal(res.status, 503) // db()'s "database not ready" error carries statusCode 503
+  assert.match((await res.json()).error, /failed to save attachment/)
+
+  // The server process itself is still alive and serving requests — it
+  // just reports the plugin as not ready, rather than having crashed.
+  const afterCrash = await server.get('/items')
+  assert.equal(afterCrash.status, 503)
+})
