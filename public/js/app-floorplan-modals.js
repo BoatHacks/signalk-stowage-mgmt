@@ -177,20 +177,24 @@ export function MoveModal() {
     return function () { cancelled = true; };
   }, [move ? move.entity.id : null, summary ? summary.id : null]);
 
-  if (!move) return null;
-
-  var forbidden = move.type === 'container'
+  // forbidden/floorplan/mappedIdsKey are computed unconditionally (even when
+  // `move` is null) so the useMemo below always runs — Preact/React hooks
+  // must be called in the same order on every render, and an early return
+  // above a hook call would skip it only on some renders.
+  var forbidden = move && move.type === 'container'
     ? [move.entity.id].concat(descendantIds(app.data, move.entity.id))
     : [];
   var floorplan = floorplanContent;
-  var mappedIdsKey = app.data.locations
+  var mappedIdsKey = move ? app.data.locations
     .filter(function (l) { return l.type === 'storage_space' && floorplan && l.floorplan_id === floorplan.id && forbidden.indexOf(l.id) === -1; })
     .map(function (l) { return l.svg_element_id; })
     .sort()
-    .join(',');
+    .join(',') : '';
   var mappedIds = useMemo(function () {
     return mappedIdsKey ? mappedIdsKey.split(',') : [];
   }, [mappedIdsKey]);
+
+  if (!move) return null;
 
   function spaceForElementId(elementId) {
     return app.data.locations.find(function (l) {
