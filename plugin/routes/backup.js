@@ -19,6 +19,27 @@ const { runInTransaction } = require('../tx')
 // keep working against the same item/location ids after a restore).
 const SCHEMA_VERSION = 1
 
+// Detects a parent_id cycle among an array of {id, parent_id} location rows,
+// treating a parent_id that isn't one of the rows' own ids as top-level
+// (matching how the actual import's parent-fixup pass treats a dangling
+// parent_id). Used to reject a cyclic import before it's ever written —
+// locateFrom() (routes/items.js) walks the parent chain with no cycle guard
+// and would otherwise loop forever on a cyclic graph.
+function hasLocationCycle (locations) {
+  const ids = new Set(locations.map((l) => l.id))
+  const parentOf = new Map(locations.map((l) => [l.id, ids.has(l.parent_id) ? l.parent_id : null]))
+  for (const loc of locations) {
+    const seen = new Set()
+    let cursor = loc.id
+    while (cursor) {
+      if (seen.has(cursor)) return true
+      seen.add(cursor)
+      cursor = parentOf.get(cursor)
+    }
+  }
+  return false
+}
+
 module.exports = function registerBackupRoutes (router, getDb) {
   function db () {
     const instance = getDb()
@@ -85,6 +106,9 @@ module.exports = function registerBackupRoutes (router, getDb) {
     }
     if (!Array.isArray(payload.categories) || !Array.isArray(payload.locations) || !Array.isArray(payload.items)) {
       return res.status(400).json({ error: 'payload must include categories, locations, and items arrays' })
+    }
+    if (hasLocationCycle(payload.locations)) {
+      return res.status(400).json({ error: 'locations contain a parent_id cycle' })
     }
 
     const existingFloorplanIds = new Set(db().prepare('SELECT id FROM floorplans').all().map((f) => f.id))

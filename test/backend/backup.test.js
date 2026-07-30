@@ -140,3 +140,26 @@ test('import: rejects missing/wrong schema_version and malformed payloads withou
   assert.equal(items.length, 1)
   assert.equal(items[0].name, 'Untouched')
 })
+
+test('import: rejects a payload whose locations contain a parent_id cycle, without touching data', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  await server.post('/items', { name: 'Untouched' })
+
+  const cyclic = {
+    schema_version: 1,
+    categories: [],
+    locations: [
+      { id: 'a', name: 'A', type: 'storage_space', parent_id: 'b' },
+      { id: 'b', name: 'B', type: 'storage_space', parent_id: 'a' }
+    ],
+    items: []
+  }
+  const res = await server.post('/import', cyclic)
+  assert.equal(res.status, 400)
+  assert.match((await res.json()).error, /cycle/)
+
+  const items = await (await server.get('/items')).json()
+  assert.equal(items.length, 1)
+  assert.equal(items[0].name, 'Untouched')
+})
