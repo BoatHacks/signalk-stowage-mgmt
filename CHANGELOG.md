@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [0.9.5] - 2026-07-30
+
+### Changed
+
+- `cut-release.yml` now publishes to npm directly in the same run (tag,
+  create the GitHub release, then `npm publish --provenance`), instead
+  of relying on a separate `publish-npm.yml` workflow triggered by the
+  release. A release created with the default `GITHUB_TOKEN` doesn't
+  cascade into other workflows' `release: published` triggers (GitHub
+  suppresses that, to prevent recursive workflow chains), so the
+  separate workflow was never actually firing on its own — this bit
+  v0.9.4, which needed a manual rescue to get published. `publish-npm.yml`
+  has been removed; npm's Trusted Publisher config now points at
+  `cut-release.yml`, since only one workflow can hold that role at a
+  time.
+- Corrected stale `AGENTS.md` notes claiming npm's Trusted Publisher
+  config was incomplete — OIDC trusted publishing has in fact been
+  fully working for a while (confirmed via v0.8.12 and v0.9.4, both
+  published tokenless with a signed provenance statement).
+
 ## [0.9.4] - 2026-07-30
 
 ### Security
