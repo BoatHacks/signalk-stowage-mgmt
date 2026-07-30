@@ -19,6 +19,16 @@ const { runInTransaction } = require('../tx')
 // keep working against the same item/location ids after a restore).
 const SCHEMA_VERSION = 1
 
+// Import runs as a single synchronous transaction (see runInTransaction) —
+// node:sqlite has no async API, so nothing yields back to the event loop
+// between rows. A payload under the router's 15MB body-size cap can still
+// contain a very large number of small rows, and the whole server (a
+// single-threaded Node process) would be unresponsive for the entire import.
+// This caps the total row count to keep worst-case blocking bounded, rather
+// than the more invasive change of splitting the write across multiple
+// transactions (which would risk a partially-applied "replace").
+const MAX_IMPORT_ROWS = 20000
+
 // Detects a parent_id cycle among an array of {id, parent_id} location rows,
 // treating a parent_id that isn't one of the rows' own ids as top-level
 // (matching how the actual import's parent-fixup pass treats a dangling
@@ -109,6 +119,15 @@ module.exports = function registerBackupRoutes (router, getDb) {
     }
     if (hasLocationCycle(payload.locations)) {
       return res.status(400).json({ error: 'locations contain a parent_id cycle' })
+    }
+    const totalPlacements = payload.items.reduce(
+      (sum, item) => sum + (Array.isArray(item.placements) ? item.placements.length : 0), 0
+    )
+    const totalRows = payload.categories.length + payload.locations.length + payload.items.length + totalPlacements
+    if (totalRows > MAX_IMPORT_ROWS) {
+      return res.status(400).json({
+        error: `import payload too large (${totalRows} rows across categories/locations/items/placements, max ${MAX_IMPORT_ROWS})`
+      })
     }
 
     const existingFloorplanIds = new Set(db().prepare('SELECT id FROM floorplans').all().map((f) => f.id))

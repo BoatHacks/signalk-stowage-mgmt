@@ -190,3 +190,23 @@ test('import: rejects a payload whose locations contain a parent_id cycle, witho
   assert.equal(items.length, 1)
   assert.equal(items[0].name, 'Untouched')
 })
+
+test('import: rejects a payload over the row-count cap, without touching data (fixes #36)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  await server.post('/items', { name: 'Untouched' })
+
+  const tooManyItems = {
+    schema_version: 1,
+    categories: [],
+    locations: [],
+    items: Array.from({ length: 20001 }, (_, i) => ({ id: 'i' + i, name: 'Item ' + i, actual_quantity: 1 }))
+  }
+  const res = await server.post('/import', tooManyItems)
+  assert.equal(res.status, 400)
+  assert.match((await res.json()).error, /too large/)
+
+  const items = await (await server.get('/items')).json()
+  assert.equal(items.length, 1)
+  assert.equal(items[0].name, 'Untouched')
+})
