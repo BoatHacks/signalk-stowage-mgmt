@@ -1,5 +1,15 @@
 name: Publish to npm
 
+# Releases cut via cut-release.yml now publish to npm directly as part of
+# that same workflow run, so its `release: published` trigger below won't
+# actually fire for them — a release created there uses the default
+# GITHUB_TOKEN, and GitHub suppresses downstream workflow triggers from
+# events created by that token (see issue #43). This workflow is kept
+# around as a manual fallback: use its workflow_dispatch input to retry a
+# publish for a tag whose release already exists (e.g. npm had a transient
+# failure) without re-cutting the release, or to publish a release created
+# some other way (e.g. directly via the GitHub UI, which isn't subject to
+# the same suppression).
 on:
   release:
     types: [published]

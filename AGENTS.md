@@ -54,18 +54,20 @@ scaffolded as `signalk-quartermaster`.
   v0.9.4) that published with a signed provenance statement, no OTP, no
   human present. (Earlier notes here claiming npm-side Trusted Publisher
   config was incomplete were stale/wrong.)
-- `publish-npm.yml` triggers on `release: published`, gated on Plugin CI
-  (`plugin-ci.yml`) having already completed successfully for the exact
-  released commit — refuses to publish otherwise. Also has a
-  `workflow_dispatch` trigger (`tag` input) for manual retries.
-- `cut-release.yml` (added ~v0.9.4) automates tagging + GitHub release
-  creation via `workflow_dispatch`. **Known gap (issue #43):** it creates
-  the release using the default `GITHUB_TOKEN`, and GitHub suppresses
-  downstream workflow triggers from events created by that token — so
-  `publish-npm.yml`'s `release: published` trigger never fires
-  automatically afterward. Until #43 is fixed, manually trigger
-  `publish-npm.yml`'s `workflow_dispatch` (same tag) right after
-  `cut-release.yml` finishes.
+- `cut-release.yml` (added ~v0.9.4, `workflow_dispatch`) is the standard
+  release path: verifies `package.json`'s version and the CHANGELOG entry,
+  runs the test suite, tags, creates the GitHub release, and — as of
+  issue #43's fix — publishes to npm itself in the same run, gated on
+  Plugin CI (`plugin-ci.yml`) having already completed successfully for
+  the exact commit. It publishes directly rather than relying on
+  `publish-npm.yml`'s `release: published` trigger, because a release
+  created with the default `GITHUB_TOKEN` doesn't cascade into other
+  workflows' triggers (GitHub suppresses that, to prevent recursive
+  workflow chains) — so that trigger would never have fired on its own.
+- `publish-npm.yml` still exists as a manual fallback (`workflow_dispatch`,
+  `tag` input) — for retrying a publish against an already-existing
+  release without re-cutting it, or publishing a release created some
+  other way (e.g. directly via the GitHub UI).
 - GitHub release and npm publish are separate explicit steps (see the
   user-level `plugin-release` skill for the general procedure).
 
