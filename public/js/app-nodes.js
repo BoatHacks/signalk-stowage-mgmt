@@ -23,7 +23,7 @@ export function ItemChip(props) {
       <span class="category-badge" key=${cat.id}>
         <span class="type-icon"><${Icon} name="tag" title="Category" /></span>${cat.name}
         <button type="button" class="category-badge-remove" title=${'Remove "' + cat.name + '" from this item'}
-                onClick=${function (e) { e.stopPropagation(); app.removeItemCategory(item.id, cat.id); }}>×</button>
+                onClick=${function (e) { e.stopPropagation(); app.removeItemCategory(item.id, cat.id).catch(function () {}); }}>×</button>
       </span>
     `;
   });
@@ -107,11 +107,11 @@ export function LocationNode(props) {
     if (!draggedId) return;
     if (dragType === 'container') {
       if (draggedId === loc.id) return;
-      app.moveContainer(draggedId, loc.id);
+      app.moveContainer(draggedId, loc.id).catch(function () {});
     } else if (placementId) {
-      app.movePlacementTo(draggedId, placementId, loc.id);
+      app.movePlacementTo(draggedId, placementId, loc.id).catch(function () {});
     } else {
-      app.moveItemTo(draggedId, loc.id);
+      app.moveItemTo(draggedId, loc.id).catch(function () {});
     }
   }
 
@@ -179,9 +179,9 @@ export function NotStoredPanel() {
     var draggedId = e.dataTransfer.getData('text/plain');
     var placementId = e.dataTransfer.getData('application/x-placement-id');
     if (!draggedId) return;
-    if (dragType === 'container') app.moveContainer(draggedId, null);
-    else if (placementId) app.movePlacementTo(draggedId, placementId, null);
-    else app.moveItemTo(draggedId, null);
+    if (dragType === 'container') app.moveContainer(draggedId, null).catch(function () {});
+    else if (placementId) app.movePlacementTo(draggedId, placementId, null).catch(function () {});
+    else app.moveItemTo(draggedId, null).catch(function () {});
   }
 
   if (hiddenForTab || !visible) return null;

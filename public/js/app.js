@@ -181,18 +181,18 @@ function App() {
     addStorageSpace: function (parentId) {
       var name = prompt('Name of the new storage space (e.g. "Lazarette"):');
       if (!name) return;
-      act(function () { return api.createLocation({ name: name, type: 'storage_space', parent_id: parentId || null }); });
+      act(function () { return api.createLocation({ name: name, type: 'storage_space', parent_id: parentId || null }); }).catch(function () {});
     },
     addContainer: function (parentId) {
       var name = prompt('Name of the new container (e.g. "First Aid Box"):');
       if (!name) return;
-      act(function () { return api.createLocation({ name: name, type: 'container', parent_id: parentId }); });
+      act(function () { return api.createLocation({ name: name, type: 'container', parent_id: parentId }); }).catch(function () {});
     },
     createLocation: function (body) { return act(function () { return api.createLocation(body); }); },
     renameLocation: function (loc) {
       var name = prompt('New name:', loc.name);
       if (!name || name === loc.name) return;
-      act(function () { return api.renameLocation(loc.id, name); });
+      act(function () { return api.renameLocation(loc.id, name); }).catch(function () {});
     },
     setManualSvgId: function (loc) {
       var current = loc.svg_element_id || '';
@@ -207,11 +207,11 @@ function App() {
       if (trimmed === current) return;
       var floorplanId = trimmed ? (data.floorplans.length ? data.floorplans[0].id : null) : null;
       if (trimmed && !floorplanId) return showToast('Upload a floorplan first.');
-      act(function () { return api.setSvgMapping(loc.id, floorplanId, trimmed || null); });
+      act(function () { return api.setSvgMapping(loc.id, floorplanId, trimmed || null); }).catch(function () {});
     },
     deleteLocation: function (loc) {
       if (!confirm('Really delete "' + loc.name + '"?')) return;
-      act(function () { return api.deleteLocation(loc.id); });
+      act(function () { return api.deleteLocation(loc.id); }).catch(function () {});
     },
     moveContainer: function (id, parentId) { return act(function () { return api.moveLocation(id, parentId); }); },
     setSvgMapping: function (id, floorplanId, svgElementId) { return act(function () { return api.setSvgMapping(id, floorplanId, svgElementId); }); },
@@ -222,7 +222,7 @@ function App() {
       if (!name) return;
       var qtyRaw = prompt('Actual Quantity:', '1');
       var actualQuantity = parseInt(qtyRaw, 10) || 1;
-      act(function () { return api.createItem({ name: name, actual_quantity: actualQuantity, location_id: locationId }); });
+      act(function () { return api.createItem({ name: name, actual_quantity: actualQuantity, location_id: locationId }); }).catch(function () {});
     },
     updateItem: function (id, body) { return act(function () { return api.updateItem(id, body); }); },
     setThumbnail: function (id, thumbnail) { return act(function () { return api.setThumbnail(id, thumbnail); }); },
@@ -234,7 +234,7 @@ function App() {
     removeItemCategory: function (id, categoryId) { return act(function () { return api.removeItemCategory(id, categoryId); }); },
     deleteItem: function (item, skipConfirm) {
       if (!skipConfirm && !confirm('Really delete "' + item.name + '"?')) return;
-      act(function () { return api.deleteItem(item.id); });
+      act(function () { return api.deleteItem(item.id); }).catch(function () {});
     },
 
     // categories
