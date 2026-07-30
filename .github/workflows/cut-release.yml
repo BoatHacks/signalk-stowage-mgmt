@@ -90,8 +90,9 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ steps.changelog.outputs.notes }}
         run: |
           TAG="v${{ github.event.inputs.version }}"
           gh release create "$TAG" \
             --title "$TAG" \
-            --notes "${{ steps.changelog.outputs.notes }}"
+            --notes "$NOTES"
