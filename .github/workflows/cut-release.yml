@@ -46,11 +46,18 @@ jobs:
         id: changelog
         run: |
           VERSION="${{ github.event.inputs.version }}"
-          NOTES=$(awk -v ver="## \\[$VERSION\\]" '
-            $0 ~ ver { found=1; next }
-            found && /^## \[/ { exit }
-            found { print }
-          ' CHANGELOG.md)
+          START=$(grep -n "^## \[$VERSION\]" CHANGELOG.md | head -1 | cut -d: -f1)
+          if [ -z "$START" ]; then
+            echo "::error::No CHANGELOG.md entry found for version $VERSION"
+            exit 1
+          fi
+          REST=$(tail -n +$((START+1)) CHANGELOG.md)
+          END=$(printf '%s\n' "$REST" | grep -n "^## \[" | head -1 | cut -d: -f1)
+          if [ -z "$END" ]; then
+            NOTES="$REST"
+          else
+            NOTES=$(printf '%s\n' "$REST" | head -n $((END-1)))
+          fi
           if [ -z "$NOTES" ]; then
             echo "::error::No CHANGELOG.md entry found for version $VERSION"
             exit 1
