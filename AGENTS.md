@@ -54,20 +54,26 @@ scaffolded as `signalk-quartermaster`.
   v0.9.4) that published with a signed provenance statement, no OTP, no
   human present. (Earlier notes here claiming npm-side Trusted Publisher
   config was incomplete were stale/wrong.)
-- `cut-release.yml` (added ~v0.9.4, `workflow_dispatch`) is the standard
-  release path: verifies `package.json`'s version and the CHANGELOG entry,
-  runs the test suite, tags, creates the GitHub release, and — as of
-  issue #43's fix — publishes to npm itself in the same run, gated on
+- `cut-release.yml` (added ~v0.9.4, `workflow_dispatch`) is the **only**
+  release path now: verifies `package.json`'s version and the CHANGELOG
+  entry, runs the test suite, tags, creates the GitHub release, and — as
+  of issue #43's fix — publishes to npm itself in the same run, gated on
   Plugin CI (`plugin-ci.yml`) having already completed successfully for
-  the exact commit. It publishes directly rather than relying on
-  `publish-npm.yml`'s `release: published` trigger, because a release
-  created with the default `GITHUB_TOKEN` doesn't cascade into other
-  workflows' triggers (GitHub suppresses that, to prevent recursive
-  workflow chains) — so that trigger would never have fired on its own.
-- `publish-npm.yml` still exists as a manual fallback (`workflow_dispatch`,
-  `tag` input) — for retrying a publish against an already-existing
-  release without re-cutting it, or publishing a release created some
-  other way (e.g. directly via the GitHub UI).
+  the exact commit. It publishes directly rather than relying on a
+  separate release-triggered workflow, because a release created with
+  the default `GITHUB_TOKEN` doesn't cascade into other workflows'
+  `release: published` triggers (GitHub suppresses that, to prevent
+  recursive workflow chains) — a separate workflow would never have
+  fired on its own.
+- `publish-npm.yml` (the previous release-triggered workflow, and briefly
+  a manual-fallback candidate) was **removed** once npm's Trusted
+  Publisher config for this package was repointed at `cut-release.yml`'s
+  exact workflow filename — npm's OIDC exchange is pinned to a specific
+  repo + workflow filename, so only one workflow can actually publish at
+  a time. If a manual-retry path is needed again later, it'll need to be
+  re-added and re-registered as the trusted workflow (or npm would need
+  to support multiple trusted workflows per package, which it doesn't
+  currently).
 - GitHub release and npm publish are separate explicit steps (see the
   user-level `plugin-release` skill for the general procedure).
 

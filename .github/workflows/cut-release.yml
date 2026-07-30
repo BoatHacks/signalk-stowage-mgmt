@@ -128,16 +128,17 @@ jobs:
 
       # No NODE_AUTH_TOKEN / NPM_TOKEN needed: npm exchanges the OIDC token
       # from id-token: write above for a short-lived publish credential,
-      # since this repo + workflow is configured as a Trusted Publisher on
-      # the package's npm settings page. Provenance attestation happens
-      # automatically for trusted-publishing releases of public packages
-      # from a public repo, so --provenance isn't required, but it's kept
-      # explicit since some setups have needed it.
+      # since this repo + this exact workflow filename is configured as the
+      # Trusted Publisher on the package's npm settings page. Provenance
+      # attestation happens automatically for trusted-publishing releases of
+      # public packages from a public repo, so --provenance isn't required,
+      # but it's kept explicit since some setups have needed it.
       #
-      # This runs directly in this workflow (rather than relying on
-      # publish-npm.yml's `release: published` trigger) because a release
-      # created here uses the default GITHUB_TOKEN, and GitHub deliberately
-      # suppresses downstream workflow triggers from events created by that
-      # token — publish-npm.yml would never fire on its own (see issue #43).
+      # This runs directly in this workflow rather than in a separate
+      # release-triggered one (there was one, publish-npm.yml, removed after
+      # issue #43) because a release created with the default GITHUB_TOKEN
+      # doesn't cascade into other workflows' `release: published` triggers
+      # — GitHub suppresses that, to prevent recursive workflow chains — so
+      # a separate workflow would never have fired on its own.
       - name: Publish to npm
         run: npm publish --provenance
