@@ -49,9 +49,23 @@ scaffolded as `signalk-quartermaster`.
   `dynamicQuantityScale`.
 
 ## Release/publish setup
-- npm OIDC trusted publishing set up in CI, but npmjs.com-side Trusted
-  Publisher config not yet completed — all publishes are manual with OTP.
-- `publish-npm.yml` has a `workflow_dispatch` trigger for retries.
+- npm OIDC trusted publishing is fully configured and working — confirmed
+  by multiple hands-free, tokenless `publish-npm.yml` runs (e.g. v0.8.12,
+  v0.9.4) that published with a signed provenance statement, no OTP, no
+  human present. (Earlier notes here claiming npm-side Trusted Publisher
+  config was incomplete were stale/wrong.)
+- `publish-npm.yml` triggers on `release: published`, gated on Plugin CI
+  (`plugin-ci.yml`) having already completed successfully for the exact
+  released commit — refuses to publish otherwise. Also has a
+  `workflow_dispatch` trigger (`tag` input) for manual retries.
+- `cut-release.yml` (added ~v0.9.4) automates tagging + GitHub release
+  creation via `workflow_dispatch`. **Known gap (issue #43):** it creates
+  the release using the default `GITHUB_TOKEN`, and GitHub suppresses
+  downstream workflow triggers from events created by that token — so
+  `publish-npm.yml`'s `release: published` trigger never fires
+  automatically afterward. Until #43 is fixed, manually trigger
+  `publish-npm.yml`'s `workflow_dispatch` (same tag) right after
+  `cut-release.yml` finishes.
 - GitHub release and npm publish are separate explicit steps (see the
   user-level `plugin-release` skill for the general procedure).
 
