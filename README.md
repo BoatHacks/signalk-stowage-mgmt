@@ -499,6 +499,24 @@ API directly — the first (and so far only) external consumer. It depends on:
 - The `{ "error": "..." }` error shape, to distinguish "no such item" from
   "route doesn't exist" on `GET /items/:id`'s 404.
 
+**A note on auth for this integration:** every route above lives under
+`/plugins/signalk-stowage-mgmt/*`, the same prefix every SignalK plugin's
+routes are mounted under — and, like any other plugin route, it's covered
+by Signal K's own security layer, not by anything this plugin adds itself.
+With security **disabled** (the common case for a private, on-boat
+server), all of the above works with no auth from any origin. With
+security **enabled**, a same-origin browser call from another plugin's
+frontend — such as `signalk-maintenance-tracker`'s `GET /items` and
+`PATCH /items/:id` above — needs a session already authenticated with
+sufficient permission, exactly as if it were calling any of this plugin's
+own admin-UI-driven routes. There's no separate read-only/anonymous access
+tier for this API the way there is for Signal K's own resource-provider
+endpoints (which stay readable under `allow_readonly` regardless of the
+security setting) — with security on and no authenticated session, callers
+get a 401/403, not degraded read-only access. Keep this in mind before
+relying on a same-origin fetch from another plugin's frontend on a
+security-enabled server.
+
 There's no version negotiation between the two plugins, so a breaking
 change to any of the above won't fail loudly on either side — it'll just
 silently break the integration. **Call this out explicitly in the
