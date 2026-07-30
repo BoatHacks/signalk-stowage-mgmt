@@ -11,10 +11,13 @@ scaffolded as `signalk-quartermaster`.
 - Error response shape is flat `{error: "..."}`, not nested (a downstream
   consumer's docs got this wrong, see [[signalk-maintenance-tracker]]).
 
-## Features shipped (v0.7.x - v0.8.5, most recent: v0.8.4/v0.8.5)
+## Features shipped (v0.7.x - v0.9.3, most recent: v0.9.0-v0.9.3)
 - Split items across multiple locations (full `item_placements`/`item_log`
-  schema, floorplan blinking, placement chips, inline quantity editing).
-- Expiration date tracking with an Expiring tab (14-day window).
+  schema, floorplan blinking, placement chips, inline quantity editing), with
+  an optional default storage location per split item (v0.9.0) so quick
+  +/- editors can act on it directly instead of staying disabled.
+- Expiration date tracking, merged with Understocked into a single "Stock
+  Alerts" tab (v0.8.8).
 - Consumption rate prediction (Predicted Runway, requires 3+ events).
 - `GET /items/:id` and `GET /items?q=` endpoints for the external consumer
   [[signalk-maintenance-tracker]].
@@ -25,6 +28,25 @@ scaffolded as `signalk-quartermaster`.
   nesting; UI gap closed with breadcrumb paths in the floorplan picker.
 - Collapsible Store Log sections; search extended to notes; `CHANGELOG.md`
   and `ROADMAP.md` created.
+- Automated test suite (v0.8.7) via `node --test`, covering both
+  `test/backend/` (real HTTP requests against the mounted plugin, fresh temp
+  SQLite db per test) and `test/frontend/` (pure data-layer helpers, no
+  DOM/JSDOM needed).
+- App-wide "Edit mode" toggle (v0.8.10) collapsing chip action buttons
+  behind "..." until toggled; auto light/dark theme following SignalK's sun
+  data (v0.8.13); collapsible inventory-tree nodes at any depth (v0.8.12,
+  v0.8.14).
+- JSON export/import (v0.8.9): full backup/restore of categories, locations,
+  and items; import is a full replace, not a merge.
+- New "Touch" view on the Overview tab (v0.9.0): always-visible +/- chips
+  sized for MFD touchscreens, plus a dynamic coarse/fine +/- scale option
+  (v0.9.3) for items with large quantities.
+- Store Log's Individual Movements table now shows location per event
+  (v0.9.1).
+- Webapp's own config endpoint renamed from `/config` to `/webapp-config`
+  (v0.9.3) — it collided with signalk-server's reserved
+  `GET /plugins/{id}/config`, silently no-opping `autoTheme` and
+  `dynamicQuantityScale`.
 
 ## Release/publish setup
 - npm OIDC trusted publishing set up in CI, but npmjs.com-side Trusted
