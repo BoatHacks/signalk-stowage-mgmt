@@ -8,6 +8,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [0.9.4] - 2026-07-30
+
+### Security
+
+- Floorplan SVG uploads are now sanitized (allowlist-based) before being
+  stored and before being rendered, closing a stored XSS vector where a
+  crafted SVG (script elements, event-handler attributes, foreignObject)
+  could execute in the browser of anyone who opened the Floorplan tab or
+  Move dialog.
+
+### Fixed
+
+- JSON import now rejects a payload whose locations contain a `parent_id`
+  cycle, instead of importing it and later hanging the server the first
+  time an item under the cycle was located.
+- JSON import now preserves a split item's unlocated (`location_id:
+  null`) placement instead of silently dropping it, which previously
+  broke the `actual_quantity`/placements-sum invariant on restore.
+- JSON import now rejects payloads over a 20,000-row cap, bounding how
+  long the single synchronous import transaction can block the server.
+- `POST /items` and `PATCH /items/:id` now validate `actual_quantity` as
+  a non-negative integer, instead of accepting negative or non-numeric
+  values.
+- Fixed a rules-of-hooks violation in the floorplan Move dialog
+  (`useMemo` called after a conditional early return) that could desync
+  component state across opens/closes.
+- The attachment upload route no longer crashes the whole server process
+  if the database becomes unavailable mid-upload; the request now fails
+  gracefully instead.
+- Rapid +/- taps on the Overview tab's Touch view no longer silently
+  drop an adjustment when tapped faster than a request round-trip.
+- Several UI actions (deleting a location, moving an item/container via
+  drag-and-drop, removing a category) no longer produce an unhandled
+  promise rejection on failure.
+
+### Changed
+
+- License changed from Apache-2.0 to MIT.
+- README now documents that this plugin's API routes are admin-gated
+  like any other plugin route when Signal K security is enabled —
+  relevant to `signalk-maintenance-tracker`'s same-origin browser calls.
+
 ## [0.9.3] - 2026-07-28
 
 ### Added
