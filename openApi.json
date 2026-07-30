@@ -5,8 +5,8 @@
     "description": "Inventory manager for Signal K Server: organize items into containers and storage spaces, track actual vs. target quantities, attach photos and markdown notes, and map storage spaces to areas on an SVG floorplan.",
     "version": "0.5.3",
     "license": {
-      "name": "Apache-2.0",
-      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
     }
   },
   "servers": [
