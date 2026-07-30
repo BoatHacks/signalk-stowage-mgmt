@@ -2,6 +2,7 @@ import { html, useState, useEffect, useRef, useMemo } from '../vendor/preact-htm
 import { useApp } from './app-core.js';
 import { FloorplanSvg, fitFloorplanSvgIn } from './app-floorplan-modals.js';
 import { LocationNode } from './app-nodes.js';
+import { sanitizeSvg } from './svg-sanitizer.js';
 
 export function FloorplanTab() {
   var app = useApp();
@@ -114,15 +115,15 @@ export function FloorplanTab() {
   }
 
   function uploadFile(file) {
-    file.text().then(function (text) {
-      if (text.indexOf('<svg') === -1) { app.showToast('This is not a valid SVG file.'); return; }
+    file.text().then(function (rawText) {
+      if (rawText.indexOf('<svg') === -1) { app.showToast('This is not a valid SVG file.'); return; }
 
-      var newDoc = new DOMParser().parseFromString(text, 'image/svg+xml');
-      var newSvgRoot = newDoc.querySelector('svg');
-      if (!newSvgRoot || newDoc.querySelector('parsererror')) {
+      var text = sanitizeSvg(rawText);
+      if (!text) {
         app.showToast('This is not a valid SVG file.');
         return;
       }
+      var newSvgRoot = new DOMParser().parseFromString(text, 'image/svg+xml').querySelector('svg');
 
       var affectedSpaces = app.data.locations.filter(function (l) {
         return l.type === 'storage_space' && l.floorplan_id && app.data.floorplans.some(function (fp) { return fp.id === l.floorplan_id; });
