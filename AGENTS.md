@@ -76,6 +76,14 @@ scaffolded as `signalk-quartermaster`.
   currently).
 - GitHub release and npm publish are separate explicit steps (see the
   user-level `plugin-release` skill for the general procedure).
+- **Standing rule:** before cutting a **minor or major** release (not a
+  patch), regenerate the screenshots in `docs/screenshots/` (all 7 —
+  Inventory, Floorplan, Categories, Overview, Overview Touch view, Stock
+  Alerts, Store Log — see the README's Usage section and
+  `signalk.screenshots` in `package.json`) so both the README and the
+  SignalK App Store listing reflect the current UI. Not required for
+  patch releases unless a patch specifically changed something visible
+  in one of them.
 
 ## History
 Original scaffold was `signalk-quartermaster` (npm:
