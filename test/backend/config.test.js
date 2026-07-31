@@ -2,12 +2,22 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { startTestServer } = require('../../test-helpers/server')
 
-test('config: autoTheme and dynamicQuantityScale off by default, no recommendation', async (t) => {
+test('config: autoTheme and dynamicQuantityScale off by default, no recommendation, no qrLabelBaseUrl', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())
 
   const body = await (await server.get('/webapp-config')).json()
-  assert.deepEqual(body, { autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false })
+  assert.deepEqual(body, {
+    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: ''
+  })
+})
+
+test('config: qrLabelBaseUrl reflects the plugin option when set', async (t) => {
+  const server = await startTestServer({ options: { qrLabelBaseUrl: 'http://192.168.1.50:3000' } })
+  t.after(() => server.close())
+
+  const body = await (await server.get('/webapp-config')).json()
+  assert.equal(body.qrLabelBaseUrl, 'http://192.168.1.50:3000')
 })
 
 test('config: dynamicQuantityScale reflects the plugin option when enabled', async (t) => {

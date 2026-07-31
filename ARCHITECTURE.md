@@ -70,24 +70,27 @@ plugin/index.js ── registers route modules, error middleware
 - `api.js` — thin `fetch()` wrapper layer; `markdown.js`/`icons.js`/
   `theme.js` are small single-purpose helpers.
 
-### 2.3 QR label generation (new)
+### 2.3 QR label generation
 
 No new backend component. Label rendering is entirely client-side:
 
-- A new vendored file, `public/vendor/qrcode-generator.mjs` (see §4),
-  provides QR encoding.
-- A new frontend module (e.g. `app-labels-tab.js` or a modal alongside
-  the existing ones — exact placement TBD at implementation time) builds
-  the label markup: the vendored library's `createSvgTag()` output,
-  composited with the location's name/breadcrumb text and the app-icon
-  overlay, using data already present in `app.data.locations`.
+- `public/vendor/qrcode-generator.mjs` (see §4) provides QR encoding.
+- `public/js/qr-label.js` — pure logic (no DOM beyond string building), so
+  it's unit-testable like `helpers.js`: builds the deep-link URL, parses
+  it back out of the page's query string, and composites the label SVG
+  (the vendored library's `createSvgTag()` output plus the centered
+  app-icon overlay).
+- `public/js/app-label-modals.js` — the UI: `LabelModal` (single label,
+  opened from a location's actions menu) and `PrintLabelsModal` (the
+  batch "Print Labels" page, opened from the Inventory toolbar), both
+  built on a shared `Label` component.
 - The Server URL config value flows through the existing `/webapp-config`
-  polling path (or a small addition to it) the same way `autoTheme`/
+  polling path (`qrLabelBaseUrl`), the same way `autoTheme`/
   `dynamicQuantityScale` already do.
 - The deep-link handler (`?location=<id>` → expand that node in the
-  Inventory tab) is a small addition to the app's initial-load routing,
-  parallel to how `locateTarget` already drives floorplan blinking from
-  search.
+  Inventory tab, via `helpers.js`'s `ancestorIds`) is a small addition to
+  `app.js`'s initial-load effect, parallel to how `locateTarget` already
+  drives floorplan blinking from search.
 
 ## 3. Data Models
 
@@ -111,7 +114,7 @@ QR labels introduce no schema change.
 | Frontend framework | Preact + htm, vendored standalone | Small enough to vendor as a single file with no build step, unlike React; keeps the "buildless" constraint (must run on Chromium 69+ MFDs) |
 | Testing | `node --test` | Built-in, no extra devDependency beyond `express` for the backend test harness's HTTP layer |
 | CI/Release | GitHub Actions (`plugin-ci.yml`, `cut-release.yml`) | `cut-release.yml` tags, releases, and publishes to npm via OIDC trusted publishing in one run (see AGENTS.md for the full history of why) |
-| **QR encoding (new)** | `qrcode-generator` (npm), vendored as a single `.mjs` file | MIT, zero dependencies, ~52KB single ES module; `createSvgTag()` outputs dependency-free vector SVG — matches the vendoring pattern already used for Preact/htm, and keeps the app usable offline |
+| **QR encoding** | `qrcode-generator` (npm), vendored as a single `.mjs` file | MIT, zero dependencies, ~52KB single ES module; `createSvgTag()` outputs dependency-free vector SVG — matches the vendoring pattern already used for Preact/htm, and keeps the app usable offline |
 
 ## 5. Integration Points
 
@@ -127,7 +130,7 @@ QR labels introduce no schema change.
   applies when Signal K security is enabled.
 - **npm registry** — OIDC trusted publishing from `cut-release.yml`; no
   long-lived `NPM_TOKEN`.
-- **QR labels (new)** — no external integration; the "deep link" a QR
+- **QR labels** — no external integration; the "deep link" a QR
   code encodes is a URL back into this same webapp, not a third-party
   service. Deliberately not using an external QR-image API, to keep label
   generation working offline.
@@ -150,7 +153,7 @@ QR labels introduce no schema change.
   and enum-like fields (`type`, `event`) are validated; there's no
   multi-tenant isolation to enforce, by design (see README's Known
   Limitations).
-- **QR labels (new)**: the deep link (`?location=<id>`) only ever opens an
+- **QR labels**: the deep link (`?location=<id>`) only ever opens an
   existing read path in the webapp (expand a node in the Inventory tab) —
   it introduces no new write capability and no new auth boundary; a
   printed label is exactly as sensitive as physical access to the boat's
@@ -179,7 +182,7 @@ public/
     svg-sanitizer.js markdown.js icons.js theme.js
   vendor/
     preact-htm-standalone.js
-    qrcode-generator.mjs        (new)
+    qrcode-generator.mjs
   assets/icons/
 
 test/

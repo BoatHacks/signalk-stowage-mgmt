@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   childLocations, itemsIn, formatBytes, isSplit, resolvedItemsIn, descendantIds,
-  pathToRoot, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
+  pathToRoot, ancestorIds, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
   isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor
 } from '../../public/js/helpers.js'
@@ -186,6 +186,19 @@ test('pathToRoot: builds a breadcrumb string from root to the given location', (
   })
   assert.equal(pathToRoot(data, 'b'), 'Aft Cabin \u2192 Port Locker')
   assert.equal(pathToRoot(data, 'a'), 'Aft Cabin')
+})
+
+test('ancestorIds: ids from root to the given location, inclusive', () => {
+  const data = makeData({
+    locations: [
+      { id: 'a', name: 'Aft Cabin', parent_id: null },
+      { id: 'b', name: 'Port Locker', parent_id: 'a' },
+      { id: 'c', name: 'Box 3', parent_id: 'b' }
+    ]
+  })
+  assert.deepEqual(ancestorIds(data, 'c'), ['a', 'b', 'c'])
+  assert.deepEqual(ancestorIds(data, 'a'), ['a'])
+  assert.deepEqual(ancestorIds(data, 'nope'), [])
 })
 
 test('locationHasAnyItems: true if the location or any descendant has items', () => {

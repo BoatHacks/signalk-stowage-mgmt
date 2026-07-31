@@ -57,7 +57,8 @@ module.exports = function registerConfigRoutes (router, app, getOptions) {
     res.json({
       autoTheme: !!options.autoTheme,
       themeRecommendation: computeThemeRecommendation(),
-      dynamicQuantityScale: !!options.dynamicQuantityScale
+      dynamicQuantityScale: !!options.dynamicQuantityScale,
+      qrLabelBaseUrl: options.qrLabelBaseUrl || ''
     })
   })
 }

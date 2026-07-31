@@ -39,6 +39,7 @@ export function InventoryTab() {
         <button type="button" onClick=${function () { app.exportSnapshot().catch(function () {}); }}>Export to JSON</button>
         <button type="button" onClick=${function () { importFileRef.current && importFileRef.current.click(); }}>Import from JSON</button>
         <input ref=${importFileRef} type="file" accept="application/json,.json" hidden onChange=${handleImportFile} />
+        <${IconBtn} icon="qrcode" title="Print Labels" onClick=${app.openPrintLabelsModal} />
         <button type="button" onClick=${app.toggleCollapseAll}>
           ${app.allCollapsed() ? 'Expand All' : 'Collapse All'}
         </button>

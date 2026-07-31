@@ -1485,3 +1485,68 @@ select {
     gap: 10px;
   }
 }
+
+/* ---------- QR labels (single + batch print) ---------- */
+
+.qr-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: #000;
+  break-inside: avoid;
+}
+
+.qr-label-code svg {
+  display: block;
+  width: 120px;
+  height: 120px;
+}
+
+.qr-label-text {
+  min-width: 0;
+}
+
+.qr-label-name {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.qr-label-path {
+  font-size: 0.85em;
+  color: #444;
+  word-break: break-word;
+}
+
+.label-print-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* On screen, .label-print-area is just a preview inside the modal.
+   When printing, everything else on the page is hidden so only the
+   label(s) end up on paper. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .label-print-area,
+  .label-print-area * {
+    visibility: visible;
+  }
+
+  .label-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}

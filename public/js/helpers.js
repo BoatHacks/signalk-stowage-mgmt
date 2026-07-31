@@ -137,6 +137,19 @@ export function pathToRoot(data, locationId) {
   return names.join(' \u2192 ');
 }
 
+// The ids from the root down to (and including) locationId \u2014 the nodes
+// that must be expanded for locationId to actually be visible in a
+// collapsible tree. Empty array if locationId doesn't exist.
+export function ancestorIds(data, locationId) {
+  var ids = [];
+  var current = data.locations.find(function (l) { return l.id === locationId; });
+  while (current) {
+    ids.unshift(current.id);
+    current = current.parent_id ? data.locations.find(function (l) { return l.id === current.parent_id; }) : null;
+  }
+  return ids;
+}
+
 export function locationHasAnyItems(data, locId) {
   if (resolvedItemsIn(data, locId).length > 0) return true;
   return childLocations(data, locId).some(function (child) {

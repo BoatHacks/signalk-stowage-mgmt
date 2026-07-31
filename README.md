@@ -68,6 +68,14 @@ Set in the plugin's config page in the SignalK Admin UI
   one +/- pair is shown. Useful once you're tracking bulk goods by weight
   or volume (e.g. grams) rather than by piece.
 
+- **Server URL for QR labels** (blank by default). The absolute base URL
+  (e.g. `http://192.168.1.50:3000`) a printed location QR label's link
+  points at. Signal K plugins can't reliably auto-detect the right LAN
+  address/hostname, so the Print Labels UI pre-fills a working guess from
+  the browser's own address when you open it — only set this if that
+  guess would be wrong (e.g. labels generated from a device other than
+  the boat's own display).
+
 ## Usage
 
 **Header controls (present on every tab):** a search box (see "Search"
@@ -126,6 +134,14 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   inventory with a previously exported file, after a confirmation dialog —
   it's a restore, not a merge, so export a fresh backup first if you're
   not sure.
+- "Print Labels" (toolbar) opens a page to select any storage space or
+  container (any depth) and print a QR-coded label for each — scanning
+  one opens this webapp with that location expanded in the Inventory tab,
+  so a locker/bin can carry a label that jumps straight to what's
+  supposed to be inside it. Each node also has its own single-label
+  "Print QR label" action, for printing just one without the batch page.
+  See "Server URL for QR labels" under Configuration if labels end up
+  pointing at the wrong address.
 - The floating "Not Stored" panel (bottom/top-right of the screen,
   depending on context) lists any containers with no parent and any items
   with no location — normally hidden, it appears automatically whenever
@@ -605,7 +621,7 @@ merge/append mode (see issue #26).
 
 | Method & path | Purpose |
 |---|---|
-| `GET /webapp-config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), and the current value of the "Dynamic +/- scale for touch interface" plugin option. Polled by the webapp alongside its regular data refresh; see "Configuration" above. (Named `/webapp-config` rather than `/config` to avoid colliding with signalk-server's own reserved `GET /plugins/{id}/config` endpoint.) |
+| `GET /webapp-config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale, qrLabelBaseUrl }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), the current value of the "Dynamic +/- scale for touch interface" plugin option, and the configured "Server URL for QR labels" (empty string if unset). Polled by the webapp alongside its regular data refresh; see "Configuration" above. (Named `/webapp-config` rather than `/config` to avoid colliding with signalk-server's own reserved `GET /plugins/{id}/config` endpoint.) |
 
 ## Known limitations / possible next steps
 

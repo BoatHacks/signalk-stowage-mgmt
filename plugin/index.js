@@ -52,6 +52,13 @@ module.exports = function (app) {
         description:
           'Overview tab Touch view: the -/+ buttons\u2019 step grows with the quantity (1 for small counts, 10 in the hundreds, 100 in the thousands, and so on) instead of always stepping by 1. Useful once you start tracking bulk goods by weight/volume (e.g. grams) rather than by piece.',
         default: false
+      },
+      qrLabelBaseUrl: {
+        type: 'string',
+        title: 'Server URL for QR labels',
+        description:
+          'Absolute base URL (e.g. http://192.168.1.50:3000) that a printed location QR label\u2019s link points at. Signal K plugins can\u2019t reliably auto-detect the right LAN address/hostname, so the webapp pre-fills this from the browser\u2019s own address when you open the Print Labels page \u2014 only set this if that guess would be wrong (e.g. labels generated from a device other than the boat\u2019s own display).',
+        default: ''
       }
     }
   }

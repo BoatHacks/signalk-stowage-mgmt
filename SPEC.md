@@ -162,7 +162,7 @@ Stock Alerts, Store Log. Design constraints:
   regressions found after the fact; new UI should be checked against both
   form factors up front).
 
-### 6.1 QR Labels UI (new)
+### 6.1 QR Labels UI
 
 - A batch **"Print Labels"** page: multi-select any storage space or
   container (any depth), lay out selected labels on a print-ready grid,

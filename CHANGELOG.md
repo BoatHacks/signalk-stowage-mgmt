@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [Unreleased]
+
+### Added
+
+- **QR labels for storage spaces/containers** (issue #14): a "Print
+  Labels" batch page (Inventory toolbar) to select any location at any
+  depth and print a QR-coded label for each, plus a single-label "Print
+  QR label" action on every node. Each label is a QR code (with the app
+  icon centered in it) plus the location's name and breadcrumb path.
+  Scanning one opens the webapp with that location expanded in the
+  Inventory tab. New plugin option: "Server URL for QR labels", pre-filled
+  by the webapp from the browser's own address. Entirely client-side —
+  no new backend endpoints, no new persisted data beyond the config
+  value. Uses a newly vendored `qrcode-generator` (MIT, zero deps).
+
 ## [0.9.5] - 2026-07-30
 
 ### Changed

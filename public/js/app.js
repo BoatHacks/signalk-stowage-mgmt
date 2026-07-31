@@ -13,8 +13,10 @@ import { ItemPropertiesModal, CategoryModal, ExportModal } from './app-item-moda
 import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
-import { buildInventoryMarkdown, buildShoppingListMarkdown } from './helpers.js';
+import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
+import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
+import { parseLocationParam } from './qr-label.js';
 
 var TABS = [
   { id: 'inventory', label: 'Inventory' },
@@ -36,7 +38,7 @@ function App() {
   var activeTab = tabState[0], setActiveTab = tabState[1];
   var themeState = useState(getPreferredTheme());
   var theme = themeState[0], setThemeState = themeState[1];
-  var configState = useState({ autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false });
+  var configState = useState({ autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '' });
   var config = configState[0], setConfig = configState[1];
   var toastState = useState(null);
   var toastMessage = toastState[0], setToastMessage = toastState[1];
@@ -64,6 +66,8 @@ function App() {
   var exportModalContentState = useState(null);
   var locateTargetState = useState(null);
   var locatePopupItemState = useState(null);
+  var labelModalLocationState = useState(null);
+  var printLabelsModalOpenState = useState(false);
 
   var toastTimerRef = useRef(null);
   var fetchInFlightRef = useRef(false);
@@ -90,7 +94,7 @@ function App() {
     fetchInFlightRef.current = true;
     return Promise.all([
       api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(),
-      api.getConfig().catch(function () { return { autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false }; })
+      api.getConfig().catch(function () { return { autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '' }; })
     ])
       .then(function (results) {
         setData({ locations: results[0], items: results[1], categories: results[2], floorplans: results[3] });
@@ -106,6 +110,30 @@ function App() {
     var timer = setInterval(refreshData, POLL_INTERVAL_MS);
     return function () { clearInterval(timer); };
   }, [refreshData]);
+
+  // A scanned QR label's deep link (?location=<id>) jumps to the
+  // Inventory tab with that location's node (and all of its ancestors)
+  // expanded — same target regardless of floorplan mapping, per SPEC.md
+  // §11. Runs once data is loaded, not on every poll: the query param is
+  // stripped from the URL right after handling it, so there's nothing
+  // left to re-trigger on a later refresh.
+  useEffect(function () {
+    if (!loaded) return;
+    var locationId = parseLocationParam(window.location.search);
+    if (!locationId) return;
+    var ids = ancestorIds(data, locationId);
+    if (ids.length) {
+      setCollapsedLocationIds(function (prev) {
+        var next = new Set(prev);
+        ids.forEach(function (id) { next.delete(id); });
+        return next;
+      });
+      setActiveTab('inventory');
+    }
+    var url = new URL(window.location.href);
+    url.searchParams.delete('location');
+    window.history.replaceState(null, '', url);
+  }, [loaded]);
 
   // Attachments are fetched separately from the main polled dataset (only
   // while the Item Properties modal is open for a given item), since they
@@ -283,6 +311,14 @@ function App() {
     openSplitModal: function (item, fromLocationId) { splitModalState[1]({ item: item, fromLocationId: fromLocationId }); },
     closeSplitModal: function () { splitModalState[1](null); },
 
+    labelModalLocation: labelModalLocationState[0],
+    openLabelModal: function (loc) { labelModalLocationState[1](loc); },
+    closeLabelModal: function () { labelModalLocationState[1](null); },
+
+    printLabelsModalOpen: printLabelsModalOpenState[0],
+    openPrintLabelsModal: function () { printLabelsModalOpenState[1](true); },
+    closePrintLabelsModal: function () { printLabelsModalOpenState[1](false); },
+
     locationAssignSvgElementId: locationAssignSvgElementIdState[0],
     openLocationAssignModal: function (svgElementId) { locationAssignSvgElementIdState[1](svgElementId); },
     closeLocationAssignModal: function () { locationAssignSvgElementIdState[1](null); },
@@ -391,6 +427,8 @@ function App() {
       <${MoveModal} />
       <${SplitModal} />
       <${ExportModal} />
+      <${LabelModal} />
+      <${PrintLabelsModal} />
     </${AppCtx.Provider}>
   `;
 }
