@@ -26,8 +26,8 @@ SPEC §11 for why). Three pieces:
 2. A new frontend module building label markup: `qrcode(0, 'H')` →
    `addData(deepLink)` → `make()` → `createSvgTag({cellSize, margin,
    scalable: true})`, then composite the app-icon overlay (centered
-   `<image>`/`<use>` inside the returned SVG string) and the
-   name/breadcrumb text alongside it.
+   `<image>`/`<use>` inside the returned SVG string) and the location's
+   own name below it.
 3. A "Print Labels" page (multi-select locations + print grid) and a
    single-label action on each location's actions menu, both building on
    the same label-rendering module. Printing uses `window.print()` +

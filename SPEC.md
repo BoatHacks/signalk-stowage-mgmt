@@ -100,8 +100,8 @@ schema, `getSelfPath`).
   except that it's excluded (not migrated) by a JSON import/restore.
 
 QR labels (§9.2) introduce no new persisted entity — a label is generated
-on demand from a Location's existing `id`/`name`/breadcrumb path. The only
-new persisted state is the base-URL config value (§8).
+on demand from a Location's existing `id`/`name`. The only new persisted
+state is the base-URL config value (§8).
 
 ## 4. Sources / Inputs
 
@@ -132,12 +132,12 @@ All responses are JSON; errors are the flat shape `{ "error": "..." }`,
 never nested — a documented gotcha for external consumers (see
 `signalk-maintenance-tracker`'s docs, which got this wrong once).
 
-### 5.1 QR Labels (new — see §9.2)
+### 5.1 QR Labels (see §9.2)
 
 No new backend endpoints are required for MVP: a label is rendered
-entirely client-side from data the webapp already has (a Location's id,
-name, and breadcrumb path) plus the configured base URL (§8). The only new
-contract is the **deep link** a QR code encodes:
+entirely client-side from data the webapp already has (a Location's id
+and name) plus the configured base URL (§8). The only new contract is
+the **deep link** a QR code encodes:
 
 ```
 <base-url>/plugins/signalk-stowage-mgmt/?location=<location-id>
@@ -170,9 +170,9 @@ Stock Alerts, Store Log. Design constraints:
   print-specific CSS) — no generated PDF file.
 - A **single-label** action available from each location's own actions
   menu, for the common case of just wanting one label right now.
-- Each label: QR code (SVG), the location's name, its breadcrumb path
-  (e.g. "Galley → Spice Rack"), and the stowage-mgmt app icon centered in
-  the QR code itself.
+- Each label: QR code (SVG), the location's own name (not its full
+  breadcrumb path — kept short so it stays legible at label size), and
+  the stowage-mgmt app icon centered in the QR code itself.
 - Scanning a label's QR code opens the deep link from §5.1, which jumps to
   the Inventory tab with that location's node expanded — the same
   behavior regardless of whether the location happens to be
@@ -221,7 +221,7 @@ and several backend hardening fixes.
 - Batch "Print Labels" page: multi-select (any location, any depth) +
   print-ready grid via the native print dialog.
 - Each label: SVG QR code (error-correction level `H`, to tolerate the
-  logo overlay) + name + breadcrumb path + centered app-icon overlay.
+  logo overlay) + the location's own name + centered app-icon overlay.
 - Scanning always opens the Inventory tab with the location's node
   expanded.
 - New Plugin Config field: Server URL for QR labels, pre-filled with
@@ -278,9 +278,9 @@ and several backend hardening fixes.
   general, so a manual override stays available rather than trusting
   auto-detection unconditionally.
 - **No new backend endpoints for QR labels.** Everything needed (location
-  id, name, breadcrumb path) is already in data the webapp holds; adding a
-  server-side label-rendering endpoint would just be extra surface for no
-  benefit, since the client can render the SVG itself.
+  id and name) is already in data the webapp holds; adding a server-side
+  label-rendering endpoint would just be extra surface for no benefit,
+  since the client can render the SVG itself.
 - **Vendored `qrcode-generator` over a CDN or bundler-installed
   dependency.** Matches how Preact/htm are already vendored, and keeps the
   "works with no internet" principle intact — a CDN dependency would

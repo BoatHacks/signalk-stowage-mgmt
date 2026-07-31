@@ -1,22 +1,21 @@
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
-import { pathToRoot } from './helpers.js';
 import { locationDeepLink, buildLabelSvg } from './qr-label.js';
 
 var APP_ICON_URL = 'assets/icons/icon-512.png';
 
 // One printable label: a QR code (with the app icon centered in it, per
-// the design in SPEC.md §6.1/§11) plus the location's name and breadcrumb
-// path. The QR SVG itself is trusted markup built entirely by
-// qrcode-generator plus our own hardcoded overlay — nothing user-supplied
-// is ever injected as raw markup here, only QR-encoded (the deep link) or
-// rendered as ordinary (auto-escaped) text (name/path) — so innerHTML is
-// safe the same way it is for FloorplanSvg.
+// the design in SPEC.md §6.1/§11) plus the location's own name (not its
+// full breadcrumb path — kept short so it stays legible at label size).
+// The QR SVG itself is trusted markup built entirely by qrcode-generator
+// plus our own hardcoded overlay — nothing user-supplied is ever injected
+// as raw markup here, only QR-encoded (the deep link) or rendered as
+// ordinary (auto-escaped) text (the name) — so innerHTML is safe the same
+// way it is for FloorplanSvg.
 function Label(props) {
   var loc = props.loc;
   var app = useApp();
   var containerRef = useRef(null);
-  var breadcrumb = pathToRoot(app.data, loc.id);
   var baseUrl = app.config.qrLabelBaseUrl || window.location.origin;
   var deepLink = locationDeepLink(baseUrl, loc.id);
 
@@ -30,7 +29,6 @@ function Label(props) {
       <div class="qr-label-code" ref=${containerRef}></div>
       <div class="qr-label-text">
         <div class="qr-label-name">${loc.name}</div>
-        ${breadcrumb !== loc.name ? html`<div class="qr-label-path">${breadcrumb}</div>` : null}
       </div>
     </div>
   `;
