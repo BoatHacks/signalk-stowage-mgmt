@@ -1,5 +1,6 @@
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp } from './app-core.js';
+import { pathToRoot } from './helpers.js';
 import { locationDeepLink, buildLabelSvg } from './qr-label.js';
 
 var APP_ICON_URL = 'assets/icons/icon-512.png';
