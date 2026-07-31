@@ -1528,22 +1528,39 @@ select {
 /* On screen, .label-print-area is just a preview inside the modal.
    When printing, everything else on the page is hidden so only the
    label(s) end up on paper. */
+/* `visibility: hidden` (rather than `display: none`) leaves hidden
+   elements occupying their normal layout height, so hiding the whole
+   page that way still paginates across as many print pages as the full
+   (invisible) app content would need — the visible label(s) only ever
+   land on the first page, with extra blank pages after. display: none
+   actually removes the rest of the UI from layout, so print pagination
+   is driven only by the label content itself. */
 @media print {
-  body * {
-    visibility: hidden;
+  #app > header,
+  #app > nav,
+  #app > main,
+  .toast,
+  .orphaned-panel,
+  .modal-header,
+  .hint,
+  .category-chip-list,
+  .modal-footer {
+    display: none !important;
   }
 
-  .label-print-area,
-  .label-print-area * {
-    visibility: visible;
+  .modal-overlay {
+    position: static !important;
+    background: none !important;
+    padding: 0 !important;
+    display: block !important;
   }
 
-  .label-print-area {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+  .modal {
+    position: static !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    padding: 0 !important;
   }
 }
