@@ -38,6 +38,17 @@ was renamed to `signalk-stowage-mgmt`.
   floorplan mapping. Locating on the floorplan is still available as a
   button on the detail page when a mapping exists.
 
+### Fixed
+
+- QR labels (and any manually-shared `?item=<id>` deep link) encoded
+  `<base-url>/plugins/signalk-stowage-mgmt/?location=<id>`, but that's
+  the plugin's JSON API mount, not the webapp — it has no handler for
+  `GET /`, so scanning a v0.9.6 label landed on a flat JSON 404 instead
+  of the app. The webapp is actually served at its own package-name
+  mount, `/signalk-stowage-mgmt/` (server root, via the `signalk-webapp`
+  keyword). `locationDeepLink()` now builds the correct URL; existing
+  printed labels need reprinting.
+
 ## [0.9.6] - 2026-08-01
 
 ### Added

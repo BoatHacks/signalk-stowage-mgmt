@@ -4,11 +4,12 @@
 
 A Signal K server plugin with two halves: a Node.js backend (Express-style
 router mounted by signalk-server) backed by a single SQLite database, and
-a buildless Preact/htm single-page webapp served as static files under
-the same mount point.
+a buildless Preact/htm single-page webapp served as static files under a
+separate mount point (the plugin's package name, at the server root — not
+under `/plugins/`).
 
 ```
-Browser (webapp)
+Browser (webapp, served from /signalk-stowage-mgmt/)
   │  fetch() JSON + raw-byte uploads
   ▼
 signalk-server ── mounts plugin router at /plugins/signalk-stowage-mgmt
@@ -308,8 +309,10 @@ and attachment files live under the plugin's own data directory
 (`app.getDataDirPath()`), separate from plugin config.
 
 No separate deployment step for the webapp — it's served as static files
-by the same plugin process, mounted at
-`/plugins/signalk-stowage-mgmt/`.
+by the same plugin process (via the `signalk-webapp` package.json
+keyword), mounted at `/signalk-stowage-mgmt/` — its own package-name
+path at the server root, distinct from the `/plugins/signalk-stowage-mgmt/`
+API mount (§5).
 
 ## 9. Future Considerations
 
