@@ -119,32 +119,47 @@ Live-filter (independent of the above, but same issue/PR):
 
 ## Implementation Steps
 
-- [ ] Add `item_id` filter to `GET /item-log` (`plugin/routes/itemLog.js`)
-- [ ] Add `detailPageSections` to `plugin.schema` (`plugin/index.js`) and
+- [x] Add `item_id` filter to `GET /item-log` (`plugin/routes/itemLog.js`)
+- [x] Add `detailPageSections` to `plugin.schema` (`plugin/index.js`) and
       `/webapp-config` (`plugin/routes/config.js`)
-- [ ] Extract reusable Properties/Attachments sub-components from
-      `ItemPropertiesModal` (`app-item-modals.js`)
-- [ ] Extract a shared log-row-formatting helper from
-      `app-storelog-tab.js` if needed for the History section
-- [ ] Build `app-item-detail-view.js` (header + four sections, driven by
+- [x] Properties/Attachments sections built — `AttachmentsSection` is
+      reused directly (exported from `app-item-modals.js`); Properties
+      ended up as a new read-only summary component (photo, categories,
+      expiration, rendered notes) with an "Edit" button opening the
+      existing `ItemPropertiesModal` for changes, rather than extracting
+      the modal's edit form into a shared component — simpler, and the
+      modal's form already covers editing well
+- [x] Reused `buildIndividualRows` from `app-storelog-tab.js` (exported)
+      for the History section instead of a new helper
+- [x] Build `app-item-detail-view.js` (header + four sections, driven by
       `detailPageSections` config)
-- [ ] Add `selectedItemId`/`selectItem`/`closeItemDetail` to `app.js`;
+- [x] Add `selectedItemId`/`selectItem`/`closeItemDetail` to `app.js`;
       render `ItemDetailView` when set
-- [ ] Add `?item=<id>` parsing (`qr-label.js`) + initial-load handling
+- [x] Add `?item=<id>` parsing (`qr-label.js`) + initial-load handling
       (`app.js`)
-- [ ] Wire `app-search.js`'s `SearchBox.pick` to `selectItem`; adjust/
-      remove `LocateItemPopup` if it becomes unused
-- [ ] Add "open detail page" entry points: item chip actions
-      (`app-nodes.js`), Overview rows (`app-overview-tab.js`)
-- [ ] Add `filterQuery` helper (`helpers.js`)
-- [ ] Lift search query state to `app.js`; wire `SearchBox` to it
-- [ ] Apply live filtering in `app-nodes.js` (Inventory tree) and
+- [x] Wire `app-search.js`'s `SearchBox.pick` to `selectItem`;
+      `LocateItemPopup`/`app.locateItem` kept as-is — now triggered from
+      the detail page's "Locate on floorplan" button instead of search
+- [x] Add "open detail page" entry points: item chip actions
+      (`app-nodes.js`), Overview rows/touch chips (`app-overview-tab.js`,
+      now also opening the detail page instead of locating directly)
+- [x] Add `filterQuery` helper (`helpers.js`), extended to also match
+      location names directly (revealing their whole subtree), per
+      SPEC.md §6.3
+- [x] Lift search query state to `app.js`; wire `SearchBox` to it
+- [x] Apply live filtering in `app-nodes.js` (Inventory tree, via a
+      `filter` prop threaded through the recursive `LocationNode`) and
       `app-overview-tab.js` (table/touch rows)
-- [ ] Remove Overview's local "Filter table…" field
-- [ ] Add/update tests (see Test Strategy)
-- [ ] Manual verification (see Test Strategy)
-- [ ] Update README.md (API table, Usage section, config table); update
-      CHANGELOG.md
+- [x] Remove Overview's local "Filter table…" field
+- [x] Add/update tests (backend: `item_id` filter, config field;
+      frontend: `filterQuery`, `itemHasFloorplanMapping`,
+      `resolveDetailPageSections`, `parseItemParam`) — 123/123 passing
+- [x] Manual verification: smoke-tested in a headless browser against a
+      throwaway server instance (search → detail page with no floorplan
+      mapping, all four sections render, back button, live-filter on
+      Inventory and Overview, Overview's local filter field gone)
+- [x] Update README.md (API table, Usage section, config table, Known
+      external consumers); update CHANGELOG.md
 
 ## Files to Create/Modify
 
@@ -152,17 +167,24 @@ Live-filter (independent of the above, but same issue/PR):
 - `plugin/index.js` (schema addition)
 - `plugin/routes/config.js` (`/webapp-config` response)
 - `public/js/app-item-detail-view.js` (new)
-- `public/js/app-item-modals.js` (extract reusable sub-components)
-- `public/js/app-storelog-tab.js` (possible shared helper extraction)
-- `public/js/app.js` (`selectedItemId` state, deep-link handling, render
-  wiring)
+- `public/js/app-item-modals.js` (`AttachmentsSection` exported for reuse)
+- `public/js/app-storelog-tab.js` (`buildIndividualRows` exported for reuse)
+- `public/js/app.js` (`selectedItemId`/`searchQuery` state, deep-link
+  handling, render wiring)
 - `public/js/qr-label.js` (`?item=<id>` parsing)
-- `public/js/app-search.js` (`SearchBox.pick` wiring, `LocateItemPopup`)
-- `public/js/app-nodes.js` (item chip actions entry point, live-filter)
-- `public/js/app-overview-tab.js` (Overview row entry point, live-filter,
+- `public/js/api.js` (`getItemLog` gains an `itemId` param)
+- `public/js/app-search.js` (query state lifted to `app`, `SearchBox.pick`
+  wiring)
+- `public/js/app-nodes.js` (item chip "View details" action, live-filter)
+- `public/js/app-overview-tab.js` (row/chip entry points, live-filter,
   remove local filter field)
-- `public/js/helpers.js` (pure section-filtering/ordering helper,
-  `filterQuery`)
-- `test/backend/itemLog.test.js` or similar, `test/backend/config.test.js`,
-  `test/frontend/helpers.test.mjs`
+- `public/js/app-inventory-tab.js` (thread live-filter down to
+  `LocationNode`)
+- `public/js/helpers.js` (`filterQuery`, `itemHasFloorplanMapping`,
+  `locationHasFloorplanMapping`, `itemMatchesQuery`,
+  `resolveDetailPageSections`)
+- `public/js/icons.js` (`info`, `back`, `locate` icons)
+- `public/style.css` (item detail page styles)
+- `test/backend/item-log.test.js`, `test/backend/config.test.js`,
+  `test/frontend/helpers.test.mjs`, `test/frontend/qr-label.test.mjs`
 - `README.md`, `CHANGELOG.md`

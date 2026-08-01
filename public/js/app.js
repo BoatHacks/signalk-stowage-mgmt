@@ -10,13 +10,14 @@ import { OverviewTab } from './app-overview-tab.js';
 import { StockAlertsTab } from './app-stock-alerts-tab.js';
 import { StoreLogTab, buildStoreLogMarkdown } from './app-storelog-tab.js';
 import { ItemPropertiesModal, CategoryModal, ExportModal } from './app-item-modals.js';
+import { ItemDetailView } from './app-item-detail-view.js';
 import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
 import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
 import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
-import { parseLocationParam } from './qr-label.js';
+import { parseLocationParam, parseItemParam } from './qr-label.js';
 
 var TABS = [
   { id: 'inventory', label: 'Inventory' },
@@ -38,7 +39,10 @@ function App() {
   var activeTab = tabState[0], setActiveTab = tabState[1];
   var themeState = useState(getPreferredTheme());
   var theme = themeState[0], setThemeState = themeState[1];
-  var configState = useState({ autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '' });
+  var configState = useState({
+    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
+    detailPageSections: ['placements', 'history', 'properties', 'attachments']
+  });
   var config = configState[0], setConfig = configState[1];
   var toastState = useState(null);
   var toastMessage = toastState[0], setToastMessage = toastState[1];
@@ -68,6 +72,8 @@ function App() {
   var locatePopupItemState = useState(null);
   var labelModalLocationState = useState(null);
   var printLabelsModalOpenState = useState(false);
+  var selectedItemIdState = useState(null);
+  var searchQueryState = useState('');
 
   var toastTimerRef = useRef(null);
   var fetchInFlightRef = useRef(false);
@@ -94,7 +100,12 @@ function App() {
     fetchInFlightRef.current = true;
     return Promise.all([
       api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(),
-      api.getConfig().catch(function () { return { autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '' }; })
+      api.getConfig().catch(function () {
+        return {
+          autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
+          detailPageSections: ['placements', 'history', 'properties', 'attachments']
+        };
+      })
     ])
       .then(function (results) {
         setData({ locations: results[0], items: results[1], categories: results[2], floorplans: results[3] });
@@ -135,10 +146,24 @@ function App() {
     window.history.replaceState(null, '', url);
   }, [loaded]);
 
+  // A scanned/linked item deep link (?item=<id>) opens the item detail
+  // page directly — the second-external-consumer-facing deep link
+  // contract (SPEC.md §6.2, alongside ?location=<id> above), and what
+  // lets signalk-maintenance-tracker link straight to an item here.
+  useEffect(function () {
+    if (!loaded) return;
+    var itemId = parseItemParam(window.location.search);
+    if (!itemId) return;
+    selectedItemIdState[1](itemId);
+    var url = new URL(window.location.href);
+    url.searchParams.delete('item');
+    window.history.replaceState(null, '', url);
+  }, [loaded]);
+
   // Attachments are fetched separately from the main polled dataset (only
-  // while the Item Properties modal is open for a given item), since they
-  // can be numerous/large and there's no reason to carry them along on
-  // every 5s refresh of the whole app.
+  // while the Item Properties modal or the item detail page is open for a
+  // given item), since they can be numerous/large and there's no reason
+  // to carry them along on every 5s refresh of the whole app.
   function loadAttachments (itemId) {
     attachmentsLoadingState[1](true);
     return api.listAttachments(itemId)
@@ -148,10 +173,10 @@ function App() {
   }
 
   useEffect(function () {
-    var item = propertiesModalItemState[0];
-    if (!item) { attachmentsState[1]([]); return; }
-    loadAttachments(item.id);
-  }, [propertiesModalItemState[0] && propertiesModalItemState[0].id]);
+    var itemId = (propertiesModalItemState[0] && propertiesModalItemState[0].id) || selectedItemIdState[0];
+    if (!itemId) { attachmentsState[1]([]); return; }
+    loadAttachments(itemId);
+  }, [propertiesModalItemState[0] && propertiesModalItemState[0].id, selectedItemIdState[0]]);
 
   function showToast(message) {
     setToastMessage(message);
@@ -334,7 +359,7 @@ function App() {
     },
     closeExportModal: function () { exportModalContentState[1](null); },
 
-    getItemLog: function (start, end) { return api.getItemLog(start, end); },
+    getItemLog: function (start, end, itemId) { return api.getItemLog(start, end, itemId); },
 
     // backup / restore
     exportSnapshot: function () {
@@ -370,6 +395,7 @@ function App() {
     closeLocatePopup: function () { locatePopupItemState[1](null); locateTargetState[1](null); },
     locateItem: function (item) {
       api.locateItem(item.id).then(function (result) {
+        selectedItemIdState[1](null);
         setActiveTab('floorplan');
         var targets = result.split
           ? result.matches.map(function (m) { return { floorplanId: m.floorplan_id, svgElementId: m.svg_element_id }; })
@@ -377,11 +403,22 @@ function App() {
         locateTargetState[1](targets);
         locatePopupItemState[1](item);
       }).catch(function (err) { showToast('"' + item.name + '": ' + err.message); });
-    }
+    },
+
+    // item detail page
+    selectedItemId: selectedItemIdState[0],
+    selectItem: function (id) { selectedItemIdState[1](id); },
+    closeItemDetail: function () { selectedItemIdState[1](null); },
+
+    // live-filter search query, shared between SearchBox and the
+    // Inventory/Overview tabs it filters (SPEC.md §6.3)
+    searchQuery: searchQueryState[0],
+    setSearchQuery: searchQueryState[1]
   };
 
   function switchTab(id) {
     setActiveTab(id);
+    selectedItemIdState[1](null);
     if (id !== 'floorplan') { locatePopupItemState[1](null); locateTargetState[1](null); }
   }
 
@@ -412,7 +449,7 @@ function App() {
       </nav>
 
       <main>
-        ${!loaded ? html`<p class="hint">Loading…</p>` : activeTabView}
+        ${!loaded ? html`<p class="hint">Loading…</p>` : (selectedItemIdState[0] ? html`<${ItemDetailView} />` : activeTabView)}
       </main>
 
       <${NotStoredPanel} />

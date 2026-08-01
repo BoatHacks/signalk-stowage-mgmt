@@ -70,6 +70,7 @@ export function ItemChip(props) {
                       }} />
           <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${deleteWholeItem} />
           <${IconBtn} icon="add-tag" title="Add category" onClick=${function () { app.openCategoryModal(item); }} />
+          <${IconBtn} icon="info" title="View details" onClick=${function () { app.selectItem(item.id); }} />
         </${ChipActionsMenu}>
       </div>
       <div class="item-categories">
@@ -91,11 +92,20 @@ export function LocationNode(props) {
   var isDropTarget = dropTargetState[0];
   var setIsDropTarget = dropTargetState[1];
 
+  // A live-filter search is active when filter.locationIds is non-null
+  // (SPEC.md §6.3) — a branch not in that set is pruned entirely, and a
+  // branch that IS in it stays expanded regardless of manual collapse
+  // state, so a match is never hidden by a collapse the user set earlier.
+  var filter = props.filter;
+  var filtering = !!(filter && filter.locationIds);
+  if (filtering && !filter.locationIds.has(loc.id)) return null;
+
   var children = childLocations(app.data, loc.id);
   var items = resolvedItemsIn(app.data, loc.id);
+  if (filter && filter.itemIds) items = items.filter(function (item) { return filter.itemIds.has(item.id); });
   var isContainer = loc.type === 'container';
   var mapped = loc.type === 'storage_space' && loc.svg_element_id;
-  var collapsed = app.collapsedLocationIds.has(loc.id);
+  var collapsed = filtering ? false : app.collapsedLocationIds.has(loc.id);
   var summary = collapsed ? subtreeSummary(app.data, loc.id) : null;
 
   function handleDrop(e) {
@@ -151,7 +161,7 @@ export function LocationNode(props) {
       </div>
       ${(!collapsed && (children.length || items.length)) ? html`
         <div class="children">
-          ${children.map(function (child) { return html`<${LocationNode} loc=${child} key=${child.id} />`; })}
+          ${children.map(function (child) { return html`<${LocationNode} loc=${child} filter=${filter} key=${child.id} />`; })}
           ${items.map(function (item) { return html`<${ItemChip} item=${item} key=${item.id + ':' + (item.placementId || '')} />`; })}
         </div>
       ` : null}

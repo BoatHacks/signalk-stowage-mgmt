@@ -5,7 +5,7 @@ import { isSplit, formatBytes, pathToRoot } from './helpers.js';
 
 // ---------- attachments (lives inside the Item Properties modal) ----------
 
-function AttachmentsSection(props) {
+export function AttachmentsSection(props) {
   var app = useApp();
   var item = props.item;
   var fileInputRef = useRef(null);

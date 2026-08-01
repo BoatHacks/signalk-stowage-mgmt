@@ -105,10 +105,11 @@ export const api = {
 
   // Floorplans
   listFloorplans: function () { return get('/floorplans'); },
-  getItemLog: function (start, end) {
+  getItemLog: function (start, end, itemId) {
     var params = [];
     if (start) params.push('start=' + encodeURIComponent(start));
     if (end) params.push('end=' + encodeURIComponent(end));
+    if (itemId) params.push('item_id=' + encodeURIComponent(itemId));
     return get('/item-log' + (params.length ? '?' + params.join('&') : ''));
   },
   getFloorplan: function (id) { return get('/floorplans/' + id); },

@@ -2,6 +2,19 @@
 // { locations, items, categories, floorplans }. No DOM access here, so
 // these are easy to reason about and reuse across components.
 
+// Every section the item detail page can show, in the default order —
+// also the fallback when config.detailPageSections is missing/invalid.
+export var DETAIL_PAGE_SECTIONS = ['placements', 'history', 'properties', 'attachments'];
+
+// Turns the detailPageSections config value into the actual ordered list
+// of sections to render, dropping anything not in DETAIL_PAGE_SECTIONS
+// (defensive against a stale/hand-edited config value) without silently
+// re-adding a section the user deliberately removed.
+export function resolveDetailPageSections(sections) {
+  if (!Array.isArray(sections)) return DETAIL_PAGE_SECTIONS.slice();
+  return sections.filter(function (s) { return DETAIL_PAGE_SECTIONS.indexOf(s) !== -1; });
+}
+
 export function childLocations(data, parentId) {
   return data.locations.filter(function (l) {
     return (l.parent_id || null) === (parentId || null);
@@ -155,6 +168,96 @@ export function locationHasAnyItems(data, locId) {
   return childLocations(data, locId).some(function (child) {
     return locationHasAnyItems(data, child.id);
   });
+}
+
+// True if locationId, or any storage-space ancestor of it, is mapped to a
+// floorplan SVG element — mirrors the backend's locateFrom walk
+// (plugin/routes/items.js) so the frontend can decide whether "Locate on
+// floorplan" would succeed without making a request first.
+export function locationHasFloorplanMapping(data, locationId) {
+  var current = locationId ? data.locations.find(function (l) { return l.id === locationId; }) : null;
+  while (current) {
+    if (current.type === 'storage_space' && current.floorplan_id && current.svg_element_id) return true;
+    current = current.parent_id ? data.locations.find(function (l) { return l.id === current.parent_id; }) : null;
+  }
+  return false;
+}
+
+// True if an item (or, for a split item, any of its placements) resolves
+// to a floorplan-mapped storage space — used to decide whether the item
+// detail page's "Locate on floorplan" button should show.
+export function itemHasFloorplanMapping(data, item) {
+  if (isSplit(item)) {
+    return item.placements.some(function (p) { return locationHasFloorplanMapping(data, p.location_id); });
+  }
+  return locationHasFloorplanMapping(data, item.location_id);
+}
+
+// Case-insensitive name/notes match, the same rule SearchBox's dropdown
+// results already use. Used both there and by the live-filter helper
+// below, so the two behaviors can't drift apart.
+export function itemMatchesQuery(item, q) {
+  if (!q) return true;
+  var needle = q.toLowerCase();
+  if (item.name.toLowerCase().indexOf(needle) !== -1) return true;
+  return !!(item.notes && item.notes.toLowerCase().indexOf(needle) !== -1);
+}
+
+// For live-filtering the Inventory tree and Overview rows (SPEC.md §6.3).
+// A location "matches" either directly (its own name matches) or by
+// containing a match (a descendant item or location matches) — a direct
+// location match reveals its whole subtree, the same as browsing to it
+// normally would, not just the path down to it. Returns the set of item
+// ids to show and the set of location ids that must stay visible/expanded
+// to keep every match reachable. An empty/falsy query returns null for
+// both sets, meaning "show everything" — callers should treat null as
+// "don't filter" rather than "filter to nothing".
+export function filterQuery(data, query) {
+  var q = (query || '').trim();
+  if (!q) return { itemIds: null, locationIds: null };
+
+  var itemIds = new Set();
+  var locationIds = new Set();
+  // Locations whose whole subtree is "inside a match" (a direct name
+  // match) — distinct from locationIds, which just tracks which nodes
+  // must stay visible/expanded. Using locationIds itself for this would
+  // wrongly pull in unrelated siblings: reveal()ing the ancestor chain of
+  // one matching item also adds that item's own location to locationIds,
+  // which must NOT be read as "everything in this location is revealed".
+  var revealedSubtreeIds = new Set();
+
+  function reveal(locationId) {
+    ancestorIds(data, locationId).forEach(function (id) { locationIds.add(id); });
+  }
+  function revealSubtree(locationId) {
+    revealedSubtreeIds.add(locationId);
+    descendantIds(data, locationId).forEach(function (id) { revealedSubtreeIds.add(id); });
+    locationIds.add(locationId);
+    descendantIds(data, locationId).forEach(function (id) { locationIds.add(id); });
+  }
+
+  data.locations.forEach(function (loc) {
+    if (loc.name.toLowerCase().indexOf(q.toLowerCase()) === -1) return;
+    reveal(loc.id);
+    revealSubtree(loc.id);
+  });
+
+  data.items.forEach(function (item) {
+    var matchedByName = itemMatchesQuery(item, q);
+    if (isSplit(item)) {
+      item.placements.forEach(function (p) {
+        if (matchedByName || (p.location_id && revealedSubtreeIds.has(p.location_id))) {
+          itemIds.add(item.id);
+          if (p.location_id) reveal(p.location_id);
+        }
+      });
+    } else if (matchedByName || (item.location_id && revealedSubtreeIds.has(item.location_id))) {
+      itemIds.add(item.id);
+      if (item.location_id) reveal(item.location_id);
+    }
+  });
+
+  return { itemIds: itemIds, locationIds: locationIds };
 }
 
 export function isUnderstocked(item) {

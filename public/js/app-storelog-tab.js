@@ -220,7 +220,7 @@ export function StoreLogTab () {
 
 // One row per movement event (item creation, actual_quantity change, or
 // deletion), newest first.
-function buildIndividualRows (rows) {
+export function buildIndividualRows (rows) {
   return rows
     .filter(function (r) { return r.event === 'created' || r.event === 'actual_quantity' || r.event === 'deleted'; })
     .map(function (r) {

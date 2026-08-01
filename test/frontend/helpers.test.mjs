@@ -4,7 +4,9 @@ import {
   childLocations, itemsIn, formatBytes, isSplit, resolvedItemsIn, descendantIds,
   pathToRoot, ancestorIds, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
-  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor
+  isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor,
+  locationHasFloorplanMapping, itemHasFloorplanMapping, itemMatchesQuery, filterQuery,
+  resolveDetailPageSections, DETAIL_PAGE_SECTIONS
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -363,4 +365,111 @@ test('buildShoppingListMarkdown: expiring item with no target_quantity falls bac
   })
   const md = buildShoppingListMarkdown(data)
   assert.match(md, /Cheese.*need 2.*\(expires/)
+})
+
+test('locationHasFloorplanMapping: true for a directly mapped storage space, or via an ancestor', () => {
+  const data = makeData({
+    locations: [
+      { id: 'mapped', type: 'storage_space', parent_id: null, floorplan_id: 'fp1', svg_element_id: 'area-1' },
+      { id: 'unmapped', type: 'storage_space', parent_id: null },
+      { id: 'container-in-mapped', type: 'container', parent_id: 'mapped' },
+      { id: 'container-in-unmapped', type: 'container', parent_id: 'unmapped' }
+    ]
+  })
+  assert.equal(locationHasFloorplanMapping(data, 'mapped'), true)
+  assert.equal(locationHasFloorplanMapping(data, 'container-in-mapped'), true)
+  assert.equal(locationHasFloorplanMapping(data, 'unmapped'), false)
+  assert.equal(locationHasFloorplanMapping(data, 'container-in-unmapped'), false)
+  assert.equal(locationHasFloorplanMapping(data, null), false)
+  assert.equal(locationHasFloorplanMapping(data, 'does-not-exist'), false)
+})
+
+test('itemHasFloorplanMapping: plain item checks its own location, split item checks any placement', () => {
+  const data = makeData({
+    locations: [
+      { id: 'mapped', type: 'storage_space', parent_id: null, floorplan_id: 'fp1', svg_element_id: 'area-1' },
+      { id: 'unmapped', type: 'storage_space', parent_id: null }
+    ]
+  })
+  assert.equal(itemHasFloorplanMapping(data, { location_id: 'mapped' }), true)
+  assert.equal(itemHasFloorplanMapping(data, { location_id: 'unmapped' }), false)
+  assert.equal(itemHasFloorplanMapping(data, { location_id: null }), false)
+
+  const splitNoMatch = { placements: [{ location_id: 'unmapped' }, { location_id: null }] }
+  assert.equal(itemHasFloorplanMapping(data, splitNoMatch), false)
+  const splitMatch = { placements: [{ location_id: 'unmapped' }, { location_id: 'mapped' }] }
+  assert.equal(itemHasFloorplanMapping(data, splitMatch), true)
+})
+
+test('itemMatchesQuery: matches name or notes, case-insensitively; empty query matches everything', () => {
+  const item = { name: 'Fuel Filter', notes: 'spare for the generator' }
+  assert.equal(itemMatchesQuery(item, 'fuel'), true)
+  assert.equal(itemMatchesQuery(item, 'GENERATOR'), true)
+  assert.equal(itemMatchesQuery(item, 'rope'), false)
+  assert.equal(itemMatchesQuery(item, ''), true)
+  assert.equal(itemMatchesQuery({ name: 'X', notes: null }, 'x'), true)
+})
+
+test('filterQuery: empty query returns null sets ("show everything")', () => {
+  const data = makeData({ items: [{ id: '1', name: 'Rope', location_id: null }] })
+  const result = filterQuery(data, '')
+  assert.equal(result.itemIds, null)
+  assert.equal(result.locationIds, null)
+})
+
+test('filterQuery: matching items reveal their own location and every ancestor', () => {
+  const data = makeData({
+    locations: [
+      { id: 'root', name: 'Root', parent_id: null },
+      { id: 'child', name: 'Child', parent_id: 'root' }
+    ],
+    items: [
+      { id: 'match', name: 'Fuel Filter', location_id: 'child' },
+      { id: 'no-match', name: 'Rope', location_id: 'child' }
+    ]
+  })
+  const result = filterQuery(data, 'fuel')
+  assert.deepEqual(Array.from(result.itemIds), ['match'])
+  assert.deepEqual(Array.from(result.locationIds).sort(), ['child', 'root'])
+})
+
+test('filterQuery: a location matching by name reveals its whole subtree, including non-matching items inside it', () => {
+  const data = makeData({
+    locations: [
+      { id: 'root', name: 'Galley', parent_id: null },
+      { id: 'child', name: 'Drawer', parent_id: 'root' }
+    ],
+    items: [
+      { id: 'inside', name: 'Rope', location_id: 'child' },
+      { id: 'elsewhere', name: 'Bulb', location_id: null }
+    ]
+  })
+  const result = filterQuery(data, 'galley')
+  assert.deepEqual(Array.from(result.locationIds).sort(), ['child', 'root'])
+  assert.deepEqual(Array.from(result.itemIds), ['inside'])
+})
+
+test('filterQuery: a split item reveals ancestors of every matching placement', () => {
+  const data = makeData({
+    locations: [
+      { id: 'a', name: 'A', parent_id: null },
+      { id: 'b', name: 'B', parent_id: null }
+    ],
+    items: [
+      {
+        id: 'split', name: 'Beans',
+        placements: [{ id: 'p1', location_id: 'a', quantity: 2 }, { id: 'p2', location_id: 'b', quantity: 3 }]
+      }
+    ]
+  })
+  const result = filterQuery(data, 'beans')
+  assert.deepEqual(Array.from(result.locationIds).sort(), ['a', 'b'])
+})
+
+test('resolveDetailPageSections: filters to known sections, falls back to the default order when missing/invalid', () => {
+  assert.deepEqual(resolveDetailPageSections(['history', 'placements']), ['history', 'placements'])
+  assert.deepEqual(resolveDetailPageSections(['history', 'bogus']), ['history'])
+  assert.deepEqual(resolveDetailPageSections([]), [])
+  assert.deepEqual(resolveDetailPageSections(undefined), DETAIL_PAGE_SECTIONS)
+  assert.deepEqual(resolveDetailPageSections(null), DETAIL_PAGE_SECTIONS)
 })

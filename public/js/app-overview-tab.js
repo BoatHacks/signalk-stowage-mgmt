@@ -1,6 +1,6 @@
 import { html, useState, useMemo, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
 import { useApp, QuantityEditor } from './app-core.js';
-import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepsFor } from './helpers.js';
+import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepsFor, filterQuery } from './helpers.js';
 
 function isoDate (d) {
   return d.toISOString().slice(0, 10);
@@ -28,8 +28,6 @@ function isLocationOnFloorplan (data, locationId, floorplanId) {
 
 export function OverviewTab() {
   var app = useApp();
-  var filterState = useState('');
-  var filter = filterState[0], setFilter = filterState[1];
   var sortState = useState({ key: 'fullPath', dir: 1 });
   var sort = sortState[0], setSort = sortState[1];
 
@@ -98,14 +96,11 @@ export function OverviewTab() {
     });
   }, [app.data.items, app.data.locations, app.data.floorplans]);
 
-  var filtered = rows.filter(function (r) {
-    if (!filter) return true;
-    var q = filter.toLowerCase();
-    return r.name.toLowerCase().indexOf(q) !== -1 ||
-      r.directLocation.toLowerCase().indexOf(q) !== -1 ||
-      r.fullPath.toLowerCase().indexOf(q) !== -1 ||
-      (r.item.notes && r.item.notes.toLowerCase().indexOf(q) !== -1);
-  });
+  // Same live-filter query the Inventory tab uses (SPEC.md §6.3) — the
+  // Table view's own former local "Filter table…" field is gone in favor
+  // of this single global one.
+  var filterResult = useMemo(function () { return filterQuery(app.data, app.searchQuery); }, [app.data, app.searchQuery]);
+  var filtered = filterResult.itemIds ? rows.filter(function (r) { return filterResult.itemIds.has(r.item.id); }) : rows;
 
   var sorted = filtered.slice().sort(function (a, b) {
     var av = a[sort.key], bv = b[sort.key];
@@ -137,7 +132,9 @@ export function OverviewTab() {
     return !!item.location_id && allowed.has(item.location_id);
   }
 
-  var touchRows = rows.filter(function (r) { return isUnderLocation(r.item, locationFilter); });
+  var touchRows = rows
+    .filter(function (r) { return isUnderLocation(r.item, locationFilter); })
+    .filter(function (r) { return !filterResult.itemIds || filterResult.itemIds.has(r.item.id); });
 
   var touchSorted = touchRows.slice().sort(function (a, b) {
     if (touchSort === 'alphabetical') return a.name.localeCompare(b.name);
@@ -200,19 +197,17 @@ export function OverviewTab() {
       <div class="toolbar">
         <button type="button" class=${viewMode === 'table' ? 'active' : ''} onClick=${function () { setViewMode('table'); }}>Table</button>
         <button type="button" class=${viewMode === 'touch' ? 'active' : ''} onClick=${function () { setViewMode('touch'); }}>Touch</button>
-        ${viewMode === 'table' ? html`
-          <input type="text" placeholder="Filter table…" value=${filter} onInput=${function (e) { setFilter(e.target.value); }} />
-        ` : html`
+        ${viewMode === 'touch' ? html`
           <button type="button" class=${touchSort === 'activity' ? 'active' : ''} onClick=${function () { setTouchSort('activity'); }}>Recent Activity</button>
           <button type="button" class=${touchSort === 'alphabetical' ? 'active' : ''} onClick=${function () { setTouchSort('alphabetical'); }}>Alphabetical</button>
           <select onChange=${function (e) { setLocationFilter(e.target.value); }}>
             <option value="">All locations</option>
             ${locationOptions.map(function (l) { return html`<option key=${l.id} value=${l.id}>${l.label}</option>`; })}
           </select>
-        `}
+        ` : null}
       </div>
       ${viewMode === 'table' ? html`
-        <p class="hint">Clicking a row jumps to the floorplan (if assigned).</p>
+        <p class="hint">Clicking a row opens its detail page. Use the search box above to filter.</p>
         <div class="table-scroll">
         <table class="overview-table">
           <thead>
@@ -233,7 +228,7 @@ export function OverviewTab() {
                 ? html`<img class="item-thumb" src=${r.thumbnail} alt="" />`
                 : html`<span class="item-thumb item-thumb-placeholder"></span>`;
               return html`
-                <tr key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
+                <tr key=${r.item.id} onClick=${function () { app.selectItem(r.item.id); }}>
                   <td>${thumb}</td>
                   <td>${r.name}</td>
                   <td><${QuantityEditor} item=${r.item} showTotal=${true} /></td>
@@ -249,7 +244,7 @@ export function OverviewTab() {
         </table>
         </div>
       ` : html`
-        <p class="hint">Tap a chip to jump to the floorplan (if assigned); tap −/+ to adjust stock. A split item
+        <p class="hint">Tap a chip to open its detail page; tap −/+ to adjust stock. A split item
           with no default storage location set (see Item Properties) can't be adjusted here — use Split instead.</p>
         <div class="touch-grid">
           ${!touchSorted.length ? html`<p class="hint">No items found.</p>` : null}
@@ -305,7 +300,7 @@ export function OverviewTab() {
                   </span>
                 `;
             return html`
-              <div class="touch-chip" key=${r.item.id} onClick=${function () { app.locateItem(r.item); }}>
+              <div class="touch-chip" key=${r.item.id} onClick=${function () { app.selectItem(r.item.id); }}>
                 ${thumb}
                 <div class="touch-chip-name">${r.name}</div>
                 <div class="touch-chip-location hint">

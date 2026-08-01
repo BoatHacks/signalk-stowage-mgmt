@@ -76,6 +76,12 @@ Set in the plugin's config page in the SignalK Admin UI
   guess would be wrong (e.g. labels generated from a device other than
   the boat's own display).
 
+- **Item detail page sections** (all four shown, in this order, by
+  default: Placements, History, Properties, Attachments). Remove a
+  section from the list to hide it on the item detail page, or reorder
+  the list to change where it appears. Removing all four still leaves the
+  page's header (name, photo, quantity).
+
 ## Usage
 
 **Header controls (present on every tab):** a search box (see "Search"
@@ -359,15 +365,29 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   that section's table as its own document.
 
 **Search:**
-- Type into the search box at the top, click a result. Matches against
-  both the item's name and its notes — a match found only in notes shows
-  a short snippet of surrounding text under the result so you can see why
-  it matched.
-- The app automatically switches to the Floorplan tab, loads the matching
-  plan, and makes the corresponding area blink for 6 seconds — even if the
-  item is nested several containers deep (the app walks up the parent
-  chain until it finds a mapped storage space). For an item split across
-  locations, every mapped area blinks at once.
+- Type into the search box at the top; it does two things at once:
+  - Live-filters the Inventory tab's tree and the Overview tab's table/
+    touch rows down to matching items as you type (matching either the
+    item's name/notes, or the name of a location — a location match
+    reveals its whole contents, not just the matching item). Clearing the
+    box restores the full view. Overview no longer has its own separate
+    filter field — this one box drives both tabs.
+  - Shows a dropdown of matching results (name/notes match, with a short
+    snippet of surrounding text when the match is only in notes);
+    clicking one opens that item's detail page (see "Item detail page"
+    below).
+
+**Item detail page:**
+- Opened by clicking a search result, an item chip's "View details"
+  action, or an Overview row/chip.
+- Shows the item's placements (with large +/- quantity editors and, if a
+  placement is floorplan-mapped, a "Locate on floorplan" button that does
+  what search results used to do automatically), its log history,
+  properties (photo, categories, expiration, notes), and attachments —
+  each section independently configurable, see "Configuration" above.
+- Deep-linkable: `<server-url>/plugins/signalk-stowage-mgmt/?item=<item-id>`
+  opens the page directly, the same way a QR label's `?location=<id>` link
+  opens the Inventory tab (see "Known external consumers" below).
 
 ## Data model
 
@@ -515,6 +535,9 @@ API directly — the first (and so far only) external consumer. It depends on:
   and `placements` (each `{ id, location_id, quantity }`).
 - The `{ "error": "..." }` error shape, to distinguish "no such item" from
   "route doesn't exist" on `GET /items/:id`'s 404.
+- The `?item=<item-id>` deep link (see "Item detail page" above) — the
+  intended way for `signalk-maintenance-tracker` to link straight into
+  this plugin's item detail page, e.g. from its own parts-picker UI.
 
 **A note on auth for this integration:** every route above lives under
 `/plugins/signalk-stowage-mgmt/*`, the same prefix every SignalK plugin's
@@ -579,7 +602,7 @@ no versioning/deprecation process beyond this is planned for now.)
 
 | Method & path | Purpose |
 |---|---|
-| `GET /item-log` | List log entries, oldest first. Optional `?start=` / `?end=` query params (inclusive dates, e.g. `2026-06-01`) filter the range; omit both for the full history |
+| `GET /item-log` | List log entries, oldest first. Optional `?start=` / `?end=` query params (inclusive dates, e.g. `2026-06-01`) filter the range; optional `?item_id=` scopes to one item (used by the item detail page's History section); omit all three for the full history |
 
 **Categories**
 
@@ -622,7 +645,7 @@ merge/append mode (see issue #26).
 
 | Method & path | Purpose |
 |---|---|
-| `GET /webapp-config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale, qrLabelBaseUrl }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), the current value of the "Dynamic +/- scale for touch interface" plugin option, and the configured "Server URL for QR labels" (empty string if unset). Polled by the webapp alongside its regular data refresh; see "Configuration" above. (Named `/webapp-config` rather than `/config` to avoid colliding with signalk-server's own reserved `GET /plugins/{id}/config` endpoint.) |
+| `GET /webapp-config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale, qrLabelBaseUrl, detailPageSections }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), the current value of the "Dynamic +/- scale for touch interface" plugin option, the configured "Server URL for QR labels" (empty string if unset), and the ordered list of item detail page sections to show (`["placements","history","properties","attachments"]` by default; see "Configuration" above). Polled by the webapp alongside its regular data refresh. (Named `/webapp-config` rather than `/config` to avoid colliding with signalk-server's own reserved `GET /plugins/{id}/config` endpoint.) |
 
 ## Known limitations / possible next steps
 

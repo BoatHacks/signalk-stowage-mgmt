@@ -20,6 +20,13 @@ export function parseLocationParam(search) {
   return params.get('location') || null;
 }
 
+// Reads the `item` query param (the item detail page's deep link, see
+// SPEC.md §6.2) out of a location.search-shaped string, or null if absent.
+export function parseItemParam(search) {
+  var params = new URLSearchParams(search || '');
+  return params.get('item') || null;
+}
+
 // Builds a label's SVG: a scannable QR code (error-correction level 'H',
 // which tolerates ~30% obstruction) encoding `url`, with `logoUrl` (any
 // URL an <image> element can resolve — a static asset path is fine, no
