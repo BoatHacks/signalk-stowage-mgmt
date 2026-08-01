@@ -132,7 +132,16 @@ All responses are JSON; errors are the flat shape `{ "error": "..." }`,
 never nested — a documented gotcha for external consumers (see
 `signalk-maintenance-tracker`'s docs, which got this wrong once).
 
-### 5.1 QR Labels (see §9.2)
+### 5.1 Item Detail Page (see §9.4)
+
+No new endpoints — the detail page is built entirely from data the webapp
+already fetches (`GET /items/:id`, already shipped for the external
+`signalk-maintenance-tracker` consumer) plus one small extension: `GET
+/item-log` (§5) gains an optional `item_id` query parameter, so the
+page's history section doesn't have to fetch and filter the *entire*
+audit trail client-side to show one item's events.
+
+### 5.2 QR Labels (see §9.2)
 
 No new backend endpoints are required for MVP: a label is rendered
 entirely client-side from data the webapp already has (a Location's id
@@ -173,10 +182,31 @@ Stock Alerts, Store Log. Design constraints:
 - Each label: QR code (SVG), the location's own name (not its full
   breadcrumb path — kept short so it stays legible at label size), and
   the stowage-mgmt app icon centered in the QR code itself.
-- Scanning a label's QR code opens the deep link from §5.1, which jumps to
+- Scanning a label's QR code opens the deep link from §5.2, which jumps to
   the Inventory tab with that location's node expanded — the same
   behavior regardless of whether the location happens to be
   floorplan-mapped, for consistency and simplicity.
+
+### 6.2 Item Detail Page (see §9.4)
+
+- A dedicated full-view "page" (swaps the main content area the way a tab
+  does, with a back button) rather than a modal — the content (placements,
+  +/- editors, history, photo, attachments) doesn't fit comfortably in the
+  existing modal pattern, and a real view gives it a URL identity (below).
+- Reachable from: clicking a search result (replacing today's
+  floorplan-only behavior, see §9.4 and issue #45), an item chip's actions
+  menu, and the Overview tab's rows.
+- Content: item name/photo/notes/categories/expiration, all placements
+  (location + quantity, including split items) each with a large
+  touch-sized +/- editor, the item's log history (filtered via the new
+  `item_id` param on `GET /item-log`, §5.1), and its file attachments.
+  If the item (or a placement's location) has a floorplan mapping, a
+  "Locate on floorplan" button switches to the Floorplan tab and blinks it
+  — the same behavior search used to trigger unconditionally.
+- Deep link: `<base-url>/plugins/signalk-stowage-mgmt/?item=<item-id>`,
+  parallel to the existing `?location=<id>` contract (§5.2) — this is what
+  lets `signalk-maintenance-tracker` link directly to an item (the
+  motivating use case for issue #44).
 
 ## 7. Persistence
 
