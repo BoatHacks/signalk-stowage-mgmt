@@ -5,12 +5,17 @@
 // way helpers.js is (no JSDOM needed).
 import qrcode from '../vendor/qrcode-generator.mjs';
 
-// The deep link a location's QR code encodes: <base>/plugins/signalk-stowage-mgmt/?location=<id>.
-// baseUrl is expected to already be an absolute origin (e.g.
+// The deep link a location's QR code encodes: <base>/signalk-stowage-mgmt/?location=<id>.
+// This is the webapp's own static mount (its package name, served at the
+// server root by signalk-server because of the "signalk-webapp" keyword in
+// package.json) — NOT /plugins/signalk-stowage-mgmt/, which is a different
+// mount reserved for this plugin's JSON API routes and has no handler for
+// GET / (a request there 404s with a flat JSON error instead of loading the
+// app). baseUrl is expected to already be an absolute origin (e.g.
 // "http://192.168.1.50:3000"), with or without a trailing slash.
 export function locationDeepLink(baseUrl, locationId) {
   var base = (baseUrl || '').replace(/\/+$/, '');
-  return base + '/plugins/signalk-stowage-mgmt/?location=' + encodeURIComponent(locationId);
+  return base + '/signalk-stowage-mgmt/?location=' + encodeURIComponent(locationId);
 }
 
 // Reads the `location` query param out of a location.search-shaped string

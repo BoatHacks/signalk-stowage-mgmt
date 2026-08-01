@@ -388,9 +388,12 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   jump instead), its log history, properties (photo, categories,
   expiration, notes), and attachments — each section independently
   configurable, see "Configuration" above.
-- Deep-linkable: `<server-url>/plugins/signalk-stowage-mgmt/?item=<item-id>`
+- Deep-linkable: `<server-url>/signalk-stowage-mgmt/?item=<item-id>`
   opens the page directly, the same way a QR label's `?location=<id>` link
-  opens the Inventory tab (see "Known external consumers" below).
+  opens the Inventory tab (see "Known external consumers" below). Note this
+  is the webapp's own static mount (the plugin's package name, served at
+  the server root) — not `/plugins/signalk-stowage-mgmt/`, which is the
+  separate JSON API mount and has no page to serve at `/`.
 
 ## Data model
 

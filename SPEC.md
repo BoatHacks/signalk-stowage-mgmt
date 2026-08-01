@@ -24,7 +24,8 @@ better-sqlite3 prototype), rewritten and renamed to `signalk-stowage-mgmt`
 starting at v0.2.3. It runs as a standard Signal K server plugin —
 installed via the Signal K App Store or `npm install`, configured via the
 Admin UI's Plugin Config page, and serving its own webapp under
-`/plugins/signalk-stowage-mgmt/`.
+`/signalk-stowage-mgmt/` (its package name at the server root — the
+`/plugins/signalk-stowage-mgmt/` mount is the separate JSON API, §5).
 
 One other Signal K plugin, `signalk-maintenance-tracker`, integrates
 directly against this plugin's REST API (see §5 and README's "Known
@@ -149,8 +150,13 @@ and name) plus the configured base URL (§8). The only new contract is
 the **deep link** a QR code encodes:
 
 ```
-<base-url>/plugins/signalk-stowage-mgmt/?location=<location-id>
+<base-url>/signalk-stowage-mgmt/?location=<location-id>
 ```
+
+This is the webapp's own static mount (its package name, served at the
+server root by signalk-server) — not `/plugins/signalk-stowage-mgmt/`,
+which is the separate JSON API mount registered via `registerWithRouter`
+and has no handler for `GET /`.
 
 On load, if a `location` query param is present, the webapp jumps straight
 to the Inventory tab with that location's node expanded (see §6, §9.2) —
@@ -219,7 +225,7 @@ Stock Alerts, Store Log. Design constraints:
   Header content (name, current actual/target quantity) is always shown
   above the sections and isn't itself configurable — it's identity, not
   detail.
-- Deep link: `<base-url>/plugins/signalk-stowage-mgmt/?item=<item-id>`,
+- Deep link: `<base-url>/signalk-stowage-mgmt/?item=<item-id>`,
   parallel to the existing `?location=<id>` contract (§5.2) — this is what
   lets `signalk-maintenance-tracker` link directly to an item (the
   motivating use case for issue #44).
