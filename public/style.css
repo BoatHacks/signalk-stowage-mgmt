@@ -1525,6 +1525,37 @@ select {
   margin-top: 12px;
 }
 
+.label-picker { margin: 14px 0; }
+
+.label-picker-tree {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.label-picker-node { font-size: 13px; }
+
+.label-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.label-picker-row input[type="checkbox"] { cursor: pointer; }
+
+.label-picker-item { color: var(--text-muted); }
+
+.label-picker-children {
+  margin-left: 16px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+
 /* ---------- item detail page ---------- */
 
 .item-detail-header {
@@ -1615,6 +1646,7 @@ select {
   .modal-header,
   .hint,
   .category-chip-list,
+  .label-picker,
   .modal-footer {
     display: none !important;
   }

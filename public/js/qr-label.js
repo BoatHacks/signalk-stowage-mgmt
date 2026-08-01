@@ -13,6 +13,14 @@ export function locationDeepLink(baseUrl, locationId) {
   return base + '/plugins/signalk-stowage-mgmt/?location=' + encodeURIComponent(locationId);
 }
 
+// The deep link an item's QR code encodes: <base>/plugins/signalk-stowage-mgmt/?item=<id>.
+// Same shape as locationDeepLink, targeting the item detail page's own
+// deep-link contract (SPEC.md §6.2) instead of the Inventory tree.
+export function itemDeepLink(baseUrl, itemId) {
+  var base = (baseUrl || '').replace(/\/+$/, '');
+  return base + '/plugins/signalk-stowage-mgmt/?item=' + encodeURIComponent(itemId);
+}
+
 // Reads the `location` query param out of a location.search-shaped string
 // (e.g. "?location=abc123"), or null if absent.
 export function parseLocationParam(search) {
