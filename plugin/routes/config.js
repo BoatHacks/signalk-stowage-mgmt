@@ -10,6 +10,8 @@
 // dusk through dawn, not just once it's fully dark.
 const SUN_DARK_PHASES = new Set(['dawn', 'sunrise', 'sunset', 'dusk', 'night'])
 
+const DEFAULT_DETAIL_PAGE_SECTIONS = ['placements', 'floorplan', 'history', 'properties', 'attachments']
+
 // app.getSelfPath() may return either the raw leaf value or the full tree
 // node ({ value, timestamp, $source }) wrapping it, depending on server
 // version - this unwraps either shape to the plain value.
@@ -58,7 +60,13 @@ module.exports = function registerConfigRoutes (router, app, getOptions) {
       autoTheme: !!options.autoTheme,
       themeRecommendation: computeThemeRecommendation(),
       dynamicQuantityScale: !!options.dynamicQuantityScale,
-      qrLabelBaseUrl: options.qrLabelBaseUrl || ''
+      qrLabelBaseUrl: options.qrLabelBaseUrl || '',
+      // An explicit empty array (user removed every section) is respected
+      // as-is - only a genuinely unset field falls back to the default,
+      // since removing all sections is a valid config (SPEC.md §8).
+      detailPageSections: Array.isArray(options.detailPageSections)
+        ? options.detailPageSections
+        : DEFAULT_DETAIL_PAGE_SECTIONS
     })
   })
 }

@@ -1,12 +1,13 @@
-import { html, useRef } from '../vendor/preact-htm-standalone.js';
+import { html, useRef, useMemo } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn } from './app-core.js';
 import { LocationNode } from './app-nodes.js';
-import { childLocations } from './helpers.js';
+import { childLocations, filterQuery } from './helpers.js';
 
 export function InventoryTab() {
   var app = useApp();
   var topLevel = childLocations(app.data, null).filter(function (l) { return l.type === 'storage_space'; });
   var importFileRef = useRef(null);
+  var filter = useMemo(function () { return filterQuery(app.data, app.searchQuery); }, [app.data, app.searchQuery]);
 
   function handleImportFile (e) {
     var file = e.target.files && e.target.files[0];
@@ -46,7 +47,8 @@ export function InventoryTab() {
       </div>
       <div class="tree">
         ${!topLevel.length ? html`<p class="hint">No storage spaces created yet.</p>` : null}
-        ${topLevel.map(function (loc) { return html`<${LocationNode} loc=${loc} key=${loc.id} />`; })}
+        ${filter.locationIds && !filter.locationIds.size ? html`<p class="hint">No matches for "${app.searchQuery}".</p>` : null}
+        ${topLevel.map(function (loc) { return html`<${LocationNode} loc=${loc} filter=${filter} key=${loc.id} />`; })}
       </div>
     </section>
   `;

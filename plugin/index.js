@@ -59,6 +59,18 @@ module.exports = function (app) {
         description:
           'Absolute base URL (e.g. http://192.168.1.50:3000) that a printed location QR label\u2019s link points at. Signal K plugins can\u2019t reliably auto-detect the right LAN address/hostname, so the webapp pre-fills this from the browser\u2019s own address when you open the Print Labels page \u2014 only set this if that guess would be wrong (e.g. labels generated from a device other than the boat\u2019s own display).',
         default: ''
+      },
+      detailPageSections: {
+        type: 'array',
+        title: 'Item detail page sections',
+        description:
+          'Which sections appear on an item\u2019s detail page, and in what order. Remove a section to hide it; reorder to change where it appears. All five are shown by default. When the Floorplan section is hidden, a "Locate on floorplan" button appears in Placements instead.',
+        items: {
+          type: 'string',
+          enum: ['placements', 'floorplan', 'history', 'properties', 'attachments'],
+          enumNames: ['Placements', 'Floorplan', 'History', 'Properties', 'Attachments']
+        },
+        default: ['placements', 'floorplan', 'history', 'properties', 'attachments']
       }
     }
   }

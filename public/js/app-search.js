@@ -4,8 +4,12 @@ import { ItemChip } from './app-nodes.js';
 
 export function SearchBox() {
   var app = useApp();
-  var queryState = useState('');
-  var query = queryState[0], setQuery = queryState[1];
+  // The query lives in app-level state (app.searchQuery), not locally —
+  // it also drives live-filtering of the Inventory tree and Overview rows
+  // (SPEC.md §6.3), so both the dropdown below and those other tabs read
+  // the same value.
+  var query = app.searchQuery;
+  var setQuery = app.setSearchQuery;
   var openState = useState(false);
   var open = openState[0], setOpen = openState[1];
 
@@ -22,10 +26,13 @@ export function SearchBox() {
         .slice(0, 8)
     : [];
 
+  // Opens the item's detail page instead of attempting a floorplan locate
+  // — the old behavior did nothing useful for an item with no floorplan
+  // mapping (issue #45). "Locate on floorplan" is still available, as a
+  // button inside the detail page's Placements section when applicable.
   function pick(item) {
-    setQuery(item.name);
     setOpen(false);
-    app.locateItem(item);
+    app.selectItem(item.id);
   }
 
   return html`

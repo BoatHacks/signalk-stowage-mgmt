@@ -8,6 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [Unreleased]
+
+### Added
+
+- **Item detail page** (issues #44, #45): a dedicated page for one item —
+  placements with large +/- quantity editors, an inline floorplan section
+  showing (and blinking) the item's mapped area(s), log history,
+  properties (photo/notes/categories/expiration), and attachments. If the
+  Floorplan section is hidden via config, Placements shows a "Locate on
+  floorplan" button instead. Opened from a search result, an item chip's
+  new "View details" action, or an Overview row/chip. Deep-linkable via
+  `?item=<item-id>`, alongside the existing `?location=<id>` QR-label
+  link. New plugin option, "Item detail page sections", to hide/reorder
+  the page's five sections (all shown by default). Backend: `GET
+  /item-log` gains an optional `item_id` filter; no other new endpoints.
+- **Live-filter on Inventory and Overview** (issue #45): typing in the
+  header's search box now also filters the Inventory tree and the
+  Overview table/touch rows down to matches (by item name/notes, or by
+  location name — a location match reveals everything inside it), instead
+  of only offering a dropdown of results. Overview's own separate
+  "Filter table…" field is gone in favor of this one shared box.
+
+### Changed
+
+- Clicking a search result now always opens the item's detail page,
+  instead of only trying to locate it on the floorplan — which did
+  nothing useful (beyond an easy-to-miss toast) for items with no
+  floorplan mapping. Locating on the floorplan is still available as a
+  button on the detail page when a mapping exists.
+
 ## [0.9.6] - 2026-08-01
 
 ### Added

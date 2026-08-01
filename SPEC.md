@@ -132,7 +132,16 @@ All responses are JSON; errors are the flat shape `{ "error": "..." }`,
 never nested — a documented gotcha for external consumers (see
 `signalk-maintenance-tracker`'s docs, which got this wrong once).
 
-### 5.1 QR Labels (see §9.2)
+### 5.1 Item Detail Page (see §9.3)
+
+No new endpoints — the detail page is built entirely from data the webapp
+already fetches (`GET /items/:id`, already shipped for the external
+`signalk-maintenance-tracker` consumer) plus one small extension: `GET
+/item-log` (§5) gains an optional `item_id` query parameter, so the
+page's history section doesn't have to fetch and filter the *entire*
+audit trail client-side to show one item's events.
+
+### 5.2 QR Labels (see §9.2)
 
 No new backend endpoints are required for MVP: a label is rendered
 entirely client-side from data the webapp already has (a Location's id
@@ -173,10 +182,65 @@ Stock Alerts, Store Log. Design constraints:
 - Each label: QR code (SVG), the location's own name (not its full
   breadcrumb path — kept short so it stays legible at label size), and
   the stowage-mgmt app icon centered in the QR code itself.
-- Scanning a label's QR code opens the deep link from §5.1, which jumps to
+- Scanning a label's QR code opens the deep link from §5.2, which jumps to
   the Inventory tab with that location's node expanded — the same
   behavior regardless of whether the location happens to be
   floorplan-mapped, for consistency and simplicity.
+
+### 6.2 Item Detail Page (see §9.3)
+
+- A dedicated full-view "page" (swaps the main content area the way a tab
+  does, with a back button) rather than a modal — the content (placements,
+  +/- editors, history, photo, attachments) doesn't fit comfortably in the
+  existing modal pattern, and a real view gives it a URL identity (below).
+- Reachable from: clicking a search result (replacing today's
+  floorplan-only behavior, see §9.3 and issue #45), an item chip's actions
+  menu, and the Overview tab's rows.
+- Content is organized into sections, each independently configurable
+  (shown/hidden, and in what order) via plugin config (§8) — all sections
+  are enabled by default:
+  - **Placements** — all placements (location + quantity, including split
+    items), each with a large touch-sized +/- editor. A "Locate on
+    floorplan" button (switches to the Floorplan tab and blinks the
+    matching area(s), the same behavior search used to trigger
+    unconditionally) is shown here only when the **Floorplan** section
+    below is *not* also shown — no point offering to jump to the
+    Floorplan tab when the floorplan is already inline on this same page.
+  - **Floorplan** — the mapped area(s) for this item's placement(s),
+    rendered inline (reusing the same floorplan SVG the Floorplan tab
+    shows) and blinking on load, the same way clicking a search result
+    used to jump to the Floorplan tab and blink. If nothing about this
+    item is floorplan-mapped, says so instead of showing an empty plan.
+  - **History** — the item's log history, filtered via the new `item_id`
+    param on `GET /item-log` (§5.1).
+  - **Properties** — photo, notes, categories, expiration date (the
+    existing fields ItemPropertiesModal already edits).
+  - **Attachments** — the item's file attachments.
+  Header content (name, current actual/target quantity) is always shown
+  above the sections and isn't itself configurable — it's identity, not
+  detail.
+- Deep link: `<base-url>/plugins/signalk-stowage-mgmt/?item=<item-id>`,
+  parallel to the existing `?location=<id>` contract (§5.2) — this is what
+  lets `signalk-maintenance-tracker` link directly to an item (the
+  motivating use case for issue #44).
+
+### 6.3 Live-Filter Inventory/Overview (see §9.3)
+
+- The global `SearchBox` query drives live client-side filtering of the
+  Inventory tab's tree and the Overview tab's table/touch rows, in
+  addition to its existing dropdown-results behavior — no separate
+  "filter mode" toggle.
+- Inventory: a location node stays visible if it matches directly, has a
+  matching descendant item, or has a matching descendant location;
+  non-matching branches are hidden while a query is active (matches the
+  existing `ancestorIds` expand-to-reveal logic already used for
+  QR-label/search navigation, §2.3 ARCHITECTURE).
+- Overview: rows filter to items whose name/notes match, same matching
+  logic as `SearchBox`'s own dropdown results.
+- The Overview tab's own local search field is removed — the global
+  `SearchBox` is the only search input, per issue #45's suggestion.
+- Clearing the query restores the unfiltered view; this is purely a view
+  filter, it never mutates data.
 
 ## 7. Persistence
 
@@ -204,6 +268,18 @@ New, for QR labels:
   (e.g. labels generated from a device other than the boat's own display,
   behind a reverse proxy with a different public hostname).
 
+New, for the item detail page:
+
+- **Item detail page sections** (ordered array field, default = all five
+  sections in the order listed in §6.2: Placements, Floorplan, History,
+  Properties, Attachments). Signal K's plugin-config UI renders an
+  array-of-enum field with reorder controls, so this one field covers both
+  "which sections are shown" (remove one to hide it) and "in what order"
+  (drag to reorder) — no second field needed. Removing all sections still
+  leaves the always-shown header (name, quantities) — the page is never
+  fully empty. Whether the Placements section's "Locate on floorplan"
+  button shows depends on whether Floorplan is also in this list (§6.2).
+
 ## 9. MVP Scope
 
 ### 9.1 Already Shipped
@@ -230,7 +306,36 @@ and several backend hardening fixes.
 - Vendored `qrcode-generator` (MIT, zero deps, single ES module) for
   encoding — see ARCHITECTURE §4.
 
-### 9.3 Post-MVP / Deferred
+### 9.3 Item Detail Page MVP
+
+- Dedicated detail view (§6.2), reachable from search results (replacing
+  the previous floorplan-only behavior), item chip actions menus, and
+  Overview rows.
+- Five configurable sections — Placements (with +/- editors and a
+  conditional "Locate on floorplan" button), Floorplan (the mapped area(s)
+  shown inline and blinking, reusing the Floorplan tab's rendering),
+  History, Properties, Attachments — all shown by default, in that order
+  (§8).
+- Deep link: `?item=<item-id>` query param (§6.2), parallel to the
+  existing `?location=<id>` QR-label contract.
+- Backend: `GET /item-log` gains an optional `item_id` filter (§5.1); no
+  other new endpoints (`GET /items/:id` already existed for the
+  maintenance-tracker consumer).
+- Resolves issue #45's core complaint (clicking a search result did
+  nothing useful without a floorplan mapping) by making search always
+  open the detail page instead of only attempting a floorplan locate.
+- **Live-filter Inventory/Overview lists as you type** (issue #45 stretch
+  goal). Purely client-side: as the global `SearchBox` query changes,
+  the Inventory tree and Overview table/touch rows filter down to
+  matching items (and, for Inventory, the ancestor locations needed to
+  keep matches visible) using the same name/notes matching `SearchBox`
+  already does — no new data fetch, no backend change. The Overview tab's
+  own local search field is removed in favor of the single global one,
+  per the issue's suggestion. Independent of the rest of this section —
+  it doesn't touch the detail page — but included in this MVP rather than
+  deferred, since it's small and shares the same issue/PR.
+
+### 9.4 Post-MVP / Deferred
 
 - **Merge/append JSON import mode** (issue #26) — deferred because it
   needs a real ID-remapping and name-collision policy, not yet designed.
@@ -253,8 +358,9 @@ and several backend hardening fixes.
   external consumers.
 - CHANGELOG.md — complete version history.
 - ROADMAP.md — longer-horizon ideas not yet scheduled.
-- GitHub issues #14 (QR labels — the issue this MVP scope resolves), #26,
-  #25, #24, #23 (deferred items above).
+- GitHub issues #14 (QR labels — the issue that MVP scope resolved), #44,
+  #45 (item detail page + live-filter — the issues this MVP scope
+  resolves), #26, #25, #24, #23 (deferred items above).
 
 ## 11. Design Decisions
 
@@ -287,9 +393,52 @@ and several backend hardening fixes.
   "works with no internet" principle intact — a CDN dependency would
   break offline use, and this project has no build step to run an
   npm-installed dependency through.
+- **Full view over a modal for the item detail page.** The content
+  (placements with +/- editors, history, properties, attachments) is
+  substantially more than the existing modal pattern (`ItemPropertiesModal`
+  etc.) comfortably holds, and a real view gives the page a URL identity
+  (the `?item=<id>` deep link) the way a modal wouldn't.
+- **Search always opens the detail page, with floorplan-locate as a
+  secondary action.** Rejected keeping today's "floorplan-blink if
+  mapped, toast-fail otherwise" split — that's exactly the bug in #45.
+  One consistent primary action (open detail page) plus an optional
+  secondary one (a "Locate on floorplan" button, shown only when a
+  mapping exists) removes the silent-failure path entirely.
+- **One ordered-array config field for section visibility + order,
+  not two separate fields.** Signal K's plugin-config UI (react-jsonschema-
+  form) already renders an array-of-enum field with add/remove/reorder
+  controls, so a single field naturally covers both "which sections show"
+  (item present or removed from the array) and "in what order" (array
+  order) — a separate boolean-per-section-plus-order-number scheme would
+  duplicate that for no gain.
+- **`item_id` filter added to the existing `/item-log` endpoint, not a
+  new nested route.** Keeps one endpoint for "list log entries" with
+  composable filters (date range already existed, `item_id` is just
+  another optional query param) rather than introducing
+  `/items/:id/log` as a parallel, partially-overlapping endpoint.
+- **Live-filter included in this MVP rather than deferred.** Originally
+  scoped out as a separate follow-up since it doesn't share any
+  implementation surface with the detail page. Folded back in at the
+  user's request — it's still independent work internally, but small
+  enough (§9.3) that shipping it in the same PR/issue as the rest of #45
+  isn't a scope-creep risk the way a bigger deferred item (e.g. #26's
+  merge-import mode) would be.
+- **One global `SearchBox`, Overview's local field removed.** Rejected
+  keeping both — a per-tab search field alongside a global one is
+  confusing (which one does live-filtering, which one doesn't) and #45
+  asked for exactly this consolidation.
+- **Inline Floorplan section, added after initial user feedback on the
+  first cut of this feature.** The first version only ever offered
+  "Locate on floorplan" as a button that jumped away to the Floorplan
+  tab. Added a fifth section that embeds the mapped area(s) directly
+  (reusing the same `FloorplanSvg` component and blink behavior the
+  Floorplan tab uses) so a user who wants that context doesn't have to
+  leave the item detail page. The "Locate on floorplan" button in
+  Placements only shows when this section is hidden, to avoid two
+  redundant ways to do the same thing when both are visible at once.
 
 ## 12. Open Questions
 
-None outstanding for QR labels — all of the original issue's open
-questions were resolved during this spec's brainstorm (see §11 for the
+None outstanding for QR labels or the item detail page — all open
+questions from both brainstorms were resolved (see §11 for the
 resolutions and reasoning).

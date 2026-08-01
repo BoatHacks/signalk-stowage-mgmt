@@ -35,6 +35,29 @@ test('item-log: start/end range filters are inclusive of the whole end day', asy
   assert.equal(fromToday.length, 1)
 })
 
+test('item-log: item_id filter scopes results to that item, combines with date range', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const fuse = await (await server.post('/items', { name: 'Fuse' })).json()
+  const rope = await (await server.post('/items', { name: 'Rope' })).json()
+
+  const fuseOnly = await (await server.get(`/item-log?item_id=${fuse.id}`)).json()
+  assert.equal(fuseOnly.length, 1)
+  assert.equal(fuseOnly[0].item_id, fuse.id)
+
+  const ropeOnly = await (await server.get(`/item-log?item_id=${rope.id}`)).json()
+  assert.equal(ropeOnly.length, 1)
+  assert.equal(ropeOnly[0].item_id, rope.id)
+
+  const unknown = await (await server.get('/item-log?item_id=does-not-exist')).json()
+  assert.equal(unknown.length, 0)
+
+  const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const combined = await (await server.get(`/item-log?item_id=${fuse.id}&start=${future}`)).json()
+  assert.equal(combined.length, 0)
+})
+
 test('item-log: records the location an item was created into (to_location)', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())

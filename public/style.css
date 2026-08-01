@@ -1525,6 +1525,77 @@ select {
   margin-top: 12px;
 }
 
+/* ---------- item detail page ---------- */
+
+.item-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.item-detail-name {
+  margin: 0;
+  font-size: 18px;
+  flex: 1;
+}
+
+.item-detail-qty {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.detail-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-section h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.detail-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.detail-section-header h3 { margin: 0; }
+
+.placement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.placement-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.placement-row:last-child { border-bottom: none; }
+
+.item-detail-photo {
+  display: block;
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  object-fit: cover;
+}
+
+.item-detail-floorplan svg {
+  max-height: 360px;
+}
+
 /* On screen, .label-print-area is just a preview inside the modal.
    When printing, everything else on the page is hidden so only the
    label(s) end up on paper. */

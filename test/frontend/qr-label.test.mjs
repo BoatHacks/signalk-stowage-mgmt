@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { locationDeepLink, parseLocationParam, buildLabelSvg } from '../../public/js/qr-label.js'
+import { locationDeepLink, parseLocationParam, parseItemParam, buildLabelSvg } from '../../public/js/qr-label.js'
 
 test('locationDeepLink: builds the deep link, trimming a trailing slash on the base URL', () => {
   assert.equal(
@@ -25,6 +25,13 @@ test('parseLocationParam: reads the location query param, or null if absent', ()
   assert.equal(parseLocationParam('?foo=bar'), null)
   assert.equal(parseLocationParam(''), null)
   assert.equal(parseLocationParam(null), null)
+})
+
+test('parseItemParam: reads the item query param, or null if absent', () => {
+  assert.equal(parseItemParam('?item=abc123'), 'abc123')
+  assert.equal(parseItemParam('?foo=bar'), null)
+  assert.equal(parseItemParam(''), null)
+  assert.equal(parseItemParam(null), null)
 })
 
 test('buildLabelSvg: produces a scannable SVG QR code with no logo', () => {
