@@ -46,6 +46,10 @@ plugin/index.js ── registers route modules, error middleware
 - `jsonBody.js` — a minimal JSON body-parser middleware (no `express`
   runtime dependency — see §4), since the router the server hands the
   plugin is not guaranteed to be a full Express app.
+- `routes/itemLog.js` — `GET /item-log` gains an optional `item_id` query
+  parameter (item detail page, §2.3), composed with the existing
+  `start`/`end` date-range filters as another `AND` clause; no schema or
+  behavior change to the existing date-range-only callers (Store Log tab).
 
 ### 2.2 Frontend SPA (`public/js/`)
 
@@ -70,7 +74,38 @@ plugin/index.js ── registers route modules, error middleware
 - `api.js` — thin `fetch()` wrapper layer; `markdown.js`/`icons.js`/
   `theme.js` are small single-purpose helpers.
 
-### 2.3 QR label generation
+### 2.3 Item detail page
+
+- `public/js/app-item-detail-view.js` (new) — the detail view component,
+  rendered in place of a tab's content (parallel to `app-<tab>-tab.js`
+  files) when an item is selected. Composes the four section components
+  below in the order/visibility given by config.
+- Section components live alongside it, each pulling from data the app
+  already fetches or a small targeted request: a placements section
+  reusing `QuantityEditor` (`app-core.js`) per placement; a history
+  section calling the extended `GET /item-log?item_id=` (§2.1 addition
+  below); a properties section reusing the read side of
+  `ItemPropertiesModal`'s fields; an attachments section reusing the
+  existing attachments list/upload UI already built for
+  `ItemPropertiesModal`.
+- `app.js` gains `selectedItemId` state (parallel to `activeTab`) and a
+  `selectItem`/`closeItemDetail` pair; selecting an item doesn't change
+  `activeTab`, so "back" just clears `selectedItemId` and the previous tab
+  reappears underneath, no navigation stack needed.
+- The `?item=<id>` deep link is handled the same way `?location=<id>`
+  already is: parsed once in `app.js`'s initial-load effect
+  (`qr-label.js`'s `parseLocationParam` gets an item-id sibling), setting
+  `selectedItemId` directly instead of expanding an Inventory node.
+- Search results (`app-search.js`'s `SearchBox.pick`) call `selectItem`
+  instead of unconditionally calling `app.locateItem` — the existing
+  floorplan-locate flow becomes a button inside the Placements section
+  instead of search's only action.
+- **Section visibility/order config** (`detailPageSections`, §8 SPEC.md)
+  flows through the existing `/webapp-config` polling path, the same way
+  `autoTheme`/`dynamicQuantityScale`/`qrLabelBaseUrl` already do — no new
+  transport.
+
+### 2.4 QR label generation
 
 No new backend component. Label rendering is entirely client-side:
 
@@ -102,7 +137,10 @@ See SPEC.md §3 for the conceptual model. Actual SQLite schema
 untyped beyond a `CHECK` on `event` — it's an audit trail, not a
 normalized model.
 
-QR labels introduce no schema change.
+QR labels introduce no schema change. The item detail page introduces no
+schema change either — it's a new read-composition over existing tables
+plus one new indexed query path (`item_log.item_id`, already indexed per
+§3's "every foreign key used in a hot lookup path").
 
 ## 4. Technology Stack
 
@@ -134,6 +172,11 @@ QR labels introduce no schema change.
   code encodes is a URL back into this same webapp, not a third-party
   service. Deliberately not using an external QR-image API, to keep label
   generation working offline.
+- **Item detail page** — the `?item=<id>` deep link (§2.3) is the second
+  known integration point for `signalk-maintenance-tracker` (the first
+  being the REST API calls above): the motivating use case for issue #44
+  is that tracker linking straight to an item's detail page in this
+  plugin.
 
 ## 6. Security Considerations
 
@@ -158,6 +201,13 @@ QR labels introduce no schema change.
   it introduces no new write capability and no new auth boundary; a
   printed label is exactly as sensitive as physical access to the boat's
   own network already is.
+- **Item detail page**: the `?item=<id>` deep link is the same kind of
+  read-only navigation shortcut as `?location=<id>` — it opens the detail
+  view, it doesn't perform any write. The `item_id` filter added to `GET
+  /item-log` only narrows an existing read query (§2.1); it accepts any
+  string and simply returns zero rows for an id that doesn't exist or
+  isn't a valid UUID, matching how the existing `start`/`end` filters
+  already behave for out-of-range input.
 
 ## 7. File Structure
 
@@ -179,6 +229,7 @@ public/
   js/
     app.js app-core.js app-nodes.js helpers.js api.js
     app-<tab>-tab.js / app-<thing>-modals.js  (per-tab/per-modal components)
+    app-item-detail-view.js  (item detail page, §2.3)
     svg-sanitizer.js markdown.js icons.js theme.js
   vendor/
     preact-htm-standalone.js
@@ -220,3 +271,9 @@ See ROADMAP.md for longer-horizon ideas (e.g. per-batch/multiple
 expiration dates) not designed against here. Nothing in the QR-labels MVP
 (§9.2 in SPEC.md) forecloses those — labels are additive and don't touch
 the items/expiration data model.
+
+The item detail page's section-based layout (§2.3) is deliberately
+composable — the live-filter stretch goal deferred from issue #45
+(SPEC.md §9.4) doesn't touch it at all, and a future section (e.g. a
+"related items" or barcode section) would just be a fifth entry in the
+same config array, not a redesign.
