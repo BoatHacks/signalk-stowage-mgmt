@@ -218,8 +218,9 @@ and several backend hardening fixes.
 ### 9.2 QR Labels MVP
 
 - Single-label generation from any location's actions menu.
-- Batch "Print Labels" page: multi-select (any location, any depth) +
-  print-ready grid via the native print dialog.
+- Batch "Print Labels" page: multi-select (any location, any depth), a
+  "Select All"/"Select None" toggle, + print-ready grid via the native
+  print dialog.
 - Each label: SVG QR code (error-correction level `H`, to tolerate the
   logo overlay) + the location's own name + centered app-icon overlay.
 - Scanning always opens the Inventory tab with the location's node

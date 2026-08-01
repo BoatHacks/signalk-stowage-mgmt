@@ -95,6 +95,11 @@ export function PrintLabelsModal() {
           <button class="modal-close" aria-label="Close" onClick=${close}>×</button>
         </div>
         <p class="hint">Select any storage space or container, then print the selected labels.</p>
+        ${sortedLocations.length ? html`
+          <button type="button" onClick=${function () {
+            setSelected(selected.size === sortedLocations.length ? new Set() : new Set(sortedLocations.map(function (l) { return l.id; })));
+          }}>${selected.size === sortedLocations.length ? 'Select None' : 'Select All'}</button>
+        ` : null}
         <div class="category-chip-list">
           ${!sortedLocations.length ? html`<span class="category-chip-empty">No storage spaces or containers yet.</span>` : null}
           ${sortedLocations.map(function (loc) {

@@ -14,14 +14,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 - **QR labels for storage spaces/containers** (issue #14): a "Print
   Labels" batch page (Inventory toolbar) to select any location at any
-  depth and print a QR-coded label for each, plus a single-label "Print
-  QR label" action on every node. Each label is a QR code (with the app
+  depth — or "Select All"/"Select None" to toggle every one at once —
+  and print a QR-coded label for each, plus a single-label "Print QR
+  label" action on every node. Each label is a QR code (with the app
   icon centered in it) plus the location's own name. Scanning one opens
   the webapp with that location expanded in the Inventory tab. New plugin
-  option: "Server URL for QR labels", pre-filled
-  by the webapp from the browser's own address. Entirely client-side —
-  no new backend endpoints, no new persisted data beyond the config
-  value. Uses a newly vendored `qrcode-generator` (MIT, zero deps).
+  option: "Server URL for QR labels", pre-filled by the webapp from the
+  browser's own address. Entirely client-side — no new backend endpoints,
+  no new persisted data beyond the config value. Uses a newly vendored
+  `qrcode-generator` (MIT, zero deps).
 
 ## [0.9.5] - 2026-07-30
 

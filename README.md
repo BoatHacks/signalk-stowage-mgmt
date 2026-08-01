@@ -135,12 +135,13 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   it's a restore, not a merge, so export a fresh backup first if you're
   not sure.
 - "Print Labels" (toolbar) opens a page to select any storage space or
-  container (any depth) and print a QR-coded label for each — scanning
-  one opens this webapp with that location expanded in the Inventory tab,
-  so a locker/bin can carry a label that jumps straight to what's
-  supposed to be inside it. Each node also has its own single-label
-  "Print QR label" action, for printing just one without the batch page.
-  See "Server URL for QR labels" under Configuration if labels end up
+  container (any depth) — or "Select All"/"Select None" to toggle every
+  one at once — and print a QR-coded label for each. Scanning one opens
+  this webapp with that location expanded in the Inventory tab, so a
+  locker/bin can carry a label that jumps straight to what's supposed to
+  be inside it. Each node also has its own single-label "Print QR label"
+  action, for printing just one without the batch page. See "Server URL
+  for QR labels" under Configuration if labels end up
   pointing at the wrong address.
 - The floating "Not Stored" panel (bottom/top-right of the screen,
   depending on context) lists any containers with no parent and any items
