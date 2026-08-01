@@ -2,7 +2,7 @@ import { html, render, useState, useEffect, useRef, useCallback } from '../vendo
 import { api } from './api.js';
 import { AppCtx, Toast, POLL_INTERVAL_MS } from './app-core.js';
 import { SearchBox, LocateItemPopup, ThemeToggle, EditModeToggle } from './app-search.js';
-import { NotStoredPanel, SplitDropPanel } from './app-nodes.js';
+import { NotStoredPanel, SplitDropPanel, LocationContentsPopup } from './app-nodes.js';
 import { InventoryTab } from './app-inventory-tab.js';
 import { FloorplanTab } from './app-floorplan-tab.js';
 import { CategoriesTab } from './app-categories-tab.js';
@@ -74,9 +74,11 @@ function App() {
   var printLabelsModalOpenState = useState(false);
   var selectedItemIdState = useState(null);
   var searchQueryState = useState('');
+  var locationContentsPanelState = useState(null);
 
   var toastTimerRef = useRef(null);
   var fetchInFlightRef = useRef(false);
+  var pendingLocateLocationIdRef = useRef(null);
 
   useEffect(function () { applyTheme(theme); }, [theme]);
 
@@ -127,7 +129,10 @@ function App() {
   // expanded — same target regardless of floorplan mapping, per SPEC.md
   // §11. Runs once data is loaded, not on every poll: the query param is
   // stripped from the URL right after handling it, so there's nothing
-  // left to re-trigger on a later refresh.
+  // left to re-trigger on a later refresh. The actual scroll-to and
+  // "what's stored there" popup (mirroring the Floorplan tab's area-click
+  // popup) happen in the effect below, once the now-uncollapsed node has
+  // actually rendered.
   useEffect(function () {
     if (!loaded) return;
     var locationId = parseLocationParam(window.location.search);
@@ -140,11 +145,34 @@ function App() {
         return next;
       });
       setActiveTab('inventory');
+      pendingLocateLocationIdRef.current = locationId;
     }
     var url = new URL(window.location.href);
     url.searchParams.delete('location');
     window.history.replaceState(null, '', url);
   }, [loaded]);
+
+  // Follows up on the effect above: once the targeted node is actually in
+  // the DOM (its ancestors' collapse state has taken effect and the
+  // Inventory tab is showing), scroll it into view and pop its contents.
+  // Retries on every relevant re-render until the node mounts, since the
+  // uncollapse from the effect above lands one render later than this one.
+  useEffect(function () {
+    var locationId = pendingLocateLocationIdRef.current;
+    if (!locationId || activeTab !== 'inventory') return;
+    var target = data.locations.find(function (l) { return l.id === locationId; });
+    if (!target) { pendingLocateLocationIdRef.current = null; return; }
+    var el = document.getElementById('location-node-' + locationId);
+    if (!el) return;
+    pendingLocateLocationIdRef.current = null;
+    locationContentsPanelState[1](target);
+    try {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (err) {
+      // Some embedded/older browsers lack the options-object form of
+      // scrollIntoView() — the popup itself must not depend on this working.
+    }
+  }, [activeTab, collapsedLocationIds, data]);
 
   // A scanned/linked item deep link (?item=<id>) opens the item detail
   // page directly — the second-external-consumer-facing deep link
@@ -408,6 +436,11 @@ function App() {
       }).catch(function (err) { showToast('"' + item.name + '": ' + err.message); });
     },
 
+    // location contents popup (Inventory tab's counterpart to the
+    // Floorplan tab's area-click popup — see LocationContentsPopup)
+    locationContentsPanel: locationContentsPanelState[0],
+    closeLocationContentsPanel: function () { locationContentsPanelState[1](null); },
+
     // item detail page
     selectedItemId: selectedItemIdState[0],
     selectItem: function (id) { selectedItemIdState[1](id); },
@@ -423,6 +456,7 @@ function App() {
     setActiveTab(id);
     selectedItemIdState[1](null);
     if (id !== 'floorplan') { locatePopupItemState[1](null); locateTargetState[1](null); }
+    if (id !== 'inventory') locationContentsPanelState[1](null);
   }
 
   var activeTabView = null;
@@ -458,6 +492,7 @@ function App() {
       <${NotStoredPanel} />
       <${SplitDropPanel} />
       <${LocateItemPopup} />
+      <${LocationContentsPopup} />
       <${Toast} />
 
       <${ItemPropertiesModal} />

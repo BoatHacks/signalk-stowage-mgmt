@@ -23,18 +23,18 @@ test('locationDeepLink: URI-encodes the location id', () => {
 test('itemDeepLink: builds the deep link, trimming a trailing slash on the base URL', () => {
   assert.equal(
     itemDeepLink('http://192.168.1.50:3000', 'item-1'),
-    'http://192.168.1.50:3000/plugins/signalk-stowage-mgmt/?item=item-1'
+    'http://192.168.1.50:3000/signalk-stowage-mgmt/?item=item-1'
   )
   assert.equal(
     itemDeepLink('http://192.168.1.50:3000/', 'item-1'),
-    'http://192.168.1.50:3000/plugins/signalk-stowage-mgmt/?item=item-1'
+    'http://192.168.1.50:3000/signalk-stowage-mgmt/?item=item-1'
   )
 })
 
 test('itemDeepLink: URI-encodes the item id', () => {
   assert.equal(
     itemDeepLink('http://x', 'item with spaces'),
-    'http://x/plugins/signalk-stowage-mgmt/?item=item%20with%20spaces'
+    'http://x/signalk-stowage-mgmt/?item=item%20with%20spaces'
   )
 })
 
