@@ -70,7 +70,7 @@ function App() {
   var exportModalContentState = useState(null);
   var locateTargetState = useState(null);
   var locatePopupItemState = useState(null);
-  var labelModalLocationState = useState(null);
+  var labelModalTargetState = useState(null);
   var printLabelsModalOpenState = useState(false);
   var selectedItemIdState = useState(null);
   var searchQueryState = useState('');
@@ -336,9 +336,12 @@ function App() {
     openSplitModal: function (item, fromLocationId) { splitModalState[1]({ item: item, fromLocationId: fromLocationId }); },
     closeSplitModal: function () { splitModalState[1](null); },
 
-    labelModalLocation: labelModalLocationState[0],
-    openLabelModal: function (loc) { labelModalLocationState[1](loc); },
-    closeLabelModal: function () { labelModalLocationState[1](null); },
+    // target is { type: 'location'|'item', entity }, mirroring openMoveModal
+    // below — a single label modal now serves both a location's own actions
+    // menu and an item's.
+    labelModalTarget: labelModalTargetState[0],
+    openLabelModal: function (entity, type) { labelModalTargetState[1]({ type: type || 'location', entity: entity }); },
+    closeLabelModal: function () { labelModalTargetState[1](null); },
 
     printLabelsModalOpen: printLabelsModalOpenState[0],
     openPrintLabelsModal: function () { printLabelsModalOpenState[1](true); },

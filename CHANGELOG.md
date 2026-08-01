@@ -12,6 +12,13 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Added
 
+- **QR labels for items**: items now get the same "Print QR label" action
+  storage spaces/containers already had, encoding the item's `?item=<id>`
+  deep link (issues #44, #45) so scanning a printed item label opens its
+  detail page directly. The batch "Print Labels" modal (Inventory tab
+  toolbar) now shows a compact, indented, checkbox-driven version of the
+  inventory tree — spaces, containers, and items all individually
+  selectable at any depth — instead of a flat list of location-only chips.
 - **Item detail page** (issues #44, #45): a dedicated page for one item —
   placements with large +/- quantity editors, an inline floorplan section
   showing (and blinking) the item's mapped area(s), log history,

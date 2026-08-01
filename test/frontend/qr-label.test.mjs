@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { locationDeepLink, parseLocationParam, parseItemParam, buildLabelSvg } from '../../public/js/qr-label.js'
+import { locationDeepLink, itemDeepLink, parseLocationParam, parseItemParam, buildLabelSvg } from '../../public/js/qr-label.js'
 
 test('locationDeepLink: builds the deep link, trimming a trailing slash on the base URL', () => {
   assert.equal(
@@ -17,6 +17,24 @@ test('locationDeepLink: URI-encodes the location id', () => {
   assert.equal(
     locationDeepLink('http://x', 'loc with spaces'),
     'http://x/signalk-stowage-mgmt/?location=loc%20with%20spaces'
+  )
+})
+
+test('itemDeepLink: builds the deep link, trimming a trailing slash on the base URL', () => {
+  assert.equal(
+    itemDeepLink('http://192.168.1.50:3000', 'item-1'),
+    'http://192.168.1.50:3000/plugins/signalk-stowage-mgmt/?item=item-1'
+  )
+  assert.equal(
+    itemDeepLink('http://192.168.1.50:3000/', 'item-1'),
+    'http://192.168.1.50:3000/plugins/signalk-stowage-mgmt/?item=item-1'
+  )
+})
+
+test('itemDeepLink: URI-encodes the item id', () => {
+  assert.equal(
+    itemDeepLink('http://x', 'item with spaces'),
+    'http://x/plugins/signalk-stowage-mgmt/?item=item%20with%20spaces'
   )
 })
 
