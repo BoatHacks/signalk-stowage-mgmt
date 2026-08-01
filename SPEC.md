@@ -217,6 +217,24 @@ Stock Alerts, Store Log. Design constraints:
   lets `signalk-maintenance-tracker` link directly to an item (the
   motivating use case for issue #44).
 
+### 6.3 Live-Filter Inventory/Overview (see §9.3)
+
+- The global `SearchBox` query drives live client-side filtering of the
+  Inventory tab's tree and the Overview tab's table/touch rows, in
+  addition to its existing dropdown-results behavior — no separate
+  "filter mode" toggle.
+- Inventory: a location node stays visible if it matches directly, has a
+  matching descendant item, or has a matching descendant location;
+  non-matching branches are hidden while a query is active (matches the
+  existing `ancestorIds` expand-to-reveal logic already used for
+  QR-label/search navigation, §2.3 ARCHITECTURE).
+- Overview: rows filter to items whose name/notes match, same matching
+  logic as `SearchBox`'s own dropdown results.
+- The Overview tab's own local search field is removed — the global
+  `SearchBox` is the only search input, per issue #45's suggestion.
+- Clearing the query restores the unfiltered view; this is purely a view
+  filter, it never mutates data.
+
 ## 7. Persistence
 
 Everything in §3 except attachment file bytes lives in one SQLite database
@@ -295,13 +313,19 @@ and several backend hardening fixes.
 - Resolves issue #45's core complaint (clicking a search result did
   nothing useful without a floorplan mapping) by making search always
   open the detail page instead of only attempting a floorplan locate.
+- **Live-filter Inventory/Overview lists as you type** (issue #45 stretch
+  goal). Purely client-side: as the global `SearchBox` query changes,
+  the Inventory tree and Overview table/touch rows filter down to
+  matching items (and, for Inventory, the ancestor locations needed to
+  keep matches visible) using the same name/notes matching `SearchBox`
+  already does — no new data fetch, no backend change. The Overview tab's
+  own local search field is removed in favor of the single global one,
+  per the issue's suggestion. Independent of the rest of this section —
+  it doesn't touch the detail page — but included in this MVP rather than
+  deferred, since it's small and shares the same issue/PR.
 
 ### 9.4 Post-MVP / Deferred
 
-- **Live-filter Inventory/Overview lists as you type** (issue #45 stretch
-  goal) — deferred from this cycle; it's a separate, purely additive UX
-  improvement (client-side filtering of already-loaded lists) that
-  doesn't depend on the detail page work and can land independently.
 - **Merge/append JSON import mode** (issue #26) — deferred because it
   needs a real ID-remapping and name-collision policy, not yet designed.
 - **Touch drag-and-drop** (issue #23) — deferred because it needs either a
@@ -324,9 +348,8 @@ and several backend hardening fixes.
 - CHANGELOG.md — complete version history.
 - ROADMAP.md — longer-horizon ideas not yet scheduled.
 - GitHub issues #14 (QR labels — the issue that MVP scope resolved), #44,
-  #45 (item detail page — the issues this MVP scope resolves; the
-  live-filter portion of #45 is deferred, see §9.4), #26, #25, #24, #23
-  (deferred items above).
+  #45 (item detail page + live-filter — the issues this MVP scope
+  resolves), #26, #25, #24, #23 (deferred items above).
 
 ## 11. Design Decisions
 
@@ -382,6 +405,17 @@ and several backend hardening fixes.
   composable filters (date range already existed, `item_id` is just
   another optional query param) rather than introducing
   `/items/:id/log` as a parallel, partially-overlapping endpoint.
+- **Live-filter included in this MVP rather than deferred.** Originally
+  scoped out as a separate follow-up since it doesn't share any
+  implementation surface with the detail page. Folded back in at the
+  user's request — it's still independent work internally, but small
+  enough (§9.3) that shipping it in the same PR/issue as the rest of #45
+  isn't a scope-creep risk the way a bigger deferred item (e.g. #26's
+  merge-import mode) would be.
+- **One global `SearchBox`, Overview's local field removed.** Rejected
+  keeping both — a per-tab search field alongside a global one is
+  confusing (which one does live-filtering, which one doesn't) and #45
+  asked for exactly this consolidation.
 
 ## 12. Open Questions
 

@@ -1,4 +1,4 @@
-# Implementation Plan: Issues #44, #45 — Item detail page
+# Implementation Plan: Issues #44, #45 — Item detail page + live-filter
 
 ## Overview
 
@@ -6,19 +6,24 @@ Add a dedicated item detail view (full-view, not a modal) showing an
 item's placements/quantities, log history, properties, and attachments,
 each independently configurable (shown/hidden, reorderable). Wire search
 results (currently floorplan-locate only, which does nothing useful for
-items with no floorplan mapping) to open it.
+items with no floorplan mapping) to open it. Also make the global search
+box live-filter the Inventory tree and Overview rows as you type,
+removing Overview's separate local filter field.
 
 ## Relevant SPEC/ARCHITECTURE Sections
 
-- SPEC.md §5.1 (`item_id` filter on `GET /item-log`), §6.2 (UI: sections,
-  navigation entry points, deep link), §8 (`detailPageSections` config
-  field), §9.3 (MVP scope), §11 (design decisions — full view over modal,
+- SPEC.md §5.1 (`item_id` filter on `GET /item-log`), §6.2 (item detail
+  page UI: sections, navigation entry points, deep link), §6.3
+  (live-filter UI), §8 (`detailPageSections` config field), §9.3 (MVP
+  scope, both parts), §11 (design decisions — full view over modal,
   search always opens detail page, one ordered-array config field, filter
-  on the existing `/item-log` endpoint rather than a new route).
-- ARCHITECTURE.md §2.1 (`routes/itemLog.js` addition), §2.3 (component
-  sketch, `selectedItemId` state, deep-link handling), §5 (integration —
-  second `signalk-maintenance-tracker` link target), §6 (security — deep
-  link is read-only, `item_id` filter is just a narrower read query).
+  on the existing `/item-log` endpoint rather than a new route,
+  live-filter included in this MVP, one global `SearchBox`).
+- ARCHITECTURE.md §2.1 (`routes/itemLog.js` addition), §2.3 (item detail
+  page component sketch, `selectedItemId` state, deep-link handling),
+  §2.5 (live-filter component sketch), §5 (integration — second
+  `signalk-maintenance-tracker` link target), §6 (security — deep link is
+  read-only, `item_id` filter is just a narrower read query).
 
 ## Approach
 
@@ -71,6 +76,22 @@ Frontend:
    four in that order); surface it via `plugin/routes/config.js`'s
    `/webapp-config` response, same pattern as `qrLabelBaseUrl`.
 
+Live-filter (independent of the above, but same issue/PR):
+8. `helpers.js`: add a pure `filterQuery(items, locations, query)` helper
+   reusing `SearchBox`'s existing name/notes matching, returning matching
+   item ids plus the ancestor location ids needed to keep them visible
+   (via the existing `ancestorIds`).
+9. `app.js`: lift search query state up (`app.searchQuery`/
+   `setSearchQuery`); `app-search.js`'s `SearchBox` reads/writes it
+   instead of (or in addition to) its own local `query` state, keeping
+   its existing dropdown-results behavior unchanged.
+10. `app-nodes.js`'s tree renderer and `app-overview-tab.js`'s table/touch
+    rows both consume `app.searchQuery` through `filterQuery` to hide
+    non-matching branches/rows when a query is active.
+11. `app-overview-tab.js`: remove the local "Filter table…" field
+    (`filterState`/`setFilter`) — Overview responds to the global query
+    only.
+
 ## Test Strategy
 
 - **Backend** (`test/backend/`): `item_id` filter on `GET /item-log`
@@ -79,17 +100,22 @@ Frontend:
   schema/`/webapp-config` test for the new `detailPageSections` field and
   its default.
 - **Frontend** (`test/frontend/helpers.test.mjs`): any new pure logic —
-  `?item=<id>` parsing, and the section-ordering/filtering logic that
-  turns `detailPageSections` config + item data into the list of sections
-  to render (keep this pure/DOM-free like the rest of `helpers.js`, even
-  though the component consuming it isn't).
+  `?item=<id>` parsing, the section-ordering/filtering logic that turns
+  `detailPageSections` config + item data into the list of sections to
+  render, and `filterQuery` (name match, notes match, no match, nested
+  location ancestor-revealing, case-insensitivity, empty query returns
+  everything) — all kept pure/DOM-free like the rest of `helpers.js`, even
+  though the components consuming them aren't.
 - **Manual, in-browser**: open the detail page via search (with and
   without a floorplan mapping — confirm the old silent-failure case is
   gone), via `?item=<id>`, from an item chip and from Overview; toggle a
   section off and reorder via Plugin Config and confirm the page reflects
   it; verify placements +/- editors, attachments upload/download, and
-  history all work from the new view; touch-target sizing check on a
-  narrow/touch viewport (per SPEC §6's standing constraint).
+  history all work from the new view; type into the global search box
+  and confirm the Inventory tree and Overview rows filter live (and
+  ancestor locations of a match stay visible), confirm Overview's old
+  local filter field is gone; touch-target sizing check on a narrow/touch
+  viewport (per SPEC §6's standing constraint).
 
 ## Implementation Steps
 
@@ -110,6 +136,11 @@ Frontend:
       remove `LocateItemPopup` if it becomes unused
 - [ ] Add "open detail page" entry points: item chip actions
       (`app-nodes.js`), Overview rows (`app-overview-tab.js`)
+- [ ] Add `filterQuery` helper (`helpers.js`)
+- [ ] Lift search query state to `app.js`; wire `SearchBox` to it
+- [ ] Apply live filtering in `app-nodes.js` (Inventory tree) and
+      `app-overview-tab.js` (table/touch rows)
+- [ ] Remove Overview's local "Filter table…" field
 - [ ] Add/update tests (see Test Strategy)
 - [ ] Manual verification (see Test Strategy)
 - [ ] Update README.md (API table, Usage section, config table); update
@@ -127,9 +158,11 @@ Frontend:
   wiring)
 - `public/js/qr-label.js` (`?item=<id>` parsing)
 - `public/js/app-search.js` (`SearchBox.pick` wiring, `LocateItemPopup`)
-- `public/js/app-nodes.js` (item chip actions entry point)
-- `public/js/app-overview-tab.js` (Overview row entry point)
-- `public/js/helpers.js` (pure section-filtering/ordering helper)
+- `public/js/app-nodes.js` (item chip actions entry point, live-filter)
+- `public/js/app-overview-tab.js` (Overview row entry point, live-filter,
+  remove local filter field)
+- `public/js/helpers.js` (pure section-filtering/ordering helper,
+  `filterQuery`)
 - `test/backend/itemLog.test.js` or similar, `test/backend/config.test.js`,
   `test/frontend/helpers.test.mjs`
 - `README.md`, `CHANGELOG.md`

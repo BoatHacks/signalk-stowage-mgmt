@@ -127,6 +127,26 @@ No new backend component. Label rendering is entirely client-side:
   `app.js`'s initial-load effect, parallel to how `locateTarget` already
   drives floorplan blinking from search.
 
+### 2.5 Live-filter Inventory/Overview
+
+No new backend component; purely a rendering-layer addition on top of
+`app.data` the app already holds:
+
+- `helpers.js` gains a pure `filterQuery(items, locations, query)`-style
+  helper (matching name/notes the same way `SearchBox`'s own dropdown
+  matching already does) returning the set of matching item ids and the
+  location ids needed to keep them visible (reusing `ancestorIds`) — kept
+  DOM-free so it's unit-testable like the rest of `helpers.js`.
+- `app-search.js`'s `SearchBox` lifts its query state up to `app.js` (a
+  new `app.searchQuery`/`setSearchQuery`, polling-independent, alongside
+  the existing dropdown-results behavior it keeps doing locally).
+- `app-nodes.js`'s tree renderer and `app-overview-tab.js`'s table/touch
+  rows both read `app.searchQuery`, run it through `filterQuery`, and
+  hide non-matching branches/rows — no new fetch, no new state beyond the
+  query string itself.
+- Overview's own local search input is removed; its rows respond to the
+  global query directly.
+
 ## 3. Data Models
 
 See SPEC.md §3 for the conceptual model. Actual SQLite schema
@@ -273,7 +293,7 @@ expiration dates) not designed against here. Nothing in the QR-labels MVP
 the items/expiration data model.
 
 The item detail page's section-based layout (§2.3) is deliberately
-composable — the live-filter stretch goal deferred from issue #45
-(SPEC.md §9.4) doesn't touch it at all, and a future section (e.g. a
-"related items" or barcode section) would just be a fifth entry in the
-same config array, not a redesign.
+composable — a future section (e.g. a "related items" or barcode section)
+would just be a fifth entry in the same config array, not a redesign.
+Live-filtering (§2.5) is independent of it — a future extension there
+(e.g. filtering Stock Alerts too) wouldn't touch the detail page either.
