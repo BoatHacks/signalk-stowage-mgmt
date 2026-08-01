@@ -10,6 +10,14 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Item QR labels pointed at the wrong URL**: `itemDeepLink` encoded
+  `/plugins/signalk-stowage-mgmt/?item=<id>`, a mount reserved for this
+  plugin's JSON API with no handler for `GET /` (404s). Item QR codes now
+  encode `/signalk-stowage-mgmt/?item=<id>`, the webapp's own static mount
+  — matching `locationDeepLink` and the deep-link contract in SPEC.md §6.2.
+
 ## [0.9.7] - 2026-08-01
 
 ### Added
