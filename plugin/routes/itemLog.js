@@ -5,11 +5,12 @@ module.exports = function registerItemLogRoutes (router, getDb) {
     return instance
   }
 
-  // Returns raw log rows within an optional date range. start/end are
-  // inclusive, ISO date strings (e.g. "2026-06-01"); the frontend does its
-  // own aggregation for display. Omit both to get the full history.
+  // Returns raw log rows within an optional date range, optionally
+  // scoped to one item. start/end are inclusive, ISO date strings (e.g.
+  // "2026-06-01"); the frontend does its own aggregation for display.
+  // Omit all filters to get the full history.
   router.get('/item-log', (req, res) => {
-    const { start, end } = req.query || {}
+    const { start, end, item_id: itemId } = req.query || {}
     const conditions = []
     const params = []
     if (start) {
@@ -21,6 +22,10 @@ module.exports = function registerItemLogRoutes (router, getDb) {
       // whole day, so compare against the start of the following day.
       conditions.push("created_at < datetime(?, '+1 day')")
       params.push(end)
+    }
+    if (itemId) {
+      conditions.push('item_id = ?')
+      params.push(itemId)
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const rows = db().prepare(`SELECT * FROM item_log ${where} ORDER BY created_at ASC`).all(...params)

@@ -8,8 +8,22 @@ test('config: autoTheme and dynamicQuantityScale off by default, no recommendati
 
   const body = await (await server.get('/webapp-config')).json()
   assert.deepEqual(body, {
-    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: ''
+    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
+    detailPageSections: ['placements', 'history', 'properties', 'attachments']
   })
+})
+
+test('config: detailPageSections reflects the plugin option when set, including an explicit empty array', async (t) => {
+  const server = await startTestServer({ options: { detailPageSections: ['history', 'placements'] } })
+  t.after(() => server.close())
+
+  const body = await (await server.get('/webapp-config')).json()
+  assert.deepEqual(body.detailPageSections, ['history', 'placements'])
+
+  const emptyServer = await startTestServer({ options: { detailPageSections: [] } })
+  t.after(() => emptyServer.close())
+  const emptyBody = await (await emptyServer.get('/webapp-config')).json()
+  assert.deepEqual(emptyBody.detailPageSections, [])
 })
 
 test('config: qrLabelBaseUrl reflects the plugin option when set', async (t) => {
