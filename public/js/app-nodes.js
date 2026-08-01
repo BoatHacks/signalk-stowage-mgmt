@@ -127,7 +127,7 @@ export function LocationNode(props) {
   }
 
   return html`
-    <div class="node">
+    <div class="node" id=${'location-node-' + loc.id}>
       <div class="node-header ${isContainer ? 'draggable-node' : ''} ${dragging ? 'dragging' : ''} ${isDropTarget ? 'drop-target' : ''}"
            draggable=${isContainer ? 'true' : 'false'}
            onDragStart=${isContainer ? function (e) {
@@ -256,6 +256,26 @@ export function SplitDropPanel() {
            onDrop=${handleDrop}>
         <span class="node-title">Drop here to split</span>
       </div>
+    </div>
+  `;
+}
+
+// ---------- "Location contents" popup (scanned/linked QR label deep link) ----------
+
+// Mirrors the Floorplan tab's "click an area to see what's stored there"
+// panel (app-floorplan-tab.js), but for the Inventory tab: shown when a
+// storage space or container's QR label deep link (?location=<id>, SPEC.md
+// §11) is opened, alongside scrolling/expanding that node in the tree.
+export function LocationContentsPopup() {
+  var app = useApp();
+  if (!app.locationContentsPanel) return null;
+  var liveLoc = app.data.locations.find(function (l) { return l.id === app.locationContentsPanel.id; }) || app.locationContentsPanel;
+
+  return html`
+    <div class="orphaned-panel floorplan-contents-panel">
+      <button class="modal-close floorplan-contents-close" aria-label="Close" onClick=${app.closeLocationContentsPanel}>×</button>
+      <div class="orphaned-panel-title">${liveLoc.name}</div>
+      <${LocationNode} loc=${liveLoc} />
     </div>
   `;
 }

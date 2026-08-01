@@ -10,6 +10,16 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Storage space/container QR labels now show contents on scan**: opening
+  a location's deep link (`?location=<id>`) still lands on the Inventory
+  tab with that node and its ancestors expanded, but now also scrolls it
+  into view and pops up its contents in a floating panel — the same
+  "what's stored there" popup the Floorplan tab already shows when you
+  click a mapped area, rather than just leaving the user to find the
+  highlighted node themselves.
+
 ### Fixed
 
 - **Item QR labels pointed at the wrong URL**: `itemDeepLink` encoded
