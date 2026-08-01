@@ -41,7 +41,7 @@ function App() {
   var theme = themeState[0], setThemeState = themeState[1];
   var configState = useState({
     autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
-    detailPageSections: ['placements', 'history', 'properties', 'attachments']
+    detailPageSections: ['placements', 'floorplan', 'history', 'properties', 'attachments']
   });
   var config = configState[0], setConfig = configState[1];
   var toastState = useState(null);
@@ -103,7 +103,7 @@ function App() {
       api.getConfig().catch(function () {
         return {
           autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
-          detailPageSections: ['placements', 'history', 'properties', 'attachments']
+          detailPageSections: ['placements', 'floorplan', 'history', 'properties', 'attachments']
         };
       })
     ])

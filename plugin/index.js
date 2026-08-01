@@ -64,13 +64,13 @@ module.exports = function (app) {
         type: 'array',
         title: 'Item detail page sections',
         description:
-          'Which sections appear on an item\u2019s detail page, and in what order. Remove a section to hide it; reorder to change where it appears. All four are shown by default.',
+          'Which sections appear on an item\u2019s detail page, and in what order. Remove a section to hide it; reorder to change where it appears. All five are shown by default. When the Floorplan section is hidden, a "Locate on floorplan" button appears in Placements instead.',
         items: {
           type: 'string',
-          enum: ['placements', 'history', 'properties', 'attachments'],
-          enumNames: ['Placements', 'History', 'Properties', 'Attachments']
+          enum: ['placements', 'floorplan', 'history', 'properties', 'attachments'],
+          enumNames: ['Placements', 'Floorplan', 'History', 'Properties', 'Attachments']
         },
-        default: ['placements', 'history', 'properties', 'attachments']
+        default: ['placements', 'floorplan', 'history', 'properties', 'attachments']
       }
     }
   }

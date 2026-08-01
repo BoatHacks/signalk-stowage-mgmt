@@ -1592,6 +1592,10 @@ select {
   object-fit: cover;
 }
 
+.item-detail-floorplan svg {
+  max-height: 360px;
+}
+
 /* On screen, .label-print-area is just a preview inside the modal.
    When printing, everything else on the page is hidden so only the
    label(s) end up on paper. */

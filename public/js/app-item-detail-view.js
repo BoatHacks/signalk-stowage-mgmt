@@ -1,9 +1,10 @@
-import { html, useState, useEffect } from '../vendor/preact-htm-standalone.js';
+import { html, useState, useEffect, useRef, useMemo } from '../vendor/preact-htm-standalone.js';
 import { useApp, Icon, IconBtn, QuantityEditor } from './app-core.js';
 import { renderMarkdown } from './markdown.js';
 import { AttachmentsSection } from './app-item-modals.js';
 import { buildIndividualRows } from './app-storelog-tab.js';
-import { isSplit, pathToRoot, itemHasFloorplanMapping, resolveDetailPageSections, daysUntil, expiringStatusText } from './helpers.js';
+import { FloorplanSvg } from './app-floorplan-modals.js';
+import { isSplit, pathToRoot, itemHasFloorplanMapping, itemFloorplanTargets, resolveDetailPageSections, daysUntil, expiringStatusText } from './helpers.js';
 
 // ---------- placements ----------
 
@@ -11,15 +12,31 @@ function PlacementsSection(props) {
   var app = useApp();
   var item = props.item;
   var hasMapping = itemHasFloorplanMapping(app.data, item);
+  // "Locate on floorplan" only makes sense as a jump-to-Floorplan-tab
+  // button when the floorplan isn't already shown inline on this page —
+  // if the Floorplan section (below) is visible, it already shows the
+  // blinking area right here.
+  var showLocateButton = hasMapping && !props.floorplanSectionVisible;
   var rows = isSplit(item)
-    ? item.placements.map(function (p) { return { placementId: p.id, locationId: p.location_id, isDefault: p.location_id === item.default_location_id }; })
-    : [{ placementId: null, locationId: item.location_id, isDefault: false }];
+    ? item.placements.map(function (p) {
+      return {
+        placementId: p.id,
+        locationId: p.location_id,
+        isDefault: p.location_id === item.default_location_id,
+        // A view with actual_quantity overridden to this placement's own
+        // share, the same trick resolvedItemsIn() uses elsewhere — without
+        // it, QuantityEditor falls back to the item's total (all
+        // placements combined) instead of this row's own quantity.
+        itemView: Object.assign({}, item, { actual_quantity: p.quantity })
+      };
+    })
+    : [{ placementId: null, locationId: item.location_id, isDefault: false, itemView: item }];
 
   return html`
     <div class="detail-section">
       <div class="detail-section-header">
         <h3>Placements</h3>
-        ${hasMapping ? html`
+        ${showLocateButton ? html`
           <button type="button" onClick=${function () { app.locateItem(item); }}>
             <${Icon} name="locate" /> Locate on floorplan
           </button>
@@ -33,11 +50,76 @@ function PlacementsSection(props) {
                 ${r.locationId ? pathToRoot(app.data, r.locationId) : 'Not stored anywhere'}
                 ${r.isDefault ? html`<span class="hint"> (default)</span>` : null}
               </span>
-              <${QuantityEditor} item=${item} placementId=${r.placementId} className="qty" />
+              <${QuantityEditor} item=${r.itemView} placementId=${r.placementId} className="qty" />
             </li>
           `;
         })}
       </ul>
+    </div>
+  `;
+}
+
+// ---------- floorplan ----------
+
+function FloorplanSection(props) {
+  var app = useApp();
+  var item = props.item;
+  var containerRef = useRef(null);
+  var contentState = useState(null); // full floorplan { id, name, svg_content } or null
+
+  var targets = itemFloorplanTargets(app.data, item);
+  // Only one floorplan is ever active app-wide (README.md's Data Model
+  // section — older ones are deleted on upload of a new one), so every
+  // target necessarily shares the same floorplanId.
+  var floorplanId = targets.length ? targets[0].floorplanId : null;
+
+  useEffect(function () {
+    if (!floorplanId) { contentState[1](null); return; }
+    var cancelled = false;
+    app.getFloorplan(floorplanId).then(function (fp) { if (!cancelled) contentState[1](fp); }).catch(function () {});
+    return function () { cancelled = true; };
+  }, [floorplanId]);
+
+  var content = contentState[0];
+  // Stable string key so mappedIds's array reference only changes when the
+  // actual set of mapped areas changes — not on every unrelated re-render
+  // (e.g. the attachments-loading effect in app.js) — see the identical
+  // comment/fix in app-floorplan-tab.js. Without this, FloorplanSvg's own
+  // inject effect (keyed on this array's reference) reruns and wipes the
+  // freshly-injected SVG, losing the blink almost immediately.
+  var mappedIdsKey = targets.map(function (t) { return t.svgElementId; }).sort().join(',');
+  var mappedIds = useMemo(function () { return mappedIdsKey ? mappedIdsKey.split(',') : []; }, [mappedIdsKey]);
+
+  // Blinks every target for 6s, same as the Floorplan tab's own
+  // click-to-locate — re-triggers whenever the item changes or the
+  // floorplan content (re)loads.
+  useEffect(function () {
+    if (!content || !containerRef.current) return;
+    var elements = mappedIds
+      .map(function (id) { return containerRef.current.querySelector('#' + CSS.escape(id)); })
+      .filter(Boolean);
+    if (!elements.length) return;
+    elements.forEach(function (el) { el.classList.add('inv-blinking'); });
+    var timer = setTimeout(function () {
+      elements.forEach(function (el) { el.classList.remove('inv-blinking'); });
+    }, 6000);
+    return function () {
+      clearTimeout(timer);
+      elements.forEach(function (el) { el.classList.remove('inv-blinking'); });
+    };
+  }, [content, item.id]);
+
+  return html`
+    <div class="detail-section">
+      <h3>Floorplan</h3>
+      ${!targets.length
+        ? html`<p class="hint">This item isn't on the floorplan.</p>`
+        : (!content ? html`<p class="hint">Loading…</p>` : html`
+            <div ref=${containerRef}>
+              <${FloorplanSvg} svgContent=${content.svg_content} mappedIds=${mappedIds}
+                               className="floorplan-container item-detail-floorplan" />
+            </div>
+          `)}
     </div>
   `;
 }
@@ -134,6 +216,7 @@ function WrappedAttachmentsSection(props) {
 
 var SECTION_COMPONENTS = {
   placements: PlacementsSection,
+  floorplan: FloorplanSection,
   history: HistorySection,
   properties: PropertiesSection,
   attachments: WrappedAttachmentsSection
@@ -155,6 +238,7 @@ export function ItemDetailView() {
   }
 
   var sections = resolveDetailPageSections(app.config.detailPageSections);
+  var floorplanSectionVisible = sections.indexOf('floorplan') !== -1;
 
   return html`
     <section class="tab-panel active item-detail-view">
@@ -168,7 +252,7 @@ export function ItemDetailView() {
       </div>
       ${sections.map(function (key) {
         var Section = SECTION_COMPONENTS[key];
-        return html`<${Section} item=${item} key=${key} />`;
+        return html`<${Section} item=${item} floorplanSectionVisible=${floorplanSectionVisible} key=${key} />`;
       })}
     </section>
   `;

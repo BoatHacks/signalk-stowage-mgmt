@@ -10,7 +10,7 @@
 // dusk through dawn, not just once it's fully dark.
 const SUN_DARK_PHASES = new Set(['dawn', 'sunrise', 'sunset', 'dusk', 'night'])
 
-const DEFAULT_DETAIL_PAGE_SECTIONS = ['placements', 'history', 'properties', 'attachments']
+const DEFAULT_DETAIL_PAGE_SECTIONS = ['placements', 'floorplan', 'history', 'properties', 'attachments']
 
 // app.getSelfPath() may return either the raw leaf value or the full tree
 // node ({ value, timestamp, $source }) wrapping it, depending on server

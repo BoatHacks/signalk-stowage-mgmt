@@ -200,10 +200,17 @@ Stock Alerts, Store Log. Design constraints:
   (shown/hidden, and in what order) via plugin config (§8) — all sections
   are enabled by default:
   - **Placements** — all placements (location + quantity, including split
-    items), each with a large touch-sized +/- editor. If a placement's
-    location (or the item's single location) has a floorplan mapping, a
-    "Locate on floorplan" button switches to the Floorplan tab and blinks
-    it — the same behavior search used to trigger unconditionally.
+    items), each with a large touch-sized +/- editor. A "Locate on
+    floorplan" button (switches to the Floorplan tab and blinks the
+    matching area(s), the same behavior search used to trigger
+    unconditionally) is shown here only when the **Floorplan** section
+    below is *not* also shown — no point offering to jump to the
+    Floorplan tab when the floorplan is already inline on this same page.
+  - **Floorplan** — the mapped area(s) for this item's placement(s),
+    rendered inline (reusing the same floorplan SVG the Floorplan tab
+    shows) and blinking on load, the same way clicking a search result
+    used to jump to the Floorplan tab and blink. If nothing about this
+    item is floorplan-mapped, says so instead of showing an empty plan.
   - **History** — the item's log history, filtered via the new `item_id`
     param on `GET /item-log` (§5.1).
   - **Properties** — photo, notes, categories, expiration date (the
@@ -263,13 +270,15 @@ New, for QR labels:
 
 New, for the item detail page:
 
-- **Item detail page sections** (ordered array field, default = all four
-  sections in the order listed in §6.2: Placements, History, Properties,
-  Attachments). Signal K's plugin-config UI renders an array-of-enum field
-  with reorder controls, so this one field covers both "which sections are
-  shown" (remove one to hide it) and "in what order" (drag to reorder) —
-  no second field needed. Removing all sections still leaves the
-  always-shown header (name, quantities) — the page is never fully empty.
+- **Item detail page sections** (ordered array field, default = all five
+  sections in the order listed in §6.2: Placements, Floorplan, History,
+  Properties, Attachments). Signal K's plugin-config UI renders an
+  array-of-enum field with reorder controls, so this one field covers both
+  "which sections are shown" (remove one to hide it) and "in what order"
+  (drag to reorder) — no second field needed. Removing all sections still
+  leaves the always-shown header (name, quantities) — the page is never
+  fully empty. Whether the Placements section's "Locate on floorplan"
+  button shows depends on whether Floorplan is also in this list (§6.2).
 
 ## 9. MVP Scope
 
@@ -302,9 +311,11 @@ and several backend hardening fixes.
 - Dedicated detail view (§6.2), reachable from search results (replacing
   the previous floorplan-only behavior), item chip actions menus, and
   Overview rows.
-- Four configurable sections — Placements (with +/- editors and a
-  "Locate on floorplan" button when applicable), History, Properties,
-  Attachments — all shown by default, in that order (§8).
+- Five configurable sections — Placements (with +/- editors and a
+  conditional "Locate on floorplan" button), Floorplan (the mapped area(s)
+  shown inline and blinking, reusing the Floorplan tab's rendering),
+  History, Properties, Attachments — all shown by default, in that order
+  (§8).
 - Deep link: `?item=<item-id>` query param (§6.2), parallel to the
   existing `?location=<id>` QR-label contract.
 - Backend: `GET /item-log` gains an optional `item_id` filter (§5.1); no
@@ -416,6 +427,15 @@ and several backend hardening fixes.
   keeping both — a per-tab search field alongside a global one is
   confusing (which one does live-filtering, which one doesn't) and #45
   asked for exactly this consolidation.
+- **Inline Floorplan section, added after initial user feedback on the
+  first cut of this feature.** The first version only ever offered
+  "Locate on floorplan" as a button that jumped away to the Floorplan
+  tab. Added a fifth section that embeds the mapped area(s) directly
+  (reusing the same `FloorplanSvg` component and blink behavior the
+  Floorplan tab uses) so a user who wants that context doesn't have to
+  leave the item detail page. The "Locate on floorplan" button in
+  Placements only shows when this section is hidden, to avoid two
+  redundant ways to do the same thing when both are visible at once.
 
 ## 12. Open Questions
 

@@ -5,7 +5,7 @@ import {
   pathToRoot, ancestorIds, locationHasAnyItems, isUnderstocked, deriveNameFromSvgElementId,
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
   isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor,
-  locationHasFloorplanMapping, itemHasFloorplanMapping, itemMatchesQuery, filterQuery,
+  locationHasFloorplanMapping, itemHasFloorplanMapping, itemFloorplanTargets, itemMatchesQuery, filterQuery,
   resolveDetailPageSections, DETAIL_PAGE_SECTIONS
 } from '../../public/js/helpers.js'
 
@@ -399,6 +399,25 @@ test('itemHasFloorplanMapping: plain item checks its own location, split item ch
   assert.equal(itemHasFloorplanMapping(data, splitNoMatch), false)
   const splitMatch = { placements: [{ location_id: 'unmapped' }, { location_id: 'mapped' }] }
   assert.equal(itemHasFloorplanMapping(data, splitMatch), true)
+})
+
+test('itemFloorplanTargets: plain item returns 0 or 1 target; split item returns one per mapped placement, skipping unmapped ones', () => {
+  const data = makeData({
+    locations: [
+      { id: 'mapped-a', type: 'storage_space', parent_id: null, floorplan_id: 'fp1', svg_element_id: 'area-a' },
+      { id: 'mapped-b', type: 'storage_space', parent_id: null, floorplan_id: 'fp1', svg_element_id: 'area-b' },
+      { id: 'unmapped', type: 'storage_space', parent_id: null }
+    ]
+  })
+  assert.deepEqual(itemFloorplanTargets(data, { location_id: 'mapped-a' }), [{ floorplanId: 'fp1', svgElementId: 'area-a' }])
+  assert.deepEqual(itemFloorplanTargets(data, { location_id: 'unmapped' }), [])
+  assert.deepEqual(itemFloorplanTargets(data, { location_id: null }), [])
+
+  const split = { placements: [{ location_id: 'mapped-a' }, { location_id: 'unmapped' }, { location_id: 'mapped-b' }] }
+  assert.deepEqual(itemFloorplanTargets(data, split), [
+    { floorplanId: 'fp1', svgElementId: 'area-a' },
+    { floorplanId: 'fp1', svgElementId: 'area-b' }
+  ])
 })
 
 test('itemMatchesQuery: matches name or notes, case-insensitively; empty query matches everything', () => {

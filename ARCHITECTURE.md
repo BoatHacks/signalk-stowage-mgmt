@@ -78,16 +78,41 @@ plugin/index.js ── registers route modules, error middleware
 
 - `public/js/app-item-detail-view.js` (new) — the detail view component,
   rendered in place of a tab's content (parallel to `app-<tab>-tab.js`
-  files) when an item is selected. Composes the four section components
+  files) when an item is selected. Composes the five section components
   below in the order/visibility given by config.
 - Section components live alongside it, each pulling from data the app
   already fetches or a small targeted request: a placements section
-  reusing `QuantityEditor` (`app-core.js`) per placement; a history
-  section calling the extended `GET /item-log?item_id=` (§2.1 addition
-  below); a properties section reusing the read side of
-  `ItemPropertiesModal`'s fields; an attachments section reusing the
-  existing attachments list/upload UI already built for
-  `ItemPropertiesModal`.
+  reusing `QuantityEditor` (`app-core.js`) per placement — each row builds
+  a shallow item view with `actual_quantity` overridden to that
+  placement's own share (the same trick `resolvedItemsIn` uses in
+  `helpers.js`), since `QuantityEditor` reads the passed item's
+  `actual_quantity` directly and would otherwise show the item's total
+  across every placement, not the one row's own quantity; a floorplan
+  section (below); a history section calling the extended
+  `GET /item-log?item_id=` (§2.1 addition below); a properties section
+  reusing the read side of `ItemPropertiesModal`'s fields; an attachments
+  section reusing the existing attachments list/upload UI already built
+  for `ItemPropertiesModal`.
+- **Floorplan section**: resolves the item's floorplan target(s) purely
+  client-side via `helpers.js`'s `itemFloorplanTargets` (walks the same
+  parent chain the backend's `locateFrom` does, no API round trip needed
+  since the frontend already holds the full location tree), fetches that
+  floorplan's content via the existing `getFloorplan` action, and renders
+  it with the existing `FloorplanSvg` component (`app-floorplan-modals.js`)
+  — the same one the Floorplan tab and Move modal already use. Blinks the
+  matched area(s) on load via the same `inv-blinking` CSS class/timeout
+  pattern `app-floorplan-tab.js` uses for click-to-locate. Reuses
+  `app-floorplan-tab.js`'s documented `mappedIds`-stability trick (a
+  joined-string key run through `useMemo`, so the array's *reference*
+  only changes when its actual contents do) — without it, an unrelated
+  re-render (e.g. the attachments-loading effect firing when the page
+  first opens) gives `FloorplanSvg` a new-but-equal `mappedIds` array,
+  retriggering its inject effect and wiping the freshly-added blink class
+  almost immediately.
+- The Placements section's "Locate on floorplan" button only renders when
+  the Floorplan section is *not* also in the resolved section list — the
+  view computes `floorplanSectionVisible` once and passes it down, so the
+  two never show a redundant way to do the same thing at once.
 - `app.js` gains `selectedItemId` state (parallel to `activeTab`) and a
   `selectItem`/`closeItemDetail` pair; selecting an item doesn't change
   `activeTab`, so "back" just clears `selectedItemId` and the previous tab
@@ -97,9 +122,10 @@ plugin/index.js ── registers route modules, error middleware
   (`qr-label.js`'s `parseLocationParam` gets an item-id sibling), setting
   `selectedItemId` directly instead of expanding an Inventory node.
 - Search results (`app-search.js`'s `SearchBox.pick`) call `selectItem`
-  instead of unconditionally calling `app.locateItem` — the existing
-  floorplan-locate flow becomes a button inside the Placements section
-  instead of search's only action.
+  instead of unconditionally calling `app.locateItem` — the
+  jump-to-Floorplan-tab-and-blink flow now only fires from the Placements
+  section's button (§2.3) or the inline Floorplan section, not from
+  search directly.
 - **Section visibility/order config** (`detailPageSections`, §8 SPEC.md)
   flows through the existing `/webapp-config` polling path, the same way
   `autoTheme`/`dynamicQuantityScale`/`qrLabelBaseUrl` already do — no new

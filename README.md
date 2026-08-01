@@ -76,11 +76,12 @@ Set in the plugin's config page in the SignalK Admin UI
   guess would be wrong (e.g. labels generated from a device other than
   the boat's own display).
 
-- **Item detail page sections** (all four shown, in this order, by
-  default: Placements, History, Properties, Attachments). Remove a
-  section from the list to hide it on the item detail page, or reorder
-  the list to change where it appears. Removing all four still leaves the
-  page's header (name, photo, quantity).
+- **Item detail page sections** (all five shown, in this order, by
+  default: Placements, Floorplan, History, Properties, Attachments).
+  Remove a section from the list to hide it on the item detail page, or
+  reorder the list to change where it appears. Removing all five still
+  leaves the page's header (name, photo, quantity). When Floorplan is
+  hidden, Placements shows a "Locate on floorplan" button instead.
 
 ## Usage
 
@@ -380,11 +381,13 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
 **Item detail page:**
 - Opened by clicking a search result, an item chip's "View details"
   action, or an Overview row/chip.
-- Shows the item's placements (with large +/- quantity editors and, if a
-  placement is floorplan-mapped, a "Locate on floorplan" button that does
-  what search results used to do automatically), its log history,
-  properties (photo, categories, expiration, notes), and attachments —
-  each section independently configurable, see "Configuration" above.
+- Shows the item's placements (with large +/- quantity editors), the
+  mapped floorplan area(s) inline (blinking, the same way search used to
+  jump to the Floorplan tab and blink — or, if that Floorplan section is
+  hidden via config, a "Locate on floorplan" button in Placements does the
+  jump instead), its log history, properties (photo, categories,
+  expiration, notes), and attachments — each section independently
+  configurable, see "Configuration" above.
 - Deep-linkable: `<server-url>/plugins/signalk-stowage-mgmt/?item=<item-id>`
   opens the page directly, the same way a QR label's `?location=<id>` link
   opens the Inventory tab (see "Known external consumers" below).
@@ -645,7 +648,7 @@ merge/append mode (see issue #26).
 
 | Method & path | Purpose |
 |---|---|
-| `GET /webapp-config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale, qrLabelBaseUrl, detailPageSections }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), the current value of the "Dynamic +/- scale for touch interface" plugin option, the configured "Server URL for QR labels" (empty string if unset), and the ordered list of item detail page sections to show (`["placements","history","properties","attachments"]` by default; see "Configuration" above). Polled by the webapp alongside its regular data refresh. (Named `/webapp-config` rather than `/config` to avoid colliding with signalk-server's own reserved `GET /plugins/{id}/config` endpoint.) |
+| `GET /webapp-config` | `{ autoTheme, themeRecommendation, dynamicQuantityScale, qrLabelBaseUrl, detailPageSections }` — the current value of the "Automatically switch light/dark theme" plugin option, the theme it currently recommends ("light", "dark", or `null` if the option is off or neither `environment.sun` nor `environment.mode` has a recognized value yet), the current value of the "Dynamic +/- scale for touch interface" plugin option, the configured "Server URL for QR labels" (empty string if unset), and the ordered list of item detail page sections to show (`["placements","floorplan","history","properties","attachments"]` by default; see "Configuration" above). Polled by the webapp alongside its regular data refresh. (Named `/webapp-config` rather than `/config` to avoid colliding with signalk-server's own reserved `GET /plugins/{id}/config` endpoint.) |
 
 ## Known limitations / possible next steps
 

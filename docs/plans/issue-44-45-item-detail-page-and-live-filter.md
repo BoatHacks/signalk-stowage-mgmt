@@ -188,3 +188,29 @@ Live-filter (independent of the above, but same issue/PR):
 - `test/backend/item-log.test.js`, `test/backend/config.test.js`,
   `test/frontend/helpers.test.mjs`, `test/frontend/qr-label.test.mjs`
 - `README.md`, `CHANGELOG.md`
+
+## Post-implementation fixes (user testing feedback)
+
+Two issues found after the initial implementation above, fixed before
+release:
+
+1. **Placements showed the item's total quantity, not each placement's
+   own share.** `QuantityEditor` was passed the raw `item` (whole-item
+   `actual_quantity`) instead of a per-placement view — fixed by building
+   a shallow view per row with `actual_quantity` overridden to that
+   placement's own quantity, the same trick `resolvedItemsIn` uses
+   elsewhere (`helpers.js`).
+2. **Added an inline Floorplan section** (`FloorplanSection` in
+   `app-item-detail-view.js`), configurable like the other four, reusing
+   `FloorplanSvg` (`app-floorplan-modals.js`) and the same blink pattern
+   `app-floorplan-tab.js` uses. `itemFloorplanTargets` added to
+   `helpers.js` to resolve floorplan target(s) purely client-side. Hit
+   (and fixed, applying the same documented workaround already used in
+   `app-floorplan-tab.js`) the `mappedIds`-array-reference-stability
+   pitfall: an unrelated re-render was giving `FloorplanSvg` a new but
+   value-equal `mappedIds` array, retriggering its inject effect and
+   wiping the blink almost immediately — fixed with a joined-string key
+   run through `useMemo`. The Placements section's "Locate on floorplan"
+   button now only shows when the Floorplan section itself is hidden.
+   `detailPageSections` default and enum extended to five entries
+   (`plugin/index.js`, `plugin/routes/config.js`, `app.js`'s fallbacks).

@@ -4,7 +4,7 @@
 
 // Every section the item detail page can show, in the default order —
 // also the fallback when config.detailPageSections is missing/invalid.
-export var DETAIL_PAGE_SECTIONS = ['placements', 'history', 'properties', 'attachments'];
+export var DETAIL_PAGE_SECTIONS = ['placements', 'floorplan', 'history', 'properties', 'attachments'];
 
 // Turns the detailPageSections config value into the actual ordered list
 // of sections to render, dropping anything not in DETAIL_PAGE_SECTIONS
@@ -170,27 +170,48 @@ export function locationHasAnyItems(data, locId) {
   });
 }
 
-// True if locationId, or any storage-space ancestor of it, is mapped to a
-// floorplan SVG element — mirrors the backend's locateFrom walk
-// (plugin/routes/items.js) so the frontend can decide whether "Locate on
-// floorplan" would succeed without making a request first.
-export function locationHasFloorplanMapping(data, locationId) {
+// Walks up from locationId to the nearest floorplan-mapped storage-space
+// ancestor (inclusive) — mirrors the backend's locateFrom walk
+// (plugin/routes/items.js) so the frontend can resolve floorplan targets
+// without making a request first. Returns { floorplanId, svgElementId },
+// or null if nothing in the chain is mapped.
+function resolveFloorplanTarget(data, locationId) {
   var current = locationId ? data.locations.find(function (l) { return l.id === locationId; }) : null;
   while (current) {
-    if (current.type === 'storage_space' && current.floorplan_id && current.svg_element_id) return true;
+    if (current.type === 'storage_space' && current.floorplan_id && current.svg_element_id) {
+      return { floorplanId: current.floorplan_id, svgElementId: current.svg_element_id };
+    }
     current = current.parent_id ? data.locations.find(function (l) { return l.id === current.parent_id; }) : null;
   }
-  return false;
+  return null;
+}
+
+// True if locationId, or any storage-space ancestor of it, is mapped to a
+// floorplan SVG element.
+export function locationHasFloorplanMapping(data, locationId) {
+  return !!resolveFloorplanTarget(data, locationId);
+}
+
+// The floorplan target(s) an item resolves to — one entry per placement
+// for a split item (skipping unmapped ones), or a single-entry/empty
+// array for a plain item. Used by the item detail page's Floorplan
+// section to render+blink every match without a round trip to
+// GET /items/:id/locate.
+export function itemFloorplanTargets(data, item) {
+  if (isSplit(item)) {
+    return item.placements
+      .map(function (p) { return resolveFloorplanTarget(data, p.location_id); })
+      .filter(Boolean);
+  }
+  var target = resolveFloorplanTarget(data, item.location_id);
+  return target ? [target] : [];
 }
 
 // True if an item (or, for a split item, any of its placements) resolves
 // to a floorplan-mapped storage space — used to decide whether the item
 // detail page's "Locate on floorplan" button should show.
 export function itemHasFloorplanMapping(data, item) {
-  if (isSplit(item)) {
-    return item.placements.some(function (p) { return locationHasFloorplanMapping(data, p.location_id); });
-  }
-  return locationHasFloorplanMapping(data, item.location_id);
+  return itemFloorplanTargets(data, item).length > 0;
 }
 
 // Case-insensitive name/notes match, the same rule SearchBox's dropdown

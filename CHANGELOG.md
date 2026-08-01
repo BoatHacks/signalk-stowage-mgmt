@@ -13,15 +13,16 @@ was renamed to `signalk-stowage-mgmt`.
 ### Added
 
 - **Item detail page** (issues #44, #45): a dedicated page for one item —
-  placements with large +/- quantity editors and a "Locate on floorplan"
-  button (when a placement is floorplan-mapped), log history, properties
-  (photo/notes/categories/expiration), and attachments. Opened from a
-  search result, an item chip's new "View details" action, or an Overview
-  row/chip. Deep-linkable via `?item=<item-id>`, alongside the existing
-  `?location=<id>` QR-label link. New plugin option, "Item detail page
-  sections", to hide/reorder the page's four sections (all shown by
-  default). Backend: `GET /item-log` gains an optional `item_id` filter;
-  no other new endpoints.
+  placements with large +/- quantity editors, an inline floorplan section
+  showing (and blinking) the item's mapped area(s), log history,
+  properties (photo/notes/categories/expiration), and attachments. If the
+  Floorplan section is hidden via config, Placements shows a "Locate on
+  floorplan" button instead. Opened from a search result, an item chip's
+  new "View details" action, or an Overview row/chip. Deep-linkable via
+  `?item=<item-id>`, alongside the existing `?location=<id>` QR-label
+  link. New plugin option, "Item detail page sections", to hide/reorder
+  the page's five sections (all shown by default). Backend: `GET
+  /item-log` gains an optional `item_id` filter; no other new endpoints.
 - **Live-filter on Inventory and Overview** (issue #45): typing in the
   header's search box now also filters the Inventory tree and the
   Overview table/touch rows down to matches (by item name/notes, or by
