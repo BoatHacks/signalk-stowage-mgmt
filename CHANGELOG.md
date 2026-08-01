@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-08-01
+
 ### Added
 
 - **QR labels for items**: items now get the same "Print QR label" action
