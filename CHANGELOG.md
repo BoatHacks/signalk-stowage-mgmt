@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-08-01
+
 ### Changed
 
 - **Storage space/container QR labels now show contents on scan**: opening
