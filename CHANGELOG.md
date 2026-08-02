@@ -10,6 +10,17 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`inventory.db-wal` could grow well past SQLite's default checkpoint
+  threshold**: `node:sqlite`'s `DatabaseSync` doesn't run passive
+  checkpoints on its own the way some other drivers do, and the plugin
+  never set an explicit `wal_autocheckpoint`. Now pinned to 1000 pages
+  (~4MB, SQLite's own default made explicit) so the WAL gets truncated
+  back into the main db on a predictable schedule instead of
+  accumulating indefinitely between whatever triggers SQLite's default
+  path.
+
 ### Changed
 
 - **Missing item photos no longer show an empty placeholder frame** on the
