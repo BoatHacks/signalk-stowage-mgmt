@@ -21,6 +21,11 @@ function initDb (dataDir) {
   const db = new DatabaseSync(dbPath)
   db.exec('PRAGMA journal_mode = WAL')
   db.exec('PRAGMA foreign_keys = ON')
+  // node:sqlite's DatabaseSync doesn't run passive checkpoints on its own;
+  // pin the auto-checkpoint threshold explicitly (1000 pages ~= 4MB) so the
+  // WAL gets truncated back into the main db on a predictable schedule
+  // instead of growing unbounded between whatever triggers SQLite's default.
+  db.exec('PRAGMA wal_autocheckpoint = 1000')
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS floorplans (
