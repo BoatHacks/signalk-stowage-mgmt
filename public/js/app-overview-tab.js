@@ -226,7 +226,7 @@ export function OverviewTab() {
             ${sorted.map(function (r) {
               var thumb = r.thumbnail
                 ? html`<img class="item-thumb" src=${r.thumbnail} alt="" />`
-                : html`<span class="item-thumb item-thumb-placeholder"></span>`;
+                : null;
               return html`
                 <tr key=${r.item.id} onClick=${function () { app.selectItem(r.item.id); }}>
                   <td>${thumb}</td>
@@ -251,7 +251,7 @@ export function OverviewTab() {
           ${touchSorted.map(function (r) {
             var thumb = r.thumbnail
               ? html`<img class="touch-chip-thumb" src=${r.thumbnail} alt="" />`
-              : html`<span class="touch-chip-thumb touch-chip-thumb-placeholder"></span>`;
+              : null;
             var defaultPlacement = defaultPlacementFor(r.item);
             var itemIsSplit = isSplit(r.item);
             var split = itemIsSplit && !defaultPlacement;

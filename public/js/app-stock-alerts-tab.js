@@ -36,7 +36,7 @@ export function StockAlertsTab () {
           var statusClass = expiring && days < 0 ? 'expiring-status-expired' : 'expiring-status-soon';
           return html`
             <div class="understocked-chip" key=${item.id}>
-              <div class=${'understocked-chip-thumb' + (item.thumbnail ? '' : ' item-thumb-placeholder')}>${thumb}</div>
+              ${item.thumbnail ? html`<div class="understocked-chip-thumb">${thumb}</div>` : null}
               <div class="understocked-chip-info">
                 <div class="understocked-chip-name">
                   <span class="item-name-link" onClick=${function () { app.selectItem(item.id); }}>${item.name}</span>

@@ -16,7 +16,7 @@ export function ItemChip(props) {
 
   var thumb = item.thumbnail
     ? html`<img class="item-thumb" src=${item.thumbnail} alt="" />`
-    : html`<span class="item-thumb item-thumb-placeholder"></span>`;
+    : null;
 
   var categoryBadges = (item.categories || []).map(function (cat) {
     return html`
