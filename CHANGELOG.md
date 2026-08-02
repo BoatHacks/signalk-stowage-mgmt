@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-08-02
+
 ### Fixed
 
 - **`inventory.db-wal` could grow well past SQLite's default checkpoint
