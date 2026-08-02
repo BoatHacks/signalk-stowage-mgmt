@@ -281,6 +281,15 @@ export function filterQuery(data, query) {
   return { itemIds: itemIds, locationIds: locationIds };
 }
 
+// Whether the empty photo-frame placeholder should be shown for a photo-less
+// item: only if at least one item anywhere in the inventory has a photo. If
+// nobody's using photos at all, the frames just add visual clutter (issue
+// #50); but once even a single item has one, the empty frame on the rest is
+// useful as an affordance ("you could add a photo here too").
+export function anyItemHasPhoto(items) {
+  return items.some(function (item) { return !!item.thumbnail; });
+}
+
 export function isUnderstocked(item) {
   return item.target_quantity !== null && item.target_quantity !== undefined &&
     item.actual_quantity < item.target_quantity;

@@ -1,6 +1,6 @@
 import { html, useState, useMemo, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
 import { useApp, QuantityEditor } from './app-core.js';
-import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepsFor, filterQuery } from './helpers.js';
+import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepsFor, filterQuery, anyItemHasPhoto } from './helpers.js';
 
 function isoDate (d) {
   return d.toISOString().slice(0, 10);
@@ -226,7 +226,7 @@ export function OverviewTab() {
             ${sorted.map(function (r) {
               var thumb = r.thumbnail
                 ? html`<img class="item-thumb" src=${r.thumbnail} alt="" />`
-                : null;
+                : (anyItemHasPhoto(app.data.items) ? html`<span class="item-thumb item-thumb-placeholder"></span>` : null);
               return html`
                 <tr key=${r.item.id} onClick=${function () { app.selectItem(r.item.id); }}>
                   <td>${thumb}</td>
@@ -251,7 +251,7 @@ export function OverviewTab() {
           ${touchSorted.map(function (r) {
             var thumb = r.thumbnail
               ? html`<img class="touch-chip-thumb" src=${r.thumbnail} alt="" />`
-              : null;
+              : (anyItemHasPhoto(app.data.items) ? html`<span class="touch-chip-thumb touch-chip-thumb-placeholder"></span>` : null);
             var defaultPlacement = defaultPlacementFor(r.item);
             var itemIsSplit = isSplit(r.item);
             var split = itemIsSplit && !defaultPlacement;
