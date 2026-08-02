@@ -1,6 +1,6 @@
 import { html } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn, QuantityEditor } from './app-core.js';
-import { isUnderstocked, isExpiringSoon, daysUntil, expiringStatusText, EXPIRING_WINDOW_DAYS } from './helpers.js';
+import { isUnderstocked, isExpiringSoon, daysUntil, expiringStatusText, EXPIRING_WINDOW_DAYS, anyItemHasPhoto } from './helpers.js';
 
 // Union of understocked and expiring-soon items, most urgent first: items
 // with an expiration date sort by days-until-expiry (soonest/most-expired
@@ -19,6 +19,7 @@ function alertItems (data) {
 export function StockAlertsTab () {
   var app = useApp();
   var items = alertItems(app.data);
+  var showPlaceholders = anyItemHasPhoto(app.data.items);
 
   return html`
     <section class="tab-panel active">
@@ -36,7 +37,9 @@ export function StockAlertsTab () {
           var statusClass = expiring && days < 0 ? 'expiring-status-expired' : 'expiring-status-soon';
           return html`
             <div class="understocked-chip" key=${item.id}>
-              ${item.thumbnail ? html`<div class="understocked-chip-thumb">${thumb}</div>` : null}
+              ${item.thumbnail || showPlaceholders
+                ? html`<div class=${'understocked-chip-thumb' + (item.thumbnail ? '' : ' item-thumb-placeholder')}>${thumb}</div>`
+                : null}
               <div class="understocked-chip-info">
                 <div class="understocked-chip-name">
                   <span class="item-name-link" onClick=${function () { app.selectItem(item.id); }}>${item.name}</span>

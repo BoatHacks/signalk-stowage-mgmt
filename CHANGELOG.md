@@ -23,10 +23,12 @@ was renamed to `signalk-stowage-mgmt`.
 
 ### Changed
 
-- **Missing item photos no longer show an empty placeholder frame** on the
-  Inventory tab, Overview tab (table and Touch view), and Stock Alerts tab
-  — items without a photo just skip the thumbnail entirely, matching the
-  item detail page's existing behavior (issue #50).
+- **Missing item photos no longer show an empty placeholder frame — unless
+  photos are in use elsewhere in the inventory.** On the Inventory tab,
+  Overview tab (table and Touch view), and Stock Alerts tab, a photo-less
+  item skips the thumbnail entirely only if *no* item anywhere has a photo
+  yet; as soon as even one item has a photo, photo-less items keep showing
+  the placeholder frame as an affordance to add one (issue #50).
 
 - **Item names are now links to the item detail page** on the Inventory
   tab, Stock Alerts tab, and every Store Log table (Individual Movements,

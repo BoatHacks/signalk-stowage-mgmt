@@ -6,7 +6,7 @@ import {
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
   isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor,
   locationHasFloorplanMapping, itemHasFloorplanMapping, itemFloorplanTargets, itemMatchesQuery, filterQuery,
-  resolveDetailPageSections, DETAIL_PAGE_SECTIONS
+  resolveDetailPageSections, DETAIL_PAGE_SECTIONS, anyItemHasPhoto
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -213,6 +213,12 @@ test('locationHasAnyItems: true if the location or any descendant has items', ()
 
   const empty = makeData({ locations: [{ id: 'c', parent_id: null }] })
   assert.equal(locationHasAnyItems(empty, 'c'), false)
+})
+
+test('anyItemHasPhoto: false when no item has a thumbnail, true if even one does', () => {
+  assert.equal(anyItemHasPhoto([]), false)
+  assert.equal(anyItemHasPhoto([{ thumbnail: null }, { thumbnail: undefined }]), false)
+  assert.equal(anyItemHasPhoto([{ thumbnail: null }, { thumbnail: 'data:image/png;base64,x' }]), true)
 })
 
 test('isUnderstocked: true only when target_quantity is set and actual is below it', () => {

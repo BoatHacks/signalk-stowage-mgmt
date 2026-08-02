@@ -1,6 +1,6 @@
 import { html, useState } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn, Icon, QuantityEditor, ChipActionsMenu } from './app-core.js';
-import { childLocations, resolvedItemsIn, isSplit, subtreeSummary } from './helpers.js';
+import { childLocations, resolvedItemsIn, isSplit, subtreeSummary, anyItemHasPhoto } from './helpers.js';
 
 // ---------- item chip ----------
 
@@ -16,7 +16,7 @@ export function ItemChip(props) {
 
   var thumb = item.thumbnail
     ? html`<img class="item-thumb" src=${item.thumbnail} alt="" />`
-    : null;
+    : (anyItemHasPhoto(app.data.items) ? html`<span class="item-thumb item-thumb-placeholder"></span>` : null);
 
   var categoryBadges = (item.categories || []).map(function (cat) {
     return html`
