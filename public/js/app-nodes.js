@@ -16,7 +16,7 @@ export function ItemChip(props) {
 
   var thumb = item.thumbnail
     ? html`<img class="item-thumb" src=${item.thumbnail} alt="" />`
-    : html`<span class="item-thumb item-thumb-placeholder"></span>`;
+    : null;
 
   var categoryBadges = (item.categories || []).map(function (cat) {
     return html`
@@ -49,7 +49,7 @@ export function ItemChip(props) {
          onDragEnd=${function () { setDragging(false); app.setDragActive(false); app.setDragEntityType(null); }}>
       <div class="item-row-main">
         <span>
-          ${thumb}<span class="type-icon"><${Icon} name="dot" title="Item" /></span>${item.name}
+          ${thumb}<span class="type-icon"><${Icon} name="dot" title="Item" /></span><span class="item-name-link" onClick=${function (e) { e.stopPropagation(); app.selectItem(item.id); }}>${item.name}</span>
           ${isPlacementRow
             ? html`<${QuantityEditor} item=${item} placementId=${item.placementId} className="qty split-qty" />`
             : html`<${QuantityEditor} item=${item} className="qty" showTotal=${props.showTotal} />`}
@@ -71,7 +71,6 @@ export function ItemChip(props) {
           <${IconBtn} icon="delete" title="Delete" danger=${true} onClick=${deleteWholeItem} />
           <${IconBtn} icon="add-tag" title="Add category" onClick=${function () { app.openCategoryModal(item); }} />
           <${IconBtn} icon="qrcode" title="Print QR label" onClick=${function () { app.openLabelModal(item, 'item'); }} />
-          <${IconBtn} icon="info" title="View details" onClick=${function () { app.selectItem(item.id); }} />
         </${ChipActionsMenu}>
       </div>
       <div class="item-categories">

@@ -10,6 +10,20 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Missing item photos no longer show an empty placeholder frame** on the
+  Inventory tab, Overview tab (table and Touch view), and Stock Alerts tab
+  — items without a photo just skip the thumbnail entirely, matching the
+  item detail page's existing behavior (issue #50).
+
+- **Item names are now links to the item detail page** on the Inventory
+  tab, Stock Alerts tab, and every Store Log table (Individual Movements,
+  Aggregate Movements, Target Adjustments, Splits, Predicted Runway),
+  replacing the Inventory chip's buried "..." → info action (issue #49).
+  Store Log entries only link when the referenced item still exists —
+  historical rows for a deleted item just show plain text.
+
 ## [0.9.8] - 2026-08-01
 
 ### Changed
