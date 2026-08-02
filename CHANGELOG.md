@@ -10,6 +10,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Item names are now links to the item detail page** on the Inventory
+  tab, Stock Alerts tab, and every Store Log table (Individual Movements,
+  Aggregate Movements, Target Adjustments, Splits, Predicted Runway),
+  replacing the Inventory chip's buried "..." → info action (issue #49).
+  Store Log entries only link when the referenced item still exists —
+  historical rows for a deleted item just show plain text.
+
 ## [0.9.8] - 2026-08-01
 
 ### Changed

@@ -19,6 +19,15 @@ var PRESETS = [
   { label: 'Last Year', days: 365 }
 ];
 
+// Store Log entries reference a point-in-time item name/id, but the item
+// may have since been deleted — only link when it's still around.
+function itemNameLink (app, itemId, name) {
+  var exists = itemId && app.data.items.some(function (i) { return i.id === itemId; });
+  return exists
+    ? html`<span class="item-name-link" onClick=${function () { app.selectItem(itemId); }}>${name}</span>`
+    : name;
+}
+
 // A collapsible section — collapsed by default. The "Export as Markdown"
 // button stays visible either way, so exporting never requires expanding.
 function StoreLogSection (props) {
@@ -108,7 +117,7 @@ export function StoreLogTab () {
               ${individual.map(function (m) {
                 return html`
                   <tr key=${m.id}>
-                    <td>${m.itemName}</td>
+                    <td>${itemNameLink(app, m.itemId, m.itemName)}</td>
                     <td>${m.added || ''}</td>
                     <td>${m.used || ''}</td>
                     <td>${m.location || ''}</td>
@@ -132,7 +141,7 @@ export function StoreLogTab () {
               ${aggregate.map(function (a) {
                 return html`
                   <tr key=${a.itemId}>
-                    <td>${a.itemName}</td>
+                    <td>${itemNameLink(app, a.itemId, a.itemName)}</td>
                     <td>${a.added}</td>
                     <td>${a.used}</td>
                   </tr>
@@ -153,7 +162,7 @@ export function StoreLogTab () {
               ${targetAdjustments.map(function (r) {
                 return html`
                   <tr key=${r.id}>
-                    <td>${r.item_name}</td>
+                    <td>${itemNameLink(app, r.item_id, r.item_name)}</td>
                     <td>${r.old_value === null ? '\u2014' : r.old_value}</td>
                     <td>${r.new_value === null ? '\u2014' : r.new_value}</td>
                     <td>${new Date(r.created_at).toLocaleString()}</td>
@@ -176,7 +185,7 @@ export function StoreLogTab () {
               ${splits.map(function (r) {
                 return html`
                   <tr key=${r.id}>
-                    <td>${r.item_name}</td>
+                    <td>${itemNameLink(app, r.item_id, r.item_name)}</td>
                     <td>${r.from_location_name || 'No Location'}</td>
                     <td>${r.to_location_name || 'No Location'}</td>
                     <td>${r.quantity}</td>
@@ -201,7 +210,7 @@ export function StoreLogTab () {
               ${predictions.map(function (p) {
                 return html`
                   <tr key=${p.itemId}>
-                    <td>${p.itemName}</td>
+                    <td>${itemNameLink(app, p.itemId, p.itemName)}</td>
                     <td>${p.currentStock}</td>
                     <td>${p.consumedInRange}</td>
                     <td>~${Math.round(p.daysRemaining)}</td>
@@ -230,7 +239,7 @@ export function buildIndividualRows (rows) {
       else if (r.delta > 0) added = r.delta;
       else if (r.delta < 0) used = Math.abs(r.delta);
       var location = added ? r.to_location_name : (used ? r.from_location_name : null);
-      return { id: r.id, itemName: r.item_name, added: added, used: used, location: location, createdAt: r.created_at, note: r.note };
+      return { id: r.id, itemId: r.item_id, itemName: r.item_name, added: added, used: used, location: location, createdAt: r.created_at, note: r.note };
     })
     .sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : -1; });
 }

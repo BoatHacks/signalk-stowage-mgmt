@@ -829,6 +829,14 @@ select {
   margin-right: 0;
 }
 
+.item-name-link {
+  cursor: pointer;
+}
+
+.item-name-link:hover {
+  text-decoration: underline;
+}
+
 /* ---------- touchscreen overview grid ---------- */
 
 .touch-grid {

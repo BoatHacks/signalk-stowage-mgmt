@@ -39,7 +39,7 @@ export function StockAlertsTab () {
               <div class=${'understocked-chip-thumb' + (item.thumbnail ? '' : ' item-thumb-placeholder')}>${thumb}</div>
               <div class="understocked-chip-info">
                 <div class="understocked-chip-name">
-                  ${item.name}
+                  <span class="item-name-link" onClick=${function () { app.selectItem(item.id); }}>${item.name}</span>
                   ${understocked ? html`<span class="chip-badge chip-badge-understocked">Understocked</span>` : null}
                   ${expiring ? html`<span class="chip-badge chip-badge-expiring">Expiring</span>` : null}
                 </div>
