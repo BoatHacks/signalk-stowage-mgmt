@@ -10,6 +10,15 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Newly uploaded photos saved as solid black thumbnails** (#53): the
+  crop modal's preview `<img>` had its `src` assigned via a ref write
+  that ran before the element existed on the first upload, so the crop
+  view rendered with no image loaded. `Save Thumbnail` then captured
+  that blank canvas, which JPEG-encodes as black. The `src` is now
+  driven from render state instead of an out-of-band ref assignment.
+
 ## [0.9.9] - 2026-08-02
 
 ### Fixed
