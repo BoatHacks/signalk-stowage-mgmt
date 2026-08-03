@@ -15,11 +15,16 @@ export function PhotoModal() {
   var crop = cropState[0];
   var setCrop = cropState[1];
 
+  var srcState = useState(null); // data: URI of the photo currently being cropped
+  var photoSrc = srcState[0];
+  var setPhotoSrc = srcState[1];
+
   var dragRef = useRef(null); // { startX, startY, startOffsetX, startOffsetY } while panning
 
   useEffect(function () {
     setStage('empty');
     setCrop(null);
+    setPhotoSrc(null);
   }, [item && item.id]);
 
   if (!item) return null;
@@ -58,7 +63,7 @@ export function PhotoModal() {
         setStage('editing');
       };
       img.src = reader.result;
-      if (imgRef.current) imgRef.current.src = reader.result;
+      setPhotoSrc(reader.result);
     };
     reader.readAsDataURL(file);
   }
@@ -137,7 +142,7 @@ export function PhotoModal() {
         ` : html`
           <div>
             <div class="photo-crop-viewport" onMouseDown=${onPointerDown}>
-              <img ref=${imgRef} style=${imgStyle} />
+              <img ref=${imgRef} src=${photoSrc} style=${imgStyle} />
             </div>
             <input type="range" min="100" max="400" value=${crop ? crop.zoomPercent : 100}
                    style="width:100%;margin-top:10px;" onInput=${onZoom} />
