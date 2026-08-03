@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-03
+
 ### Added
 
 - **Hashtag navigation** (#54): the address bar now tracks the active tab
