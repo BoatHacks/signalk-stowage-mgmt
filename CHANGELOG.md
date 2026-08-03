@@ -10,6 +10,16 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- **Hashtag navigation** (#54): the address bar now tracks the active tab
+  (`#/floorplan`, `#/overview`, …) and, independent of tab, an open item
+  detail page (`#/items/<id>`) — the default tab is just `#/`. This
+  restores normal browser back/forward behavior when switching tabs or
+  opening/closing an item, and either state can now be bookmarked or
+  shared as a link, alongside the existing `?location=`/`?item=` deep
+  links used by external consumers.
+
 ### Fixed
 
 - **Newly uploaded photos saved as solid black thumbnails** (#53): the

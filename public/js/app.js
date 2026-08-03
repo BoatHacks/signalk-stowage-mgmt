@@ -18,6 +18,7 @@ import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
 import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 import { parseLocationParam, parseItemParam } from './qr-label.js';
+import { hashForState, parseHash } from './hash-router.js';
 
 var TABS = [
   { id: 'inventory', label: 'Inventory' },
@@ -27,15 +28,22 @@ var TABS = [
   { id: 'stock-alerts', label: 'Stock Alerts' },
   { id: 'storelog', label: 'Store Log' }
 ];
+var TAB_IDS = TABS.map(function (t) { return t.id; });
+var DEFAULT_TAB = 'inventory';
 
 var EMPTY_DATA = { locations: [], items: [], categories: [], floorplans: [] };
 
 function App() {
+  // Read once per mount: the initial tab/item come from whatever's in the
+  // address bar (a bookmark, a shared link, or a page reload), everything
+  // after that flows through the hashchange/state-sync effects below.
+  var initialHash = parseHash(window.location.hash, TAB_IDS, DEFAULT_TAB);
+
   var dataState = useState(EMPTY_DATA);
   var data = dataState[0], setData = dataState[1];
   var loadedState = useState(false);
   var loaded = loadedState[0], setLoaded = loadedState[1];
-  var tabState = useState('inventory');
+  var tabState = useState(initialHash.tab || DEFAULT_TAB);
   var activeTab = tabState[0], setActiveTab = tabState[1];
   var themeState = useState(getPreferredTheme());
   var theme = themeState[0], setThemeState = themeState[1];
@@ -72,7 +80,7 @@ function App() {
   var locatePopupItemState = useState(null);
   var labelModalTargetState = useState(null);
   var printLabelsModalOpenState = useState(false);
-  var selectedItemIdState = useState(null);
+  var selectedItemIdState = useState(initialHash.itemId);
   var searchQueryState = useState('');
   var locationContentsPanelState = useState(null);
 
@@ -187,6 +195,35 @@ function App() {
     url.searchParams.delete('item');
     window.history.replaceState(null, '', url);
   }, [loaded]);
+
+  // Hashtag navigation (issue #54): keeps the address bar's `#/<tab>` or
+  // `#/items/<id>` in sync with activeTab/selectedItemId, so the browser's
+  // back/forward buttons work and either state can be bookmarked. Only
+  // writes the hash when it's actually stale, so this doesn't fight the
+  // hashchange listener below or spam extra history entries on every
+  // render.
+  useEffect(function () {
+    var next = hashForState(activeTab, selectedItemIdState[0], DEFAULT_TAB);
+    var current = window.location.hash || '#/';
+    if (current !== next) window.location.hash = next;
+  }, [activeTab, selectedItemIdState[0]]);
+
+  // The other half: a browser back/forward (or a hand-edited/pasted hash)
+  // fires 'hashchange' without going through switchTab/selectItem, so this
+  // is the only place those need to be applied to state directly.
+  useEffect(function () {
+    function onHashChange() {
+      var parsed = parseHash(window.location.hash, TAB_IDS, DEFAULT_TAB);
+      if (parsed.itemId) {
+        selectedItemIdState[1](parsed.itemId);
+      } else {
+        selectedItemIdState[1](null);
+        setActiveTab(parsed.tab || DEFAULT_TAB);
+      }
+    }
+    window.addEventListener('hashchange', onHashChange);
+    return function () { window.removeEventListener('hashchange', onHashChange); };
+  }, []);
 
   // Attachments are fetched separately from the main polled dataset (only
   // while the Item Properties modal or the item detail page is open for a
