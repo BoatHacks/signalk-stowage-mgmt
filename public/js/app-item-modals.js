@@ -70,6 +70,8 @@ export function ItemPropertiesModal() {
   var targetState = useState('');
   var notesState = useState('');
   var expiresAtState = useState('');
+  var acquiredDateState = useState('');
+  var pricePaidState = useState('');
   var changeNoteState = useState('');
   var noteViewState = useState('show'); // 'show' | 'edit'
   var defaultLocationState = useState('');
@@ -81,6 +83,8 @@ export function ItemPropertiesModal() {
     targetState[1](item.target_quantity === null || item.target_quantity === undefined ? '' : String(item.target_quantity));
     notesState[1](item.notes || '');
     expiresAtState[1](item.expires_at || '');
+    acquiredDateState[1](item.acquired_date || '');
+    pricePaidState[1](item.price_paid === null || item.price_paid === undefined ? '' : String(item.price_paid));
     changeNoteState[1]('');
     noteViewState[1]('show');
     defaultLocationState[1](item.default_location_id || '');
@@ -93,6 +97,8 @@ export function ItemPropertiesModal() {
   var targetQty = targetState[0], setTargetQty = targetState[1];
   var notes = notesState[0], setNotes = notesState[1];
   var expiresAt = expiresAtState[0], setExpiresAt = expiresAtState[1];
+  var acquiredDate = acquiredDateState[0], setAcquiredDate = acquiredDateState[1];
+  var pricePaid = pricePaidState[0], setPricePaid = pricePaidState[1];
   var changeNote = changeNoteState[0], setChangeNote = changeNoteState[1];
   var noteView = noteViewState[0], setNoteView = noteViewState[1];
   var defaultLocationId = defaultLocationState[0], setDefaultLocationId = defaultLocationState[1];
@@ -100,11 +106,16 @@ export function ItemPropertiesModal() {
   function save() {
     var trimmedName = (name || '').trim();
     if (!trimmedName) return app.showToast('Name is required.');
+    if (pricePaid !== '' && (isNaN(parseFloat(pricePaid)) || parseFloat(pricePaid) < 0)) {
+      return app.showToast('Price paid must be a non-negative number.');
+    }
     var body = {
       name: trimmedName,
       target_quantity: targetQty === '' ? null : Math.max(0, parseInt(targetQty, 10) || 0),
       notes: notes || null,
       expires_at: expiresAt || null,
+      acquired_date: acquiredDate || null,
+      price_paid: pricePaid === '' ? null : Math.round(parseFloat(pricePaid) * 100) / 100,
       note: changeNote || null
     };
     if (!isSplit(item)) body.actual_quantity = Math.max(0, parseInt(actualQty, 10) || 0);
@@ -168,6 +179,18 @@ export function ItemPropertiesModal() {
         <div class="form-field">
           <label>Expiration Date <span class="hint">(optional)</span></label>
           <input type="date" value=${expiresAt} onInput=${function (e) { setExpiresAt(e.target.value); }} />
+        </div>
+
+        <div class="form-field-row">
+          <div class="form-field">
+            <label>Acquired Date <span class="hint">(optional)</span></label>
+            <input type="date" value=${acquiredDate} onInput=${function (e) { setAcquiredDate(e.target.value); }} />
+          </div>
+          <div class="form-field">
+            <label>Price Paid <span class="hint">(optional)</span></label>
+            <input type="number" min="0" step="0.01" placeholder="none" value=${pricePaid}
+                   onInput=${function (e) { setPricePaid(e.target.value); }} />
+          </div>
         </div>
 
         <div class="form-field">

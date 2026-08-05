@@ -55,6 +55,8 @@ function initDb (dataDir) {
       thumbnail TEXT,
       expires_at TEXT,
       default_location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
+      acquired_date TEXT,
+      price_paid REAL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -133,6 +135,12 @@ function initDb (dataDir) {
   }
   if (!itemColumnsAfterRename.includes('default_location_id')) {
     db.exec('ALTER TABLE items ADD COLUMN default_location_id TEXT')
+  }
+  if (!itemColumnsAfterRename.includes('acquired_date')) {
+    db.exec('ALTER TABLE items ADD COLUMN acquired_date TEXT')
+  }
+  if (!itemColumnsAfterRename.includes('price_paid')) {
+    db.exec('ALTER TABLE items ADD COLUMN price_paid REAL')
   }
   if (itemColumnsAfterRename.includes('description')) {
     // Merge any existing description text into notes (description first,

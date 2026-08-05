@@ -140,6 +140,23 @@ test('import: preserves a split item\'s unlocated (location_id: null) placement 
   assert.equal(totalAfter, afterImport.actual_quantity)
 })
 
+test('export/import: round-trips acquired_date and price_paid (issue #56)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  await server.post('/items', { name: 'Life Raft', acquired_date: '2024-01-15', price_paid: 1299.99 })
+
+  const snapshot = await (await server.get('/export')).json()
+  const exported = snapshot.items.find((i) => i.name === 'Life Raft')
+  assert.equal(exported.acquired_date, '2024-01-15')
+  assert.equal(exported.price_paid, 1299.99)
+
+  await server.post('/import', snapshot)
+  const items = await (await server.get('/items')).json()
+  const imported = items.find((i) => i.name === 'Life Raft')
+  assert.equal(imported.acquired_date, '2024-01-15')
+  assert.equal(imported.price_paid, 1299.99)
+})
+
 test('import: does not touch floorplans or existing attachment files', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())
