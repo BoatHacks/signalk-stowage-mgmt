@@ -165,3 +165,38 @@ test('items: delete removes the item and logs a deleted event', async (t) => {
   const log = await (await server.get('/item-log')).json()
   assert.ok(log.some((e) => e.item_id === item.id && e.event === 'deleted'))
 })
+
+test('items: create and patch acquired_date and price_paid (issue #56)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const created = await (await server.post('/items', {
+    name: 'Life Raft', acquired_date: '2024-01-15', price_paid: 1299.99
+  })).json()
+  assert.equal(created.acquired_date, '2024-01-15')
+  assert.equal(created.price_paid, 1299.99)
+
+  const patched = await (await server.patch(`/items/${created.id}`, {
+    acquired_date: '2024-02-20', price_paid: 42.5
+  })).json()
+  assert.equal(patched.acquired_date, '2024-02-20')
+  assert.equal(patched.price_paid, 42.5)
+
+  const cleared = await (await server.patch(`/items/${created.id}`, {
+    acquired_date: null, price_paid: null
+  })).json()
+  assert.equal(cleared.acquired_date, null)
+  assert.equal(cleared.price_paid, null)
+})
+
+test('items: create and patch reject a negative price_paid', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const createRes = await server.post('/items', { name: 'X', price_paid: -5 })
+  assert.equal(createRes.status, 400)
+
+  const item = await (await server.post('/items', { name: 'X' })).json()
+  const patchRes = await server.patch(`/items/${item.id}`, { price_paid: -1 })
+  assert.equal(patchRes.status, 400)
+})

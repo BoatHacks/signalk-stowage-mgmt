@@ -101,7 +101,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
   router.post('/items', (req, res) => {
     const {
       name, actual_quantity: actualQuantity, target_quantity: targetQuantity, notes,
-      location_id: locationId, category_ids: categoryIds, note, expires_at: expiresAt
+      location_id: locationId, category_ids: categoryIds, note, expires_at: expiresAt,
+      acquired_date: acquiredDate, price_paid: pricePaid
     } = req.body || {}
     if (!name) return res.status(400).json({ error: 'name required' })
     let startingQuantity = 1
@@ -116,6 +117,13 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       const loc = db().prepare('SELECT id FROM locations WHERE id = ?').get(locationId)
       if (!loc) return res.status(400).json({ error: 'location_id does not exist' })
     }
+    let parsedPricePaid = null
+    if (pricePaid != null) {
+      parsedPricePaid = Number(pricePaid)
+      if (!Number.isFinite(parsedPricePaid) || parsedPricePaid < 0) {
+        return res.status(400).json({ error: 'price_paid must be a non-negative number' })
+      }
+    }
     const ids = Array.isArray(categoryIds) ? categoryIds : []
     for (const catId of ids) {
       if (!db().prepare('SELECT id FROM categories WHERE id = ?').get(catId)) {
@@ -125,8 +133,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const id = randomUUID()
     runInTransaction(db(), () => {
       db().prepare(
-        'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null, expiresAt || null)
+        'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, expires_at, acquired_date, price_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null, expiresAt || null, acquiredDate || null, parsedPricePaid)
       const link = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
       for (const catId of ids) link.run(id, catId)
       logItemEvent(db(), {
@@ -146,6 +154,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const hasNotes = Object.prototype.hasOwnProperty.call(body, 'notes')
     const hasExpiresAt = Object.prototype.hasOwnProperty.call(body, 'expires_at')
     const hasDefaultLocationId = Object.prototype.hasOwnProperty.call(body, 'default_location_id')
+    const hasAcquiredDate = Object.prototype.hasOwnProperty.call(body, 'acquired_date')
+    const hasPricePaid = Object.prototype.hasOwnProperty.call(body, 'price_paid')
     const newTargetQuantity = hasTargetQuantity ? (body.target_quantity ?? null) : null
     const newDefaultLocationId = hasDefaultLocationId ? (body.default_location_id || null) : null
 
@@ -154,6 +164,14 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       parsedActualQuantity = parseInt(actualQuantity, 10)
       if (!Number.isInteger(parsedActualQuantity) || parsedActualQuantity < 0) {
         return res.status(400).json({ error: 'actual_quantity must be a non-negative integer' })
+      }
+    }
+
+    let newPricePaid = null
+    if (hasPricePaid && body.price_paid != null) {
+      newPricePaid = Number(body.price_paid)
+      if (!Number.isFinite(newPricePaid) || newPricePaid < 0) {
+        return res.status(400).json({ error: 'price_paid must be a non-negative number' })
       }
     }
 
@@ -182,7 +200,9 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
           target_quantity = CASE WHEN ? = 1 THEN ? ELSE target_quantity END,
           notes = CASE WHEN ? = 1 THEN ? ELSE notes END,
           expires_at = CASE WHEN ? = 1 THEN ? ELSE expires_at END,
-          default_location_id = CASE WHEN ? = 1 THEN ? ELSE default_location_id END
+          default_location_id = CASE WHEN ? = 1 THEN ? ELSE default_location_id END,
+          acquired_date = CASE WHEN ? = 1 THEN ? ELSE acquired_date END,
+          price_paid = CASE WHEN ? = 1 THEN ? ELSE price_paid END
          WHERE id = ?`
       ).run(
         name ?? null,
@@ -191,6 +211,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
         hasNotes ? 1 : 0, hasNotes ? (body.notes ?? null) : null,
         hasExpiresAt ? 1 : 0, hasExpiresAt ? (body.expires_at ?? null) : null,
         hasDefaultLocationId ? 1 : 0, newDefaultLocationId,
+        hasAcquiredDate ? 1 : 0, hasAcquiredDate ? (body.acquired_date ?? null) : null,
+        hasPricePaid ? 1 : 0, newPricePaid,
         item.id
       )
 

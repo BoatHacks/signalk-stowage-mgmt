@@ -82,8 +82,8 @@ schema, `getSelfPath`).
   `created_at`.
 - **Item** — `id`, `name`, `actual_quantity`, `target_quantity`, `notes`,
   `location_id` (null if split or unlocated), `default_location_id`,
-  `thumbnail` (a `data:` URI), `expires_at`, `created_at`. Many-to-many
-  with **Category** via `item_categories`.
+  `thumbnail` (a `data:` URI), `expires_at`, `acquired_date`, `price_paid`,
+  `created_at`. Many-to-many with **Category** via `item_categories`.
 - **Item Placement** — `id`, `item_id`, `location_id` (nullable — "not
   stored anywhere"), `quantity`. Only exists for split items; a plain
   item has zero placement rows.

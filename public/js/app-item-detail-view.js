@@ -195,6 +195,8 @@ function PropertiesSection(props) {
       <p class="hint">
         ${item.expires_at ? expiringStatusText(daysUntil(item.expires_at)) + ' (' + item.expires_at + ')' : 'No expiration date set.'}
       </p>
+      ${item.acquired_date ? html`<p class="hint">Acquired ${item.acquired_date}</p>` : null}
+      ${item.price_paid !== null && item.price_paid !== undefined ? html`<p class="hint">Price paid: ${item.price_paid.toFixed(2)}</p>` : null}
       <div class="notes-preview" dangerouslySetInnerHTML=${{ __html: renderMarkdown(item.notes) }}></div>
     </div>
   `;
