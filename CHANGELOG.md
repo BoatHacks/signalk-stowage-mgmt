@@ -10,12 +10,20 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-06
+
 ### Added
 
 - **Acquired date and price paid fields on items** (#56): items now track
   an optional acquisition date and price paid, editable from the Item
   Properties modal alongside the existing expiration date, and shown on
   the item detail page. Included in JSON export/import.
+
+### Changed
+
+- Pinned the plugin-CI workflow to a specific `signalk-server` release
+  commit (v2.30.0) instead of tracking `master`, for supply-chain safety
+  and reproducibility.
 
 ## [1.0.0] - 2026-08-03
 
