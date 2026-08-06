@@ -8,4 +8,4 @@ on:
 
 jobs:
   ci:
-    uses: SignalK/signalk-server/.github/workflows/plugin-ci.yml@master
+    uses: SignalK/signalk-server/.github/workflows/plugin-ci.yml@67249e0e0fdcf7f9b0298bfada4cec32ea581a38 # v2.30.0
