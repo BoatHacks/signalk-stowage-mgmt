@@ -102,6 +102,7 @@ function initDb (dataDir) {
       to_location_id TEXT,
       to_location_name TEXT,
       quantity INTEGER,
+      user_name TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -195,6 +196,7 @@ function initDb (dataDir) {
         to_location_id TEXT,
         to_location_name TEXT,
         quantity INTEGER,
+        user_name TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
 
@@ -212,6 +214,16 @@ function initDb (dataDir) {
       CREATE INDEX IF NOT EXISTS idx_item_log_created_at ON item_log(created_at);
       CREATE INDEX IF NOT EXISTS idx_item_log_item ON item_log(item_id);
     `)
+  }
+
+  // user_name (who was logged in when the entry was written, per Signal K's
+  // req.skPrincipal.identifier — null when security is disabled or the
+  // request wasn't authenticated) was added after 'split' support, so it
+  // needs its own plain column check independent of the CHECK-constraint
+  // rebuild above, same pattern as the items-table columns.
+  const itemLogColumnsAfter = db.prepare('PRAGMA table_info(item_log)').all().map(c => c.name)
+  if (!itemLogColumnsAfter.includes('user_name')) {
+    db.exec('ALTER TABLE item_log ADD COLUMN user_name TEXT')
   }
 
   const categoryCount = db.prepare('SELECT COUNT(*) c FROM categories').get().c

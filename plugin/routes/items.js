@@ -80,6 +80,15 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     return loc ? loc.name : null
   }
 
+  // The logged-in user, per Signal K's own security convention
+  // (req.skPrincipal.identifier — set by signalk-server's auth middleware
+  // when security is enabled and the request is authenticated). Null for a
+  // security-disabled deployment or an unauthenticated request, which is
+  // the common case this plugin is designed for (see ARCHITECTURE.md §6).
+  function userNameFrom (req) {
+    return (req.skPrincipal && req.skPrincipal.identifier) || null
+  }
+
   router.get('/items', (req, res) => {
     const { q } = req.query || {}
     let items
@@ -139,7 +148,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       for (const catId of ids) link.run(id, catId)
       logItemEvent(db(), {
         itemId: id, itemName: name, event: 'created', oldValue: 0, newValue: startingQuantity, note,
-        toLocationId: locationId || null, toLocationName: locationName(locationId)
+        toLocationId: locationId || null, toLocationName: locationName(locationId), userName: userNameFrom(req)
       })
     })
     res.status(201).json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(id)))
@@ -223,13 +232,14 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
           itemId: item.id, itemName: logName, event: 'actual_quantity',
           oldValue: item.actual_quantity, newValue: parsedActualQuantity, note,
           toLocationId: delta > 0 ? item.location_id : null, toLocationName: delta > 0 ? locationName(item.location_id) : null,
-          fromLocationId: delta < 0 ? item.location_id : null, fromLocationName: delta < 0 ? locationName(item.location_id) : null
+          fromLocationId: delta < 0 ? item.location_id : null, fromLocationName: delta < 0 ? locationName(item.location_id) : null,
+          userName: userNameFrom(req)
         })
       }
       if (hasTargetQuantity && newTargetQuantity !== item.target_quantity) {
         logItemEvent(db(), {
           itemId: item.id, itemName: logName, event: 'target_quantity',
-          oldValue: item.target_quantity, newValue: newTargetQuantity, note
+          oldValue: item.target_quantity, newValue: newTargetQuantity, note, userName: userNameFrom(req)
         })
       }
       // expires_at changes are deliberately not logged to item_log.
@@ -356,7 +366,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
         logItemEvent(db(), {
           itemId: item.id, itemName: item.name, event: 'actual_quantity', oldValue: oldTotal, newValue: newTotal, note,
           toLocationId: delta > 0 ? placement.location_id : null, toLocationName: delta > 0 ? locationName(placement.location_id) : null,
-          fromLocationId: delta < 0 ? placement.location_id : null, fromLocationName: delta < 0 ? locationName(placement.location_id) : null
+          fromLocationId: delta < 0 ? placement.location_id : null, fromLocationName: delta < 0 ? locationName(placement.location_id) : null,
+          userName: userNameFrom(req)
         })
       }
     })
@@ -448,7 +459,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
         itemId: item.id, itemName: item.name,
         fromLocationId: fromLocationId || null, fromLocationName: nameOf(fromLocationId),
         toLocationId: toLocationId || null, toLocationName: nameOf(toLocationId),
-        quantity: qty, note
+        quantity: qty, note, userName: userNameFrom(req)
       })
     })
 
@@ -496,7 +507,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       logItemEvent(db(), {
         itemId: item.id, itemName: item.name, event: 'deleted',
         oldValue: item.actual_quantity, newValue: 0, note: null,
-        fromLocationId, fromLocationName
+        fromLocationId, fromLocationName, userName: userNameFrom(req)
       })
       db().prepare('DELETE FROM items WHERE id = ?').run(item.id)
     })

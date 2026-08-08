@@ -111,9 +111,9 @@ export function StoreLogTab () {
                              onExport=${function () { app.openExportModal('storelog-individual', { start: start, end: end, rows: individual }); }}>
           <div class="table-scroll">
           <table class="overview-table">
-            <thead><tr><th>Item</th><th>Added</th><th>Used</th><th>Location</th><th>Timestamp</th><th>Note</th></tr></thead>
+            <thead><tr><th>Item</th><th>Added</th><th>Used</th><th>Location</th><th>User</th><th>Timestamp</th><th>Note</th></tr></thead>
             <tbody>
-              ${!individual.length ? html`<tr class="empty-row"><td colspan="6">No inventory changes in this date range.</td></tr>` : null}
+              ${!individual.length ? html`<tr class="empty-row"><td colspan="7">No inventory changes in this date range.</td></tr>` : null}
               ${individual.map(function (m) {
                 return html`
                   <tr key=${m.id}>
@@ -121,6 +121,7 @@ export function StoreLogTab () {
                     <td>${m.added || ''}</td>
                     <td>${m.used || ''}</td>
                     <td>${m.location || ''}</td>
+                    <td>${m.userName || '—'}</td>
                     <td>${new Date(m.createdAt).toLocaleString()}</td>
                     <td>${m.note || ''}</td>
                   </tr>
@@ -239,7 +240,7 @@ export function buildIndividualRows (rows) {
       else if (r.delta > 0) added = r.delta;
       else if (r.delta < 0) used = Math.abs(r.delta);
       var location = added ? r.to_location_name : (used ? r.from_location_name : null);
-      return { id: r.id, itemId: r.item_id, itemName: r.item_name, added: added, used: used, location: location, createdAt: r.created_at, note: r.note };
+      return { id: r.id, itemId: r.item_id, itemName: r.item_name, added: added, used: used, location: location, userName: r.user_name, createdAt: r.created_at, note: r.note };
     })
     .sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : -1; });
 }
@@ -326,11 +327,11 @@ export function buildStoreLogMarkdown (kind, data) {
     if (!data.rows.length) {
       lines1.push('No inventory changes in this date range.', '');
     } else {
-      lines1.push('| Item | Added | Used | Location | Timestamp | Note |', '| --- | --- | --- | --- | --- | --- |');
+      lines1.push('| Item | Added | Used | Location | User | Timestamp | Note |', '| --- | --- | --- | --- | --- | --- | --- |');
       data.rows.forEach(function (m) {
         lines1.push(
           '| ' + m.itemName + ' | ' + (m.added || '') + ' | ' + (m.used || '') + ' | ' + (m.location || '') + ' | ' +
-          new Date(m.createdAt).toLocaleString() + ' | ' + (m.note || '') + ' |'
+          (m.userName || '') + ' | ' + new Date(m.createdAt).toLocaleString() + ' | ' + (m.note || '') + ' |'
         );
       });
       lines1.push('');
