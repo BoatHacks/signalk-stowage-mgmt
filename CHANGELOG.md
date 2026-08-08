@@ -10,6 +10,24 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-08
+
+### Added
+
+- **Per-placement chips in the Touch Overview** view: a split item now
+  renders one chip per storage location (5 oil filters in the long-term
+  storage box, 2 in the spare-parts container show up as two independently
+  adjustable chips) instead of one ambiguous chip for the whole item. Every
+  chip carries a prominent location badge, and the previous "disabled,
+  no default location set" restriction on split items is gone — each
+  chip's +/- steppers now target exactly one placement.
+- **Logged-in user on Store Log entries**: `item_log` gains a `user_name`
+  column, populated from Signal K's own `req.skPrincipal.identifier` on
+  every write path (created, actual_quantity, target_quantity, split,
+  deleted) for accountability. Null when Signal K security is disabled
+  or the request is unauthenticated. The Individual Movements table and
+  its markdown export both gain a User column.
+
 ## [1.0.1] - 2026-08-06
 
 ### Added
