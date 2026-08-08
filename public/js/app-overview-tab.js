@@ -1,6 +1,6 @@
 import { html, useState, useMemo, useEffect, useRef } from '../vendor/preact-htm-standalone.js';
-import { useApp, QuantityEditor } from './app-core.js';
-import { pathToRoot, isSplit, descendantIds, defaultPlacementFor, quantityStepsFor, filterQuery, anyItemHasPhoto } from './helpers.js';
+import { useApp, QuantityEditor, Icon } from './app-core.js';
+import { pathToRoot, isSplit, descendantIds, quantityStepsFor, filterQuery, anyItemHasPhoto } from './helpers.js';
 
 function isoDate (d) {
   return d.toISOString().slice(0, 10);
@@ -124,29 +124,82 @@ export function OverviewTab() {
     }).sort(function (a, b) { return a.label.localeCompare(b.label); });
   }, [app.data.locations]);
 
-  function isUnderLocation (item, locId) {
+  // One chip per placement for a split item (5 oil filters in the
+  // long-term storage box, 2 in the spare-parts container next to the
+  // engine room show up as two separate chips), one chip for a plain item.
+  // Each chip's itemView has actual_quantity overridden to that placement's
+  // own share — the same trick PlacementsSection (app-item-detail-view.js)
+  // and the tree rows (app-nodes.js) use, since QuantityEditor only reads
+  // props.placementId to decide what to *write*, not what quantity to
+  // *display* (it falls back to item.actual_quantity for that).
+  var touchChips = useMemo(function () {
+    var chips = [];
+    rows.forEach(function (r) {
+      var item = r.item;
+      if (isSplit(item)) {
+        item.placements.forEach(function (p) {
+          chips.push({
+            key: item.id + ':' + p.id,
+            item: item,
+            itemView: Object.assign({}, item, { actual_quantity: p.quantity }),
+            placementId: p.id,
+            locationId: p.location_id,
+            locationLabel: p.location_id ? pathToRoot(app.data, p.location_id) : 'No location',
+            isDefault: p.location_id === item.default_location_id,
+            quantity: p.quantity,
+            isSplitChip: true,
+            name: r.name,
+            thumbnail: r.thumbnail,
+            totalQuantity: r.actualQuantity,
+            targetQuantity: r.targetQuantity,
+            placementCount: item.placements.length
+          });
+        });
+      } else {
+        chips.push({
+          key: item.id,
+          item: item,
+          itemView: item,
+          placementId: null,
+          locationId: item.location_id,
+          locationLabel: r.directLocation,
+          isDefault: false,
+          quantity: r.actualQuantity,
+          isSplitChip: false,
+          name: r.name,
+          thumbnail: r.thumbnail,
+          totalQuantity: r.actualQuantity,
+          targetQuantity: r.targetQuantity,
+          placementCount: 1
+        });
+      }
+    });
+    return chips;
+  }, [rows]);
+
+  function chipUnderLocation (chip, locId) {
     if (!locId) return true;
     var allowed = new Set(descendantIds(app.data, locId));
     allowed.add(locId);
-    if (isSplit(item)) return item.placements.some(function (p) { return allowed.has(p.location_id); });
-    return !!item.location_id && allowed.has(item.location_id);
+    return !!chip.locationId && allowed.has(chip.locationId);
   }
 
-  var touchRows = rows
-    .filter(function (r) { return isUnderLocation(r.item, locationFilter); })
-    .filter(function (r) { return !filterResult.itemIds || filterResult.itemIds.has(r.item.id); });
+  var touchRows = touchChips
+    .filter(function (c) { return chipUnderLocation(c, locationFilter); })
+    .filter(function (c) { return !filterResult.itemIds || filterResult.itemIds.has(c.item.id); });
 
   var touchSorted = touchRows.slice().sort(function (a, b) {
-    if (touchSort === 'alphabetical') return a.name.localeCompare(b.name);
+    if (touchSort === 'alphabetical') {
+      return a.name.localeCompare(b.name) || a.locationLabel.localeCompare(b.locationLabel);
+    }
     var ac = activityCounts[a.item.id] || 0;
     var bc = activityCounts[b.item.id] || 0;
     if (ac !== bc) return bc - ac;
-    return a.name.localeCompare(b.name);
+    return a.name.localeCompare(b.name) || a.locationLabel.localeCompare(b.locationLabel);
   });
 
-  function adjustQty (item, delta) {
-    var defaultPlacement = defaultPlacementFor(item);
-    var key = defaultPlacement ? 'placement:' + defaultPlacement.id : 'item:' + item.id;
+  function adjustQty (item, delta, placementId, baseQuantity) {
+    var key = placementId ? 'placement:' + placementId : 'item:' + item.id;
     var pending = pendingAdjustRef.current;
 
     if (pending[key]) {
@@ -159,12 +212,10 @@ export function OverviewTab() {
       return;
     }
 
-    var baseQuantity = defaultPlacement ? defaultPlacement.quantity : item.actual_quantity;
-
     function send (targetQuantity) {
       pending[key] = { queuedDelta: 0 };
-      var request = defaultPlacement
-        ? app.setPlacementQuantity(item.id, defaultPlacement.id, targetQuantity, null)
+      var request = placementId
+        ? app.setPlacementQuantity(item.id, placementId, targetQuantity, null)
         : app.updateItem(item.id, { actual_quantity: targetQuantity });
       request.catch(function () {}).finally(function () {
         var queuedDelta = pending[key] ? pending[key].queuedDelta : 0;
@@ -244,26 +295,19 @@ export function OverviewTab() {
         </table>
         </div>
       ` : html`
-        <p class="hint">Tap a chip to open its detail page; tap −/+ to adjust stock. A split item
-          with no default storage location set (see Item Properties) can't be adjusted here — use Split instead.</p>
+        <p class="hint">Tap a chip to open its detail page; tap \u2212/+ to adjust stock. A split item
+          gets one chip per storage location, each independently adjustable.</p>
         <div class="touch-grid">
           ${!touchSorted.length ? html`<p class="hint">No items found.</p>` : null}
-          ${touchSorted.map(function (r) {
-            var thumb = r.thumbnail
-              ? html`<img class="touch-chip-thumb" src=${r.thumbnail} alt="" />`
+          ${touchSorted.map(function (c) {
+            var thumb = c.thumbnail
+              ? html`<img class="touch-chip-thumb" src=${c.thumbnail} alt="" />`
               : (anyItemHasPhoto(app.data.items) ? html`<span class="touch-chip-thumb touch-chip-thumb-placeholder"></span>` : null);
-            var defaultPlacement = defaultPlacementFor(r.item);
-            var itemIsSplit = isSplit(r.item);
-            var split = itemIsSplit && !defaultPlacement;
-            var splitTooltip = 'This item is split across multiple locations — use Split to change its quantity, ' +
-              'or set a default storage location in Item Properties to enable quick edits here.';
-            // The quantity the buttons actually adjust: the default
-            // placement's own count for a split item that has one, or the
-            // item's plain quantity otherwise. Also what the dynamic steps
-            // (if enabled) are scaled from.
-            var editableQty = defaultPlacement ? defaultPlacement.quantity : r.actualQuantity;
+            // Every chip now maps to exactly one placement (or the whole
+            // item, for a plain one), so the steppers always have a single
+            // unambiguous target \u2014 no more "disabled, use Split instead".
             var dynamicScale = !!(app.config && app.config.dynamicQuantityScale);
-            var steps = dynamicScale ? quantityStepsFor(editableQty) : { fine: 1, coarse: 1 };
+            var steps = dynamicScale ? quantityStepsFor(c.quantity) : { fine: 1, coarse: 1 };
             // A second, coarser pair of buttons only earns its place on the
             // chip once it actually differs from the fine step (single-digit
             // quantities have fine === coarse === 1) - otherwise it'd just be
@@ -271,58 +315,35 @@ export function OverviewTab() {
             var showCoarse = dynamicScale && steps.coarse !== steps.fine;
             var fineMinusLabel = steps.fine === 1 ? '\u2212' : '\u2212' + steps.fine;
             var finePlusLabel = steps.fine === 1 ? '+' : '+' + steps.fine;
-            var qtyContent = itemIsSplit
-              ? html`
-                  <span class="touch-chip-stats">
-                    ${defaultPlacement ? html`
-                      <span class="touch-chip-stat">
-                        <span class="touch-chip-stat-label">Default</span>
-                        <span class="touch-qty-editor-wrap">
-                          <${QuantityEditor} item=${r.item} className="touch-chip-stat-value" />
-                        </span>
-                      </span>
-                    ` : null}
-                    <span class="touch-chip-stat">
-                      <span class="touch-chip-stat-label">Total</span>
-                      <span class="touch-chip-stat-value">\u00d7${r.actualQuantity}</span>
-                    </span>
-                    ${r.targetQuantity != null ? html`
-                      <span class="touch-chip-stat">
-                        <span class="touch-chip-stat-label">Target</span>
-                        <span class="touch-chip-stat-value">${r.targetQuantity}</span>
-                      </span>
-                    ` : null}
-                  </span>
-                `
-              : html`
-                  <span class="touch-chip-qty">
-                    <span class="touch-qty-editor-wrap"><${QuantityEditor} item=${r.item} /></span>${r.targetQuantity != null ? html` <span class="touch-chip-target">/ ${r.targetQuantity}</span>` : null}
-                  </span>
-                `;
             return html`
-              <div class="touch-chip" key=${r.item.id} onClick=${function () { app.selectItem(r.item.id); }}>
-                ${thumb}
-                <div class="touch-chip-name">${r.name}</div>
-                <div class="touch-chip-location hint">
-                  ${defaultPlacement ? 'Default: ' + (defaultPlacement.location_name || 'unnamed') : r.directLocation}
+              <div class=${'touch-chip' + (c.isSplitChip ? ' touch-chip-split' : '')} key=${c.key} onClick=${function () { app.selectItem(c.item.id); }}>
+                <div class="touch-chip-location-badge" title=${c.locationLabel}>
+                  <${Icon} name="locate" />${c.locationLabel}${c.isDefault ? html` <span class="touch-chip-default-mark" title="Default storage location">\u2605</span>` : null}
                 </div>
-                ${qtyContent}
+                ${thumb}
+                <div class="touch-chip-name">${c.name}</div>
+                ${c.isSplitChip ? html`
+                  <div class="touch-chip-split-note hint">part of \u00d7${c.totalQuantity} across ${c.placementCount} locations</div>
+                ` : null}
+                <span class="touch-chip-qty">
+                  <span class="touch-qty-editor-wrap"><${QuantityEditor} item=${c.itemView} placementId=${c.placementId} /></span>${!c.isSplitChip && c.targetQuantity != null ? html` <span class="touch-chip-target">/ ${c.targetQuantity}</span>` : null}
+                </span>
                 <div class="touch-chip-qty-row">
                   ${showCoarse ? html`
-                    <button type="button" class="touch-qty-btn touch-qty-btn-coarse" disabled=${split}
-                            title=${split ? splitTooltip : 'Remove ' + steps.coarse}
-                            onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -steps.coarse); }}>${'\u2212' + steps.coarse}</button>
+                    <button type="button" class="touch-qty-btn touch-qty-btn-coarse"
+                            title=${'Remove ' + steps.coarse}
+                            onClick=${function (e) { e.stopPropagation(); adjustQty(c.item, -steps.coarse, c.placementId, c.quantity); }}>${'\u2212' + steps.coarse}</button>
                   ` : null}
-                  <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? splitTooltip : 'Remove ' + steps.fine}
-                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, -steps.fine); }}>${fineMinusLabel}</button>
-                  <button type="button" class="touch-qty-btn" disabled=${split}
-                          title=${split ? splitTooltip : 'Add ' + steps.fine}
-                          onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, steps.fine); }}>${finePlusLabel}</button>
+                  <button type="button" class="touch-qty-btn"
+                          title=${'Remove ' + steps.fine}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(c.item, -steps.fine, c.placementId, c.quantity); }}>${fineMinusLabel}</button>
+                  <button type="button" class="touch-qty-btn"
+                          title=${'Add ' + steps.fine}
+                          onClick=${function (e) { e.stopPropagation(); adjustQty(c.item, steps.fine, c.placementId, c.quantity); }}>${finePlusLabel}</button>
                   ${showCoarse ? html`
-                    <button type="button" class="touch-qty-btn touch-qty-btn-coarse" disabled=${split}
-                            title=${split ? splitTooltip : 'Add ' + steps.coarse}
-                            onClick=${function (e) { e.stopPropagation(); adjustQty(r.item, steps.coarse); }}>${'+' + steps.coarse}</button>
+                    <button type="button" class="touch-qty-btn touch-qty-btn-coarse"
+                            title=${'Add ' + steps.coarse}
+                            onClick=${function (e) { e.stopPropagation(); adjustQty(c.item, steps.coarse, c.placementId, c.quantity); }}>${'+' + steps.coarse}</button>
                   ` : null}
                 </div>
               </div>

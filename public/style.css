@@ -871,7 +871,30 @@ select {
 }
 
 .touch-chip-name { font-weight: 600; font-size: 14px; }
-.touch-chip-location { font-size: 12px; }
+
+/* One badge per placement chip — location is the whole point of the split
+   view (5 oil filters in the long-term storage box vs. 2 in the spare-parts
+   container need to read apart at a glance), so it gets top billing above
+   the photo/name, not a small muted line underneath. */
+.touch-chip-location-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--accent, #2563eb);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.touch-chip-location-badge .icon { width: 14px; height: 14px; flex: none; }
+.touch-chip-default-mark { color: #ffd54a; }
+
+.touch-chip-split { border-color: var(--accent, #2563eb); }
+.touch-chip-split-note { font-size: 11px; }
 
 .touch-chip-qty-row {
   display: flex;
@@ -884,22 +907,6 @@ select {
 
 .touch-chip-qty { font-size: 15px; font-weight: 600; min-width: 3em; }
 .touch-chip-target { color: var(--text-muted); font-weight: 400; }
-
-.touch-chip-stats {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 4.5em;
-}
-.touch-chip-stat {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  font-size: 12px;
-}
-.touch-chip-stat-label { color: var(--text-muted); }
-.touch-chip-stat-value { font-weight: 600; font-size: 13px; }
 
 .touch-qty-btn {
   min-width: 44px;
