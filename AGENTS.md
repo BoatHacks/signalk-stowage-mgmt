@@ -1,5 +1,3 @@
-@no-slop.md
-
 # signalk-stowage-mgmt
 
 SignalK server plugin for inventory/stowage management. npm:
