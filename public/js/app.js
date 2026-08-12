@@ -448,9 +448,13 @@ function App() {
       return act(function () { return api.importSnapshot(payload); }).then(function (result) {
         var message = 'Restored ' + result.restored.items + ' items, ' + result.restored.locations +
           ' locations, ' + result.restored.categories + ' categories.';
+        if (result.remapped_floorplan_mappings) {
+          message += ' ' + result.remapped_floorplan_mappings + ' floorplan mapping(s) automatically matched ' +
+            'to a floorplan already here.';
+        }
         if (result.dropped_floorplan_mappings) {
           message += ' ' + result.dropped_floorplan_mappings + ' floorplan mapping(s) could not be restored ' +
-            "(that floorplan isn't present here).";
+            "(upload the matching floorplan here first, then re-import).";
         }
         showToast(message);
         return result;

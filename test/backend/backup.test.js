@@ -36,6 +36,10 @@ test('export: includes categories, locations (with mappings), and items (with ca
   assert.equal(locker.floorplan_id, built.fp.id)
   assert.equal(locker.svg_element_id, 'p1')
 
+  assert.equal(snapshot.floorplans.length, 1)
+  assert.equal(snapshot.floorplans[0].id, built.fp.id)
+  assert.equal(snapshot.floorplans[0].svg_content, '<svg><path id="p1"/></svg>')
+
   const fuse = snapshot.items.find((i) => i.id === built.item1.id)
   assert.deepEqual(fuse.category_ids, [built.cat.id])
   assert.equal(fuse.attachments.length, 1)
@@ -57,6 +61,7 @@ test('import: round-trips onto the same instance, preserving ids and the floorpl
   const body = await res.json()
   assert.deepEqual(body.restored, { categories: 5, locations: 3, items: 2 })
   assert.equal(body.dropped_floorplan_mappings, 0)
+  assert.equal(body.remapped_floorplan_mappings, 0)
 
   const locations = await (await server.get('/locations')).json()
   assert.equal(locations.length, 3)
@@ -91,6 +96,7 @@ test('import: a mapping referencing a floorplan that does not exist here is drop
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.dropped_floorplan_mappings, 1)
+  assert.equal(body.remapped_floorplan_mappings, 0)
 
   const locations = await (await otherServer.get('/locations')).json()
   const locker = locations.find((l) => l.name === 'Port Locker')
@@ -98,6 +104,38 @@ test('import: a mapping referencing a floorplan that does not exist here is drop
   assert.equal(locker.svg_element_id, null)
   // Hierarchy still restored correctly despite the dropped mapping.
   assert.equal(locker.parent_id, locations.find((l) => l.name === 'Aft Cabin').id)
+})
+
+test('import: a mapping is automatically re-matched by svg_content when the target already has the same floorplan uploaded under a different id (cross-instance migration)', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  await buildSampleData(server)
+  const snapshot = await (await server.get('/export')).json()
+
+  const otherServer = await startTestServer()
+  t.after(() => otherServer.close())
+  // Simulate the user re-uploading the same original floorplan SVG to the
+  // new server before importing — same content, necessarily a different id.
+  const reuploaded = await (await otherServer.post('/floorplans', {
+    name: 'Boat', svg_content: '<svg><path id="p1"/></svg>'
+  })).json()
+  assert.notEqual(reuploaded.id, snapshot.floorplans[0].id)
+
+  const res = await otherServer.post('/import', snapshot)
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.remapped_floorplan_mappings, 1)
+  assert.equal(body.dropped_floorplan_mappings, 0)
+
+  const locations = await (await otherServer.get('/locations')).json()
+  const locker = locations.find((l) => l.name === 'Port Locker')
+  assert.equal(locker.floorplan_id, reuploaded.id)
+  assert.equal(locker.svg_element_id, 'p1')
+
+  // Import never touches floorplans themselves — still just the one we
+  // uploaded by hand, not a duplicate created from the export.
+  const floorplans = await (await otherServer.get('/floorplans')).json()
+  assert.equal(floorplans.length, 1)
 })
 
 test('import: replaces (does not merge with) existing data', async (t) => {

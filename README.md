@@ -632,20 +632,25 @@ no versioning/deprecation process beyond this is planned for now.)
 
 | Method & path | Purpose |
 |---|---|
-| `GET /export` | Full inventory snapshot as JSON: categories, locations (with hierarchy and floorplan mappings), and items (with their categories, placements, and attachment *metadata*). Deliberately excludes floorplan SVG content, attachment file contents, and Store Log history — see below |
-| `POST /import` | **Replaces** categories/locations/items entirely with the given snapshot (same shape `GET /export` returns) — a restore, not a merge. Floorplans, attachment files, and Store Log history are never touched. Returns `{ restored: { categories, locations, items }, dropped_floorplan_mappings }` |
+| `GET /export` | Full inventory snapshot as JSON: categories, locations (with hierarchy and floorplan mappings), items (with their categories, placements, and attachment *metadata*), and the `id`/`name`/`svg_content` of every floorplan actually referenced by a location mapping. Deliberately excludes attachment file contents and Store Log history — see below |
+| `POST /import` | **Replaces** categories/locations/items entirely with the given snapshot (same shape `GET /export` returns) — a restore, not a merge. Floorplans (including any in the snapshot) are never created or modified by import, nor are attachment files or Store Log history. Returns `{ restored: { categories, locations, items }, dropped_floorplan_mappings, remapped_floorplan_mappings }` |
 
-A snapshot only carries a location's floorplan *mapping* (`floorplan_id` +
-`svg_element_id`), not the floorplan itself — so a mapping only survives
-`/import` if that exact `floorplan_id` still exists in the *target*
-database. This makes the feature best suited to backup/restore on the same
-instance (protecting against accidental data loss) rather than migrating
-to a different one; a mapping that can't be resolved is silently dropped
-(not a fatal error) and counted in `dropped_floorplan_mappings`. Original
-ids are preserved on restore, so anything depending on stable item/location
-ids (see "Known external consumers" above) keeps working after a restore.
-`/import` is a full replace of everything in scope — there's currently no
-merge/append mode (see issue #26).
+Import never creates or overwrites a floorplan itself — it only tries to
+reconnect each location's floorplan *mapping* (`floorplan_id` +
+`svg_element_id`) to a floorplan already sitting in the target database,
+first by matching `floorplan_id` directly (the same-instance restore case),
+then, if that id isn't present, by an exact `svg_content` match against the
+floorplan data the snapshot carries (the cross-instance migration case —
+upload the same floorplan SVG to the new server yourself first, then
+import; the mapping finds its way back to the newly-uploaded floorplan's
+id even though the id itself differs from the export, and this is counted
+in `remapped_floorplan_mappings`). A mapping that matches neither way is
+silently dropped (not a fatal error) and counted in
+`dropped_floorplan_mappings`. Original ids are preserved on restore, so
+anything depending on stable item/location ids (see "Known external
+consumers" above) keeps working after a restore. `/import` is a full
+replace of everything in scope — there's currently no merge/append mode
+(see issue #26).
 
 **Config**
 

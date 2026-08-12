@@ -3,15 +3,22 @@ const { runInTransaction } = require('../tx')
 
 // Full-snapshot backup/restore for the inventory (locations, items,
 // categories, placements). Deliberately excludes:
-// - Floorplan SVG content — only each location's *mapping* (floorplan_id +
-//   svg_element_id) is included, not the floorplan itself. On import, a
-//   mapping only survives if that floorplan_id still exists in the
-//   *target* database (floorplans are never touched by import) — this
-//   makes the feature best suited to backup/restore on the same instance,
-//   not migrating to a different one.
 // - Attachment file contents — only metadata (filename/mime_type/size) is
 //   included, for the record. Attachments are not restored on import.
 // - Store Log history — an append-only audit trail, not configuration.
+//
+// Floorplans themselves are never created or modified by import (floorplan
+// *content* isn't config the same way locations/items are — it's a
+// deliberately separate upload step, see README). The export does include
+// each floorplan's id/name/svg_content, but only so import can *match*
+// a location's floorplan_id/svg_element_id mapping against whatever
+// floorplans already exist in the target database: first by id (the
+// same-instance restore case), then, if that id isn't present, by exact
+// svg_content match (the cross-instance migration case — upload the same
+// floorplan SVG to the new server first, then import; the mapping finds
+// its way back to the newly-uploaded floorplan's id even though that id
+// is different from the one in the export). A mapping that matches
+// neither way is dropped, not fatal.
 //
 // Import is a full replace: everything in scope is wiped and replaced
 // with the imported snapshot, preserving original ids (so external
@@ -58,6 +65,18 @@ module.exports = function registerBackupRoutes (router, getDb) {
   }
 
   router.get('/export', (req, res) => {
+    // Only the floorplans actually referenced by a location mapping need to
+    // travel with the export — id/name/svg_content, just enough for import
+    // on a different instance to find (or fail to find) a content match.
+    const referencedFloorplanIds = db().prepare(
+      'SELECT DISTINCT floorplan_id FROM locations WHERE floorplan_id IS NOT NULL'
+    ).all().map((r) => r.floorplan_id)
+    const floorplans = referencedFloorplanIds.length
+      ? db().prepare(
+          `SELECT id, name, svg_content FROM floorplans WHERE id IN (${referencedFloorplanIds.map(() => '?').join(',')})`
+        ).all(...referencedFloorplanIds)
+      : []
+
     const categories = db().prepare('SELECT id, name, created_at FROM categories ORDER BY name').all()
 
     const locations = db().prepare(
@@ -94,6 +113,7 @@ module.exports = function registerBackupRoutes (router, getDb) {
       schema_version: SCHEMA_VERSION,
       exported_at: new Date().toISOString(),
       categories,
+      floorplans,
       locations,
       items: items.map((item) => ({
         ...item,
@@ -130,8 +150,19 @@ module.exports = function registerBackupRoutes (router, getDb) {
       })
     }
 
-    const existingFloorplanIds = new Set(db().prepare('SELECT id FROM floorplans').all().map((f) => f.id))
+    const existingFloorplans = db().prepare('SELECT id, svg_content FROM floorplans').all()
+    const existingFloorplanIds = new Set(existingFloorplans.map((f) => f.id))
+    // Only used as a same-instance-id fallback when a location's
+    // floorplan_id isn't in existingFloorplanIds: maps the *old* (exported)
+    // floorplan id to its svg_content, so it can be looked up against a
+    // floorplan already sitting in the target database under a different id.
+    const payloadFloorplanContentById = new Map(
+      (Array.isArray(payload.floorplans) ? payload.floorplans : [])
+        .map((f) => [f.id, f.svg_content])
+    )
+    const existingFloorplanIdByContent = new Map(existingFloorplans.map((f) => [f.svg_content, f.id]))
     let droppedFloorplanMappings = 0
+    let remappedFloorplanMappings = 0
 
     try {
       runInTransaction(db(), () => {
@@ -159,9 +190,22 @@ module.exports = function registerBackupRoutes (router, getDb) {
           let floorplanId = loc.floorplan_id || null
           let svgElementId = loc.svg_element_id || null
           if (floorplanId && !existingFloorplanIds.has(floorplanId)) {
-            floorplanId = null
-            svgElementId = null
-            droppedFloorplanMappings++
+            // Same-instance id match failed — try matching this location's
+            // floorplan by exact svg_content instead, in case the target
+            // already has the same floorplan uploaded under a different id
+            // (the cross-instance migration case). svg_element_id is left
+            // as-is: it's an id *within* the SVG (e.g. "area-galley"), which
+            // stays meaningful as long as the SVG content itself matched.
+            const content = payloadFloorplanContentById.get(floorplanId)
+            const matchedId = content != null ? existingFloorplanIdByContent.get(content) : undefined
+            if (matchedId) {
+              floorplanId = matchedId
+              remappedFloorplanMappings++
+            } else {
+              floorplanId = null
+              svgElementId = null
+              droppedFloorplanMappings++
+            }
           }
           insertLocation.run(loc.id, loc.name, loc.type, floorplanId, svgElementId, loc.created_at || new Date().toISOString())
         })
@@ -210,7 +254,8 @@ module.exports = function registerBackupRoutes (router, getDb) {
         locations: payload.locations.length,
         items: payload.items.length
       },
-      dropped_floorplan_mappings: droppedFloorplanMappings
+      dropped_floorplan_mappings: droppedFloorplanMappings,
+      remapped_floorplan_mappings: remappedFloorplanMappings
     })
   })
 }

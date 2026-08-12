@@ -10,6 +10,19 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Changed
+
+- **JSON export/import now supports migrating floorplan mappings across
+  instances**: `GET /export` includes the `id`/`name`/`svg_content` of
+  every floorplan referenced by a location mapping. `POST /import` matches
+  a location's floorplan mapping by id first (same-instance restore), then
+  falls back to an exact `svg_content` match against floorplans already
+  present in the target database (upload the same floorplan SVG to the new
+  server first, then import) — reported as `remapped_floorplan_mappings`,
+  alongside the existing `dropped_floorplan_mappings` for mappings that
+  match neither way. Floorplans themselves are still never created or
+  modified by import.
+
 ## [1.1.0] - 2026-08-08
 
 ### Added
