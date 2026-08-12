@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-12
+
 ### Changed
 
 - **JSON export/import now supports migrating floorplan mappings across
