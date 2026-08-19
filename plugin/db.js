@@ -57,6 +57,7 @@ function initDb (dataDir) {
       default_location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
       acquired_date TEXT,
       price_paid REAL,
+      unit TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -142,6 +143,9 @@ function initDb (dataDir) {
   }
   if (!itemColumnsAfterRename.includes('price_paid')) {
     db.exec('ALTER TABLE items ADD COLUMN price_paid REAL')
+  }
+  if (!itemColumnsAfterRename.includes('unit')) {
+    db.exec('ALTER TABLE items ADD COLUMN unit TEXT')
   }
   if (itemColumnsAfterRename.includes('description')) {
     // Merge any existing description text into notes (description first,

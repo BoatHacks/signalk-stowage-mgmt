@@ -84,7 +84,7 @@ module.exports = function registerBackupRoutes (router, getDb) {
     ).all()
 
     const items = db().prepare(
-      'SELECT id, name, actual_quantity, target_quantity, notes, location_id, thumbnail, expires_at, acquired_date, price_paid, created_at FROM items'
+      'SELECT id, name, actual_quantity, target_quantity, notes, location_id, thumbnail, expires_at, acquired_date, price_paid, unit, created_at FROM items'
     ).all()
 
     const categoryIdsByItem = db().prepare('SELECT item_id, category_id FROM item_categories').all()
@@ -216,7 +216,7 @@ module.exports = function registerBackupRoutes (router, getDb) {
         })
 
         const insertItem = db().prepare(
-          'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, thumbnail, expires_at, acquired_date, price_paid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, thumbnail, expires_at, acquired_date, price_paid, unit, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         )
         const insertItemCategory = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
         const insertPlacement = db().prepare('INSERT INTO item_placements (id, item_id, location_id, quantity) VALUES (?, ?, ?, ?)')
@@ -228,7 +228,7 @@ module.exports = function registerBackupRoutes (router, getDb) {
             item.target_quantity != null ? item.target_quantity : null, item.notes || null,
             locationId, item.thumbnail || null, item.expires_at || null,
             item.acquired_date || null, item.price_paid != null ? item.price_paid : null,
-            item.created_at || new Date().toISOString()
+            item.unit || null, item.created_at || new Date().toISOString()
           );
           (item.category_ids || []).forEach((categoryId) => {
             if (restoredCategoryIds.has(categoryId)) insertItemCategory.run(item.id, categoryId)

@@ -72,6 +72,7 @@ export function ItemPropertiesModal() {
   var expiresAtState = useState('');
   var acquiredDateState = useState('');
   var pricePaidState = useState('');
+  var unitState = useState('');
   var changeNoteState = useState('');
   var noteViewState = useState('show'); // 'show' | 'edit'
   var defaultLocationState = useState('');
@@ -85,6 +86,7 @@ export function ItemPropertiesModal() {
     expiresAtState[1](item.expires_at || '');
     acquiredDateState[1](item.acquired_date || '');
     pricePaidState[1](item.price_paid === null || item.price_paid === undefined ? '' : String(item.price_paid));
+    unitState[1](item.unit || '');
     changeNoteState[1]('');
     noteViewState[1]('show');
     defaultLocationState[1](item.default_location_id || '');
@@ -99,6 +101,7 @@ export function ItemPropertiesModal() {
   var expiresAt = expiresAtState[0], setExpiresAt = expiresAtState[1];
   var acquiredDate = acquiredDateState[0], setAcquiredDate = acquiredDateState[1];
   var pricePaid = pricePaidState[0], setPricePaid = pricePaidState[1];
+  var unit = unitState[0], setUnit = unitState[1];
   var changeNote = changeNoteState[0], setChangeNote = changeNoteState[1];
   var noteView = noteViewState[0], setNoteView = noteViewState[1];
   var defaultLocationId = defaultLocationState[0], setDefaultLocationId = defaultLocationState[1];
@@ -116,6 +119,7 @@ export function ItemPropertiesModal() {
       expires_at: expiresAt || null,
       acquired_date: acquiredDate || null,
       price_paid: pricePaid === '' ? null : Math.round(parseFloat(pricePaid) * 100) / 100,
+      unit: unit.trim() || null,
       note: changeNote || null
     };
     if (!isSplit(item)) body.actual_quantity = Math.max(0, parseInt(actualQty, 10) || 0);
@@ -159,6 +163,10 @@ export function ItemPropertiesModal() {
           <div class="form-field">
             <label>Target Quantity</label>
             <input type="number" min="0" step="1" placeholder="none" value=${targetQty} onInput=${function (e) { setTargetQty(e.target.value); }} />
+          </div>
+          <div class="form-field">
+            <label>Unit <span class="hint">(optional)</span></label>
+            <input type="text" maxlength="16" placeholder="e.g. Kg, L, m" value=${unit} onInput=${function (e) { setUnit(e.target.value); }} />
           </div>
         </div>
 

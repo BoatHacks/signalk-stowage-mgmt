@@ -49,7 +49,7 @@ export function StockAlertsTab () {
                 ${understocked ? html`
                   <div class="understocked-chip-qty">
                     <${QuantityEditor} item=${item} prefix="Actual: " className="qty-actual" />
-                    <span class="qty-target"> / Target: ${item.target_quantity}</span>
+                    <span class="qty-target"> / Target: ${item.target_quantity}${item.unit ? ' ' + item.unit : ''}</span>
                   </div>
                 ` : null}
                 ${expiring ? html`
