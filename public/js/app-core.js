@@ -116,7 +116,7 @@ function QuantityEditor(props) {
   }
 
   if (!isEditing) {
-    var label = (props.prefix || '') + '\u00d7' + displayQuantity;
+    var label = (props.prefix || '') + '\u00d7' + displayQuantity + (item.unit ? ' ' + item.unit : '');
     if (isSplit(item) && !effectivePlacementId) {
       return html`
         <span class=${'qty-display' + (props.className ? ' ' + props.className : '')}

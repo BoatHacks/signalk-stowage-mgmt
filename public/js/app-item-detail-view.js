@@ -249,7 +249,7 @@ export function ItemDetailView() {
         ${item.thumbnail ? html`<img class="item-thumb" src=${item.thumbnail} alt="" />` : null}
         <h2 class="item-detail-name">${item.name}</h2>
         <span class="item-detail-qty">
-          ×${item.actual_quantity}${item.target_quantity !== null && item.target_quantity !== undefined ? ' / ' + item.target_quantity : ''}
+          ×${item.actual_quantity}${item.target_quantity !== null && item.target_quantity !== undefined ? ' / ' + item.target_quantity : ''}${item.unit ? ' ' + item.unit : ''}
         </span>
       </div>
       ${sections.map(function (key) {

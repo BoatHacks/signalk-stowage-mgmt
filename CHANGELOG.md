@@ -10,6 +10,12 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- Optional unit field for items (e.g. "Kg", "L", "m"), entered alongside
+  Quantity in Item Properties and shown next to the quantity everywhere it's
+  displayed (#60).
+
 ## [1.1.1] - 2026-08-12
 
 ### Changed

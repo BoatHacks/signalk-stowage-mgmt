@@ -32,6 +32,17 @@ test('items: create rejects a negative or non-numeric actual_quantity (fixes #33
   assert.equal(items.length, 0)
 })
 
+test('items: create accepts an optional unit and defaults it to null', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const withUnit = await (await server.post('/items', { name: 'Diesel', unit: 'L' })).json()
+  assert.equal(withUnit.unit, 'L')
+
+  const withoutUnit = await (await server.post('/items', { name: 'Spare Fuse' })).json()
+  assert.equal(withoutUnit.unit, null)
+})
+
 test('items: create rejects a non-existent location_id', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())
@@ -78,6 +89,19 @@ test('items: patch updates fields and logs actual_quantity changes', async (t) =
   assert.equal(qtyEvents.length, 1)
   assert.equal(qtyEvents[0].old_value, 3)
   assert.equal(qtyEvents[0].new_value, 5)
+})
+
+test('items: patch sets and clears the unit', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+
+  const item = await (await server.post('/items', { name: 'Diesel' })).json()
+
+  const set = await server.patch(`/items/${item.id}`, { unit: 'Kg' })
+  assert.equal((await set.json()).unit, 'Kg')
+
+  const cleared = await server.patch(`/items/${item.id}`, { unit: null })
+  assert.equal((await cleared.json()).unit, null)
 })
 
 test('items: patch rejects a negative or non-numeric actual_quantity, leaving the item unchanged (fixes #33)', async (t) => {

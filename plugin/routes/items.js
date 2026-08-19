@@ -111,7 +111,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const {
       name, actual_quantity: actualQuantity, target_quantity: targetQuantity, notes,
       location_id: locationId, category_ids: categoryIds, note, expires_at: expiresAt,
-      acquired_date: acquiredDate, price_paid: pricePaid
+      acquired_date: acquiredDate, price_paid: pricePaid, unit
     } = req.body || {}
     if (!name) return res.status(400).json({ error: 'name required' })
     let startingQuantity = 1
@@ -142,8 +142,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const id = randomUUID()
     runInTransaction(db(), () => {
       db().prepare(
-        'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, expires_at, acquired_date, price_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null, expiresAt || null, acquiredDate || null, parsedPricePaid)
+        'INSERT INTO items (id, name, actual_quantity, target_quantity, notes, location_id, expires_at, acquired_date, price_paid, unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(id, name, startingQuantity, targetQuantity ?? null, notes || null, locationId || null, expiresAt || null, acquiredDate || null, parsedPricePaid, unit || null)
       const link = db().prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
       for (const catId of ids) link.run(id, catId)
       logItemEvent(db(), {
@@ -165,6 +165,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     const hasDefaultLocationId = Object.prototype.hasOwnProperty.call(body, 'default_location_id')
     const hasAcquiredDate = Object.prototype.hasOwnProperty.call(body, 'acquired_date')
     const hasPricePaid = Object.prototype.hasOwnProperty.call(body, 'price_paid')
+    const hasUnit = Object.prototype.hasOwnProperty.call(body, 'unit')
     const newTargetQuantity = hasTargetQuantity ? (body.target_quantity ?? null) : null
     const newDefaultLocationId = hasDefaultLocationId ? (body.default_location_id || null) : null
 
@@ -211,7 +212,8 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
           expires_at = CASE WHEN ? = 1 THEN ? ELSE expires_at END,
           default_location_id = CASE WHEN ? = 1 THEN ? ELSE default_location_id END,
           acquired_date = CASE WHEN ? = 1 THEN ? ELSE acquired_date END,
-          price_paid = CASE WHEN ? = 1 THEN ? ELSE price_paid END
+          price_paid = CASE WHEN ? = 1 THEN ? ELSE price_paid END,
+          unit = CASE WHEN ? = 1 THEN ? ELSE unit END
          WHERE id = ?`
       ).run(
         name ?? null,
@@ -222,6 +224,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
         hasDefaultLocationId ? 1 : 0, newDefaultLocationId,
         hasAcquiredDate ? 1 : 0, hasAcquiredDate ? (body.acquired_date ?? null) : null,
         hasPricePaid ? 1 : 0, newPricePaid,
+        hasUnit ? 1 : 0, hasUnit ? (body.unit || null) : null,
         item.id
       )
 
