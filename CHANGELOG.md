@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-08-19
+
 ### Added
 
 - Optional unit field for items (e.g. "Kg", "L", "m"), entered alongside
