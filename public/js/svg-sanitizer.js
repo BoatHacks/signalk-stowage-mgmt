@@ -14,7 +14,7 @@ var ALLOWED_TAGS = [
   'svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'polygon', 'polyline',
   'line', 'text', 'tspan', 'defs', 'title', 'desc', 'style',
   'clippath', 'lineargradient', 'radialgradient', 'stop', 'symbol',
-  'marker', 'pattern'
+  'marker', 'pattern', 'image'
 ];
 
 var ALLOWED_ATTRS = [
@@ -25,7 +25,7 @@ var ALLOWED_ATTRS = [
   'stroke-dasharray', 'opacity', 'font-family', 'font-size', 'font-weight',
   'text-anchor', 'offset', 'stop-color', 'stop-opacity', 'gradientunits',
   'gradienttransform', 'preserveaspectratio', 'clip-path', 'clip-rule',
-  'marker-start', 'marker-end', 'marker-mid'
+  'marker-start', 'marker-end', 'marker-mid', 'href', 'xlink:href'
 ];
 
 // CSS inside <style> can't run script directly, but old/legacy engines
@@ -34,13 +34,22 @@ var ALLOWED_ATTRS = [
 var UNSAFE_CSS_PATTERN = /expression\s*\(|@import|javascript:|-moz-binding|behavior\s*:/i;
 var DANGEROUS_URL_PATTERN = /^\s*(javascript|data|vbscript):/i;
 
+// href/xlink:href is permitted ONLY as an embedded raster data URI on <image>
+// (floorplans are commonly traced over a plan photo). data:image/svg+xml is
+// deliberately excluded — an SVG referenced this way can carry script — as are
+// javascript:/vbscript:/remote URLs.
+var SAFE_IMAGE_HREF_PATTERN = /^\s*data:image\/(png|jpe?g|gif|webp)[;,]/i;
+
 function sanitizeAttributes(el) {
   Array.prototype.slice.call(el.attributes || []).forEach(function (attr) {
     var name = attr.name.toLowerCase();
+    var value = attr.value || '';
     var isEventHandler = name.indexOf('on') === 0;
     var isAllowed = ALLOWED_ATTRS.indexOf(name) !== -1;
-    var isDangerousUrl = DANGEROUS_URL_PATTERN.test(attr.value || '');
-    if (isEventHandler || !isAllowed || isDangerousUrl) {
+    var isHref = (name === 'href' || name === 'xlink:href');
+    var isSafeImageHref = isHref && SAFE_IMAGE_HREF_PATTERN.test(value);
+    var isDangerousUrl = DANGEROUS_URL_PATTERN.test(value);
+    if (isEventHandler || !isAllowed || (isHref ? !isSafeImageHref : isDangerousUrl)) {
       el.removeAttribute(attr.name);
     }
   });
