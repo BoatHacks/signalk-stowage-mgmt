@@ -10,6 +10,19 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-09-10
+
+### Fixed
+
+- Floorplan background disappearing on floorplans traced over a plan photo:
+  the SVG sanitizer's allowlist omitted `<image>` and its `href`/`xlink:href`
+  attributes, stripping the embedded raster background on every render while
+  leaving the overlaid vector shapes untouched. `<image>` and a
+  `href`/`xlink:href` value are now allowed through, but only when the value
+  is an embedded raster data URI (`data:image/png|jpeg|gif|webp`) — remote
+  URLs, `javascript:`/`vbscript:`, and `data:image/svg+xml` (which can itself
+  carry script) remain blocked (#62).
+
 ## [1.1.2] - 2026-08-19
 
 ### Added
