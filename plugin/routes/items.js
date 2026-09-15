@@ -3,7 +3,7 @@ const { runInTransaction } = require('../tx')
 const { logItemEvent, logSplitEvent } = require('../itemLog')
 const { deleteItemAttachments } = require('../attachmentsStore')
 
-module.exports = function registerItemRoutes (router, getDb, getDataDir) {
+module.exports = function registerItemRoutes (router, getDb, getDataDir, recomputeStockAlerts) {
   function db () {
     const instance = getDb()
     if (!instance) throw Object.assign(new Error('database not ready'), { statusCode: 503 })
@@ -151,6 +151,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
         toLocationId: locationId || null, toLocationName: locationName(locationId), userName: userNameFrom(req)
       })
     })
+    recomputeStockAlerts()
     res.status(201).json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(id)))
   })
 
@@ -248,6 +249,11 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       // expires_at changes are deliberately not logged to item_log.
     })
 
+    // Unconditional: this handler can change actual_quantity, target_quantity,
+    // or expires_at (the last isn't logged to item_log, see above, so it needs
+    // its own trigger) — cheaper to always recompute than to track which of
+    // those three actually changed.
+    recomputeStockAlerts()
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 
@@ -375,6 +381,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       }
     })
 
+    recomputeStockAlerts()
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 
@@ -466,6 +473,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
       })
     })
 
+    recomputeStockAlerts()
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 
@@ -517,6 +525,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir) {
     // item_attachments rows cascade automatically via the foreign key; the
     // files themselves live on disk and need a separate cleanup pass.
     deleteItemAttachments(getDataDir(), item.id)
+    recomputeStockAlerts()
     res.status(204).end()
   })
 

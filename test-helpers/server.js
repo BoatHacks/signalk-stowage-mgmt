@@ -18,6 +18,7 @@ async function startTestServer (opts) {
     getDataDirPath: () => dataDir
   }
   if (opts.getSelfPath) fakeApp.getSelfPath = opts.getSelfPath
+  if (opts.handleMessage) fakeApp.handleMessage = opts.handleMessage
 
   const plugin = pluginFactory(fakeApp)
   plugin.start(opts.options || {})

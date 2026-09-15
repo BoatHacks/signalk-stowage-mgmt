@@ -1,0 +1,72 @@
+{
+  "name": "Stowage Management",
+  "description": "Restocking, expiration, and combined stores-health tiles (issue #64)",
+  "sets": [
+    {
+      "id": "stowage-stock",
+      "name": "Stowage: Stock",
+      "description": "Understocked, out-of-stock, forecasted runway, and inventory staleness",
+      "tiles": [
+        {
+          "id": "stowageStock",
+          "label": "Stock",
+          "checks": [
+            {
+              "type": "notification",
+              "path": "notifications.stowage.stock",
+              "severityMap": {
+                "normal": "green",
+                "warn": "amber",
+                "alarm": "red"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stowage-expiring",
+      "name": "Stowage: Expiring",
+      "description": "Items already expired, or expiring within the configured window",
+      "tiles": [
+        {
+          "id": "stowageExpiring",
+          "label": "Expiring",
+          "checks": [
+            {
+              "type": "notification",
+              "path": "notifications.stowage.expiring",
+              "severityMap": {
+                "normal": "green",
+                "warn": "amber",
+                "alarm": "red"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stowage-overall",
+      "name": "Stowage: Overall",
+      "description": "One tile for stock and expiring combined — worst of the two above",
+      "tiles": [
+        {
+          "id": "stowageOverall",
+          "label": "Stores",
+          "checks": [
+            {
+              "type": "notification",
+              "path": "notifications.stowage.overall",
+              "severityMap": {
+                "normal": "green",
+                "warn": "amber",
+                "alarm": "red"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

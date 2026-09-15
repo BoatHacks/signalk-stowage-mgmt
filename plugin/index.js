@@ -1,6 +1,8 @@
+const fs = require('fs')
 const path = require('path')
 const { initDb } = require('./db')
 const { jsonBodyParser } = require('./jsonBody')
+const { publishStockAlerts } = require('./stockAlerts')
 const registerLocationRoutes = require('./routes/locations')
 const registerItemRoutes = require('./routes/items')
 const registerFloorplanRoutes = require('./routes/floorplans')
@@ -10,15 +12,68 @@ const registerAttachmentRoutes = require('./routes/attachments')
 const registerBackupRoutes = require('./routes/backup')
 const registerConfigRoutes = require('./routes/config')
 
+const PLUGIN_ID = 'signalk-stowage-mgmt'
+
+// status-tiles-examples.json ships ready-made signalk-status-tiles tiles for
+// notifications.stowage.* (issue #64) — see doc/sharing-example-tile-sets.md
+// in meri-imperiumi/signalk-status-tiles for the contract this implements.
+const stockAlertsTileExamples = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'status-tiles-examples.json'), 'utf8')
+)
+
 module.exports = function (app) {
   const plugin = {}
-  plugin.id = 'signalk-stowage-mgmt'
+  plugin.id = PLUGIN_ID
   plugin.name = 'Stowage Management'
   plugin.description = 'Organize items into containers and storage spaces, and locate them on an SVG floorplan.'
 
   let db = null
   let dataDir = null
   let pluginOptions = {}
+  let stockAlertsTimer = null
+  let running = false
+  let tileExamplesProviderRegistered = false
+
+  // Read-only statusTileExamples resource provider, per
+  // doc/sharing-example-tile-sets.md. Returns {} while stopped so a
+  // disabled plugin contributes no stale entries; the providerRegistered
+  // guard keeps a stop()-then-start() (a config save) from double-registering.
+  function registerTileExamplesProvider () {
+    if (tileExamplesProviderRegistered) return
+    if (typeof app.registerResourceProvider !== 'function') {
+      app.debug(`${PLUGIN_ID}: server has no resource provider registry; status-tiles examples disabled`)
+      return
+    }
+    app.registerResourceProvider({
+      type: 'statusTileExamples',
+      methods: {
+        listResources: async () => (running ? { [PLUGIN_ID]: stockAlertsTileExamples } : {}),
+        getResource: async (id) => {
+          if (!running || id !== PLUGIN_ID) {
+            throw new Error(`No such statusTileExamples resource: ${id}`)
+          }
+          return stockAlertsTileExamples
+        },
+        setResource: async () => { throw new Error(`${PLUGIN_ID} is a read-only provider`) },
+        deleteResource: async () => { throw new Error(`${PLUGIN_ID} is a read-only provider`) }
+      }
+    })
+    tileExamplesProviderRegistered = true
+  }
+
+  // Recomputes and republishes notifications.stowage.{stock,expiring,overall}
+  // (issue #64) — called after every write that can change stock/expiration
+  // status, plus on an hourly timer below to catch pure calendar drift
+  // (a forecast's days-remaining shrinking, or an item crossing into the
+  // expiring window) that happens with no new write at all.
+  function recomputeStockAlerts () {
+    if (!db) return
+    try {
+      publishStockAlerts(app, db, pluginOptions)
+    } catch (err) {
+      app.error(err)
+    }
+  }
 
   plugin.start = function (options) {
     pluginOptions = options || {}
@@ -27,9 +82,18 @@ module.exports = function (app) {
       : path.join(__dirname, '..', 'data')
     db = initDb(dataDir)
     app.debug(`SignalK Stowage Management: database ready at ${dataDir}`)
+    recomputeStockAlerts()
+    stockAlertsTimer = setInterval(recomputeStockAlerts, 60 * 60 * 1000)
+    running = true
+    registerTileExamplesProvider()
   }
 
   plugin.stop = function () {
+    running = false
+    if (stockAlertsTimer) {
+      clearInterval(stockAlertsTimer)
+      stockAlertsTimer = null
+    }
     if (db) {
       db.close()
       db = null
@@ -71,6 +135,44 @@ module.exports = function (app) {
           enumNames: ['Placements', 'Floorplan', 'History', 'Properties', 'Attachments']
         },
         default: ['placements', 'floorplan', 'history', 'properties', 'attachments']
+      },
+      publishStockAlertsNotification: {
+        type: 'boolean',
+        title: 'Publish stock alert status to Signal K',
+        description:
+          'Publishes notifications.stowage.stock, notifications.stowage.expiring, and notifications.stowage.overall summarizing understocked/out-of-stock/expiring items and a forecasted runway, for dashboards like signalk-status-tiles to consume (issue #64).',
+        default: true
+      },
+      stockAlertsForecastWindowDays: {
+        type: 'number',
+        title: 'Consumption forecast window (days)',
+        description:
+          'Trailing window of Store Log history used to estimate each item’s consumption rate for the runway forecast below.',
+        default: 30
+      },
+      stockAlertsRunwayWarnDays: {
+        type: 'number',
+        title: 'Forecast runway warning threshold (days)',
+        description: 'An item forecasted to run out within this many days marks notifications.stowage.stock as warn.',
+        default: 7
+      },
+      stockAlertsRunwayCritDays: {
+        type: 'number',
+        title: 'Forecast runway critical threshold (days)',
+        description: 'An item forecasted to run out within this many days marks notifications.stowage.stock as alarm.',
+        default: 2
+      },
+      stockAlertsStaleDays: {
+        type: 'number',
+        title: 'Inventory staleness threshold (days)',
+        description: 'No inventory activity in this many days marks notifications.stowage.stock as warn.',
+        default: 7
+      },
+      stockAlertsExpiringWindowDays: {
+        type: 'number',
+        title: 'Expiring-soon window (days)',
+        description: 'An item with an expiration date within this many days marks notifications.stowage.expiring as warn.',
+        default: 14
       }
     }
   }
@@ -84,7 +186,7 @@ module.exports = function (app) {
     router.use(jsonBodyParser({ limit: 15 * 1024 * 1024 })) // floorplan SVGs can be a few MB
 
     registerLocationRoutes(router, () => db)
-    registerItemRoutes(router, () => db, () => dataDir)
+    registerItemRoutes(router, () => db, () => dataDir, recomputeStockAlerts)
     registerFloorplanRoutes(router, () => db)
     registerCategoryRoutes(router, () => db)
     registerItemLogRoutes(router, () => db)
