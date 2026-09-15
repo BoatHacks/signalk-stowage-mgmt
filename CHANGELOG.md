@@ -10,6 +10,28 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-15
+
+### Added
+
+- Stock/expiration health published as Signal K notifications, for
+  dashboards like [signalk-status-tiles](https://github.com/meri-imperiumi/signalk-status-tiles)
+  to consume (#64):
+  - `notifications.stowage.stock` — understocked/out-of-stock items, a
+    per-item consumption-rate runway forecast over a trailing window, and
+    whole-boat inventory staleness (no `item_log` activity in N days).
+  - `notifications.stowage.expiring` — items already past their
+    expiration date, or expiring within a configurable window.
+  - `notifications.stowage.overall` — worst of the two above, one tile
+    for the whole picture.
+  - Six new plugin config options controlling the underlying thresholds
+    (forecast window, runway warn/crit days, staleness days, expiring
+    window) and an opt-out switch for the notifications entirely.
+  - Ships `status-tiles-examples.json` and a read-only
+    `statusTileExamples` resource provider, so a signalk-status-tiles user
+    can add ready-made tiles for these three paths with one tap each,
+    rather than hand-authoring config.
+
 ## [1.1.3] - 2026-09-10
 
 ### Fixed

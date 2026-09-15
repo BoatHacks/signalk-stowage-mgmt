@@ -83,6 +83,16 @@ Set in the plugin's config page in the SignalK Admin UI
   leaves the page's header (name, photo, quantity). When Floorplan is
   hidden, Placements shows a "Locate on floorplan" button instead.
 
+- **Publish stock alert status to Signal K** (on by default). Publishes
+  the three `notifications.stowage.*` paths described in "Signal K
+  paths" below. Turn off to keep stowage data entirely out of the SK
+  bus/alarm system.
+
+- **Consumption forecast window / runway warning / runway critical /
+  inventory staleness / expiring-soon window** (days; default 30 / 7 / 2
+  / 7 / 14). Thresholds behind the notifications below — see that
+  section for what each one controls.
+
 ## Usage
 
 **Header controls (present on every tab):** a search box (see "Search"
@@ -516,6 +526,35 @@ when the item itself is deleted.
 Indexes exist on `locations.parent_id`, `locations.floorplan_id`,
 `items.location_id`, `item_categories.category_id`, and
 `item_attachments.item_id`.
+
+## Signal K paths
+
+Three notifications, recomputed after every write that can change stock or
+expiration status, plus an hourly timer to catch pure calendar drift (a
+forecast's days-remaining shrinking, or an item crossing into the expiring
+window with no new write at all). Each is `{state, method: [], message}`,
+`state` one of `normal`/`warn`/`alarm`. Disable entirely via "Publish stock
+alert status to Signal K" above.
+
+- **`notifications.stowage.stock`** — `alarm` if any item is out of stock
+  (`actual_quantity <= 0`), or forecasted to run out within the runway
+  critical threshold; `warn` if any item is understocked
+  (`actual_quantity < target_quantity`), forecasted to run low within the
+  runway warning threshold, or there's been no inventory activity
+  (`item_log`) in the staleness threshold. The forecast is a per-item
+  consumption rate over the trailing forecast window (same idea as the
+  Store Log tab's Predicted Runway column, requiring 3+ consumption events
+  in the window before trusting a rate).
+- **`notifications.stowage.expiring`** — `alarm` if any item is already
+  past its expiration date; `warn` if any item expires within the
+  expiring-soon window and none are already expired.
+- **`notifications.stowage.overall`** — the worse of the two states above,
+  one path for a single glance at stores health.
+
+For [signalk-status-tiles](https://github.com/meri-imperiumi/signalk-status-tiles)
+users: the plugin ships ready-made tiles for all three paths via a
+`statusTileExamples` resource provider — open the tiles screen's "+"
+button to add them.
 
 ## API (under `/plugins/signalk-stowage-mgmt`)
 
