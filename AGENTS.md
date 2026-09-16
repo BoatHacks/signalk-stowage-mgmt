@@ -39,7 +39,8 @@ scaffolded as `signalk-quartermaster`.
   data (v0.8.13); collapsible inventory-tree nodes at any depth (v0.8.12,
   v0.8.14).
 - JSON export/import (v0.8.9): full backup/restore of categories, locations,
-  and items; import is a full replace, not a merge.
+  and items; import defaulted to a full replace, not a merge, until a
+  `mode: "merge"` option was added (#26, unreleased).
 - New "Touch" view on the Overview tab (v0.9.0): always-visible +/- chips
   sized for MFD touchscreens, plus a dynamic coarse/fine +/- scale option
   (v0.9.3) for items with large quantities.

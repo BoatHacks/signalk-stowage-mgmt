@@ -1737,7 +1737,7 @@
           "Backup"
         ],
         "summary": "Restore from a full inventory snapshot",
-        "description": "Replaces categories/locations/items entirely with the given snapshot (a restore, not a merge). Floorplans, attachment files, and Store Log history are never touched. A location's floorplan mapping only survives if that floorplan_id still exists in the target database; otherwise it's dropped (not a fatal error) and counted in dropped_floorplan_mappings. Original ids are preserved.",
+        "description": "Restores or merges a snapshot (same shape GET /export returns), controlled by the payload's optional `mode` field (default \"replace\"). `mode: \"replace\"` replaces categories/locations/items entirely with the given snapshot (a restore, not a merge). `mode: \"merge\"` (#26) instead adds the snapshot's rows alongside what's already there: an id from the payload is kept unless it collides with an existing row, in which case a new one is generated and every reference to it (item.location_id, item.category_ids, placement.location_id, location.parent_id) is remapped to match; a category is matched to an existing one by exact name and merged into it rather than duplicated; a location name colliding with an existing sibling under the same parent is disambiguated with a \" (2)\", \" (3)\", ... suffix; and a parent_id/location_id may reference a row already in the target database instead of one included in the payload, for importing new items/locations into an existing tree. In both modes: floorplans (including any in the snapshot) are never created or modified by import, nor are attachment files or Store Log history; a location's floorplan mapping only survives if that floorplan_id (or, failing that, a floorplan with matching svg_content) exists in the target database, otherwise it's dropped and counted in dropped_floorplan_mappings.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1756,8 +1756,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "replace",
+                        "merge"
+                      ]
+                    },
                     "restored": {
                       "type": "object",
+                      "description": "Present when mode is \"replace\".",
                       "properties": {
                         "categories": {
                           "type": "integer"
@@ -1770,7 +1778,33 @@
                         }
                       }
                     },
+                    "added": {
+                      "type": "object",
+                      "description": "Present when mode is \"merge\".",
+                      "properties": {
+                        "categories": {
+                          "type": "integer"
+                        },
+                        "locations": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "categories_matched_existing": {
+                      "type": "integer",
+                      "description": "merge mode only: imported categories matched to an existing one by name instead of being created."
+                    },
+                    "locations_renamed": {
+                      "type": "integer",
+                      "description": "merge mode only: imported locations renamed with a \" (2)\", \" (3)\", ... suffix to avoid a name clash with an existing sibling."
+                    },
                     "dropped_floorplan_mappings": {
+                      "type": "integer"
+                    },
+                    "remapped_floorplan_mappings": {
                       "type": "integer"
                     }
                   }
@@ -2159,6 +2193,14 @@
             "items": {
               "type": "object"
             }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "replace",
+              "merge"
+            ],
+            "description": "Import-only, ignored by /export. Defaults to \"replace\" (full restore) when omitted; \"merge\" adds the payload's rows alongside existing data instead. See POST /import's description."
           }
         }
       }
