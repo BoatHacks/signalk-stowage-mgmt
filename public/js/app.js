@@ -444,10 +444,23 @@ function App() {
         URL.revokeObjectURL(url);
       }).catch(function (err) { showToast(err.message); });
     },
-    importSnapshot: function (payload) {
-      return act(function () { return api.importSnapshot(payload); }).then(function (result) {
-        var message = 'Restored ' + result.restored.items + ' items, ' + result.restored.locations +
-          ' locations, ' + result.restored.categories + ' categories.';
+    importSnapshot: function (payload, mode) {
+      return act(function () { return api.importSnapshot(payload, mode); }).then(function (result) {
+        var message;
+        if (result.mode === 'merge') {
+          message = 'Added ' + result.added.items + ' items, ' + result.added.locations +
+            ' locations, ' + result.added.categories + ' categories.';
+          if (result.categories_matched_existing) {
+            message += ' ' + result.categories_matched_existing + ' imported categor' +
+              (result.categories_matched_existing === 1 ? 'y' : 'ies') + ' matched an existing one by name.';
+          }
+          if (result.locations_renamed) {
+            message += ' ' + result.locations_renamed + ' location(s) renamed to avoid a name clash.';
+          }
+        } else {
+          message = 'Restored ' + result.restored.items + ' items, ' + result.restored.locations +
+            ' locations, ' + result.restored.categories + ' categories.';
+        }
         if (result.remapped_floorplan_mappings) {
           message += ' ' + result.remapped_floorplan_mappings + ' floorplan mapping(s) automatically matched ' +
             'to a floorplan already here.';

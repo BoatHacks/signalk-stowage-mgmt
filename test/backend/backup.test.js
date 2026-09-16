@@ -223,6 +223,155 @@ test('import: rejects missing/wrong schema_version and malformed payloads withou
   assert.equal(items[0].name, 'Untouched')
 })
 
+test('import: mode "merge" adds imported rows alongside existing data instead of replacing it', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const existing = await (await server.post('/items', { name: 'Pre-existing item' })).json()
+  const snapshot = {
+    schema_version: 1,
+    mode: 'merge',
+    categories: [],
+    locations: [],
+    items: [{ id: 'imported-1', name: 'Imported Item', actual_quantity: 1 }]
+  }
+
+  const res = await server.post('/import', snapshot)
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.mode, 'merge')
+  assert.deepEqual(body.added, { categories: 0, locations: 0, items: 1 })
+
+  const items = await (await server.get('/items')).json()
+  assert.equal(items.length, 2)
+  assert.ok(items.find((i) => i.id === existing.id && i.name === 'Pre-existing item'))
+  assert.ok(items.find((i) => i.id === 'imported-1' && i.name === 'Imported Item'))
+})
+
+test('import: merge keeps an imported id when free, but regenerates it (remapping references) on collision', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const existingLoc = await (await server.post('/locations', { name: 'Existing Space', type: 'storage_space' })).json()
+
+  const snapshot = {
+    schema_version: 1,
+    mode: 'merge',
+    categories: [],
+    locations: [
+      // Collides with the existing location's id — must be regenerated, and
+      // the item below (which references it) must follow the remap.
+      { id: existingLoc.id, name: 'Imported Space', type: 'storage_space', parent_id: null }
+    ],
+    items: [
+      // A fresh id — must be kept as-is.
+      { id: 'my-own-id', name: 'Widget', actual_quantity: 2, location_id: existingLoc.id }
+    ]
+  }
+
+  const res = await server.post('/import', snapshot)
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.added.locations, 1)
+
+  const locations = await (await server.get('/locations')).json()
+  assert.equal(locations.length, 2)
+  const importedSpace = locations.find((l) => l.name === 'Imported Space')
+  assert.ok(importedSpace)
+  assert.notEqual(importedSpace.id, existingLoc.id) // regenerated, not overwriting the existing row
+
+  const items = await (await server.get('/items')).json()
+  const widget = items.find((i) => i.id === 'my-own-id')
+  assert.ok(widget, 'item id should be kept as-is when free')
+  assert.equal(widget.location_id, importedSpace.id, 'item.location_id should follow the remap')
+})
+
+test('import: merge matches an imported category to an existing one by name instead of duplicating it', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const existingCat = await (await server.post('/categories', { name: 'Electrical' })).json()
+  const before = await (await server.get('/categories')).json()
+
+  const snapshot = {
+    schema_version: 1,
+    mode: 'merge',
+    categories: [{ id: 'other-instance-id', name: 'Electrical' }],
+    locations: [],
+    items: [{ id: 'i1', name: 'Fuse', actual_quantity: 1, category_ids: ['other-instance-id'] }]
+  }
+
+  const res = await server.post('/import', snapshot)
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.added.categories, 0)
+  assert.equal(body.categories_matched_existing, 1)
+
+  const categories = await (await server.get('/categories')).json()
+  assert.equal(categories.length, before.length) // no duplicate created
+
+  const item = await (await server.get('/items/i1')).json()
+  assert.deepEqual(item.categories.map((c) => c.id), [existingCat.id])
+})
+
+test('import: merge disambiguates a location name colliding with an existing sibling', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  await server.post('/locations', { name: 'Aft Cabin', type: 'storage_space' })
+
+  const snapshot = {
+    schema_version: 1,
+    mode: 'merge',
+    categories: [],
+    locations: [{ id: 'new-loc', name: 'Aft Cabin', type: 'storage_space', parent_id: null }],
+    items: []
+  }
+
+  const res = await server.post('/import', snapshot)
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.equal(body.locations_renamed, 1)
+
+  const locations = await (await server.get('/locations')).json()
+  assert.equal(locations.length, 2)
+  assert.ok(locations.find((l) => l.name === 'Aft Cabin'))
+  assert.ok(locations.find((l) => l.name === 'Aft Cabin (2)'))
+})
+
+test('import: merge can drop new locations/items into an existing tree by referencing an id outside the payload', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const parent = await (await server.post('/locations', { name: 'Aft Cabin', type: 'storage_space' })).json()
+
+  const snapshot = {
+    schema_version: 1,
+    mode: 'merge',
+    categories: [],
+    // A hand-built import: only the new child location is included, its
+    // parent_id references a location that already exists in the target
+    // rather than resending the whole ancestor chain.
+    locations: [{ id: 'new-box', name: 'New Box', type: 'container', parent_id: parent.id }],
+    items: [{ id: 'new-item', name: 'Spare Fuse', actual_quantity: 1, location_id: 'new-box' }]
+  }
+
+  const res = await server.post('/import', snapshot)
+  assert.equal(res.status, 200)
+
+  const locations = await (await server.get('/locations')).json()
+  const box = locations.find((l) => l.id === 'new-box')
+  assert.ok(box)
+  assert.equal(box.parent_id, parent.id)
+
+  const items = await (await server.get('/items')).json()
+  const item = items.find((i) => i.id === 'new-item')
+  assert.equal(item.location_id, 'new-box')
+})
+
+test('import: rejects an unrecognized mode value', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const res = await server.post('/import', { schema_version: 1, mode: 'wipe-everything', categories: [], locations: [], items: [] })
+  assert.equal(res.status, 400)
+  assert.match((await res.json()).error, /unsupported import mode/)
+})
+
 test('import: rejects a payload whose locations contain a parent_id cycle, without touching data', async (t) => {
   const server = await startTestServer()
   t.after(() => server.close())

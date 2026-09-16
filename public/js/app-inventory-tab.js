@@ -7,10 +7,17 @@ export function InventoryTab() {
   var app = useApp();
   var topLevel = childLocations(app.data, null).filter(function (l) { return l.type === 'storage_space'; });
   var importFileRef = useRef(null);
+  var importModeRef = useRef('replace');
   var filter = useMemo(function () { return filterQuery(app.data, app.searchQuery); }, [app.data, app.searchQuery]);
+
+  function startImport (mode) {
+    importModeRef.current = mode;
+    importFileRef.current && importFileRef.current.click();
+  }
 
   function handleImportFile (e) {
     var file = e.target.files && e.target.files[0];
+    var mode = importModeRef.current;
     e.target.value = ''; // allow re-selecting the same file next time
     if (!file) return;
     file.text().then(function (text) {
@@ -23,12 +30,17 @@ export function InventoryTab() {
       }
       var itemCount = Array.isArray(payload.items) ? payload.items.length : 0;
       var locationCount = Array.isArray(payload.locations) ? payload.locations.length : 0;
-      var warning = 'Importing will DELETE all current items, storage spaces, containers, and ' +
-        'categories, replacing them with this file\u2019s contents (' + itemCount + ' items, ' +
-        locationCount + ' locations). Floorplans and attachment files are not affected. ' +
-        'This can\u2019t be undone \u2014 consider exporting a fresh backup first if you haven\u2019t already. Continue?';
+      var warning = mode === 'merge'
+        ? 'Merging will ADD this file\u2019s contents (' + itemCount + ' items, ' + locationCount +
+          ' locations) alongside your current inventory, without deleting anything. Categories are ' +
+          'matched to existing ones by name; a storage space/container with a name that already exists ' +
+          'at the same level is renamed to avoid a clash. Continue?'
+        : 'Importing will DELETE all current items, storage spaces, containers, and ' +
+          'categories, replacing them with this file\u2019s contents (' + itemCount + ' items, ' +
+          locationCount + ' locations). Floorplans and attachment files are not affected. ' +
+          'This can\u2019t be undone \u2014 consider exporting a fresh backup first if you haven\u2019t already. Continue?';
       if (!confirm(warning)) return;
-      app.importSnapshot(payload).catch(function () {});
+      app.importSnapshot(payload, mode).catch(function () {});
     });
   }
 
@@ -38,7 +50,8 @@ export function InventoryTab() {
         <${IconBtn} icon="add-cabinet" title="Add storage space" onClick=${function () { app.addStorageSpace(); }} />
         <button type="button" onClick=${function () { app.openExportModal('inventory'); }}>Export as Markdown</button>
         <button type="button" onClick=${function () { app.exportSnapshot().catch(function () {}); }}>Export to JSON</button>
-        <button type="button" onClick=${function () { importFileRef.current && importFileRef.current.click(); }}>Import from JSON</button>
+        <button type="button" onClick=${function () { startImport('replace'); }}>Import from JSON</button>
+        <button type="button" onClick=${function () { startImport('merge'); }}>Merge from JSON</button>
         <input ref=${importFileRef} type="file" accept="application/json,.json" hidden onChange=${handleImportFile} />
         <button type="button" onClick=${app.openPrintLabelsModal}>Print Labels</button>
         <button type="button" onClick=${app.toggleCollapseAll}>

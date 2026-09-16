@@ -95,7 +95,7 @@ export const api = {
   attachmentUrl: function (itemId, attachmentId) { return BASE + '/items/' + itemId + '/attachments/' + attachmentId; },
   exportSnapshot: function () { return get('/export'); },
   getConfig: function () { return get('/webapp-config'); },
-  importSnapshot: function (payload) { return post('/import', payload); },
+  importSnapshot: function (payload, mode) { return post('/import', mode ? { ...payload, mode: mode } : payload); },
 
   // Categories
   listCategories: function () { return get('/categories'); },

@@ -147,10 +147,15 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   include categories, notes, expiration dates, photos, or attachments;
   use "Export to JSON" for a complete, lossless snapshot instead.
 - "Export to JSON" downloads a full snapshot (see the API table below for
-  exactly what's in it); "Import from JSON" **replaces** the current
+  exactly what's in it). "Import from JSON" **replaces** the current
   inventory with a previously exported file, after a confirmation dialog —
   it's a restore, not a merge, so export a fresh backup first if you're
-  not sure.
+  not sure. "Merge from JSON" instead **adds** the file's contents
+  alongside what's already there, without deleting anything — useful for
+  combining inventories from two sources, or bulk-adding via a
+  hand-edited/externally-generated JSON file. See `POST /import`'s
+  `mode` field in the API table below for the id/name-collision policy it
+  applies.
 - "Print Labels" (toolbar) opens a page to select any storage space or
   container (any depth) — or "Select All"/"Select None" to toggle every
   one at once — and print a QR-coded label for each. Scanning one opens
@@ -672,7 +677,7 @@ no versioning/deprecation process beyond this is planned for now.)
 | Method & path | Purpose |
 |---|---|
 | `GET /export` | Full inventory snapshot as JSON: categories, locations (with hierarchy and floorplan mappings), items (with their categories, placements, and attachment *metadata*), and the `id`/`name`/`svg_content` of every floorplan actually referenced by a location mapping. Deliberately excludes attachment file contents and Store Log history — see below |
-| `POST /import` | **Replaces** categories/locations/items entirely with the given snapshot (same shape `GET /export` returns) — a restore, not a merge. Floorplans (including any in the snapshot) are never created or modified by import, nor are attachment files or Store Log history. Returns `{ restored: { categories, locations, items }, dropped_floorplan_mappings, remapped_floorplan_mappings }` |
+| `POST /import` | Restores or merges the given snapshot (same shape `GET /export` returns), controlled by an optional `mode` field: `"replace"` (default) or `"merge"`. Floorplans (including any in the snapshot) are never created or modified by import, nor are attachment files or Store Log history. Returns `{ mode, restored: { categories, locations, items } }` (`mode: "replace"`) or `{ mode, added: { categories, locations, items }, categories_matched_existing, locations_renamed }` (`mode: "merge"`), plus `dropped_floorplan_mappings`/`remapped_floorplan_mappings` in both cases |
 
 Import never creates or overwrites a floorplan itself — it only tries to
 reconnect each location's floorplan *mapping* (`floorplan_id` +
@@ -685,11 +690,31 @@ import; the mapping finds its way back to the newly-uploaded floorplan's
 id even though the id itself differs from the export, and this is counted
 in `remapped_floorplan_mappings`). A mapping that matches neither way is
 silently dropped (not a fatal error) and counted in
-`dropped_floorplan_mappings`. Original ids are preserved on restore, so
-anything depending on stable item/location ids (see "Known external
-consumers" above) keeps working after a restore. `/import` is a full
-replace of everything in scope — there's currently no merge/append mode
-(see issue #26).
+`dropped_floorplan_mappings`.
+
+`mode: "replace"` is a full replace of everything in scope — original ids
+are preserved, so anything depending on stable item/location ids (see
+"Known external consumers" above) keeps working after a restore.
+
+`mode: "merge"` (#26) instead adds the snapshot's rows alongside whatever
+is already in the target database:
+- An id from the snapshot is kept as-is unless it collides with a row
+  already in the target, in which case a fresh one is generated and every
+  reference to the old id (`item.location_id`, `item.category_ids`,
+  `placement.location_id`, `location.parent_id`) is remapped to match —
+  ids are *not* unconditionally regenerated, so a hand-built import (e.g.
+  from an external floorplan-SVG generator) can use ids that intentionally
+  match `svg_element_id` mappings or a previous export.
+- A category is matched to an existing one by exact name and merged into
+  it rather than duplicated (categories are globally unique by name — see
+  `POST /categories`'s 409).
+- A location name colliding with an existing sibling under the same parent
+  is disambiguated with a `" (2)"`, `" (3)"`, ... suffix rather than
+  silently creating a same-named sibling.
+- A location's `parent_id` (and an item's or placement's `location_id`)
+  may reference a row already in the target database instead of one
+  included in the snapshot, so a hand-built import can add new
+  items/locations into an existing tree without resending its ancestors.
 
 **Config**
 

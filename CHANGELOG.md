@@ -10,6 +10,18 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+### Added
+
+- `POST /import` merge/append mode (#26): pass `mode: "merge"` to add a
+  snapshot's rows alongside existing data instead of replacing it. A
+  colliding id is regenerated (with every reference remapped to match); a
+  category is matched to an existing one by name instead of duplicated; a
+  location name colliding with an existing sibling gets a " (2)", " (3)",
+  ... suffix; and a location/item/placement can reference a row already in
+  the target database instead of one included in the snapshot. "Import
+  from JSON" in the Inventory tab is joined by a new "Merge from JSON"
+  button.
+
 ## [1.2.0] - 2026-09-15
 
 ### Added
