@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [1.3.0] - 2026-09-17
+
+### Added
+
+- Bulk item actions in the Inventory tab (#71): move, delete, and add
+  category across a multi-selection, gated by the existing Edit mode
+  toggle — selection checkboxes on item chips only appear while Edit mode
+  is on. Loops the existing single-item endpoints client-side; no new
+  backend routes. Bulk quantity edit is intentionally not included.
+
 ## [1.2.1] - 2026-09-16
 
 ### Added
