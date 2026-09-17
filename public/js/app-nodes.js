@@ -13,6 +13,8 @@ export function ItemChip(props) {
 
   var split = isSplit(item);
   var isPlacementRow = item.placementId !== undefined && item.placementId !== null;
+  var chipKey = item.id + ':' + (item.placementId || '');
+  var isSelected = app.selectedChipKeys.has(chipKey);
 
   var thumb = item.thumbnail
     ? html`<img class="item-thumb" src=${item.thumbnail} alt="" />`
@@ -49,6 +51,12 @@ export function ItemChip(props) {
          onDragEnd=${function () { setDragging(false); app.setDragActive(false); app.setDragEntityType(null); }}>
       <div class="item-row-main">
         <span>
+          ${app.editMode ? html`
+            <input type="checkbox" class="item-select-checkbox" checked=${isSelected}
+                   title="Select for bulk action" aria-label="Select for bulk action"
+                   onClick=${function (e) { e.stopPropagation(); }}
+                   onChange=${function () { app.toggleChipSelection(chipKey); }} />
+          ` : null}
           ${thumb}<span class="type-icon"><${Icon} name="dot" title="Item" /></span><span class="item-name-link" onClick=${function (e) { e.stopPropagation(); app.selectItem(item.id); }}>${item.name}</span>
           ${isPlacementRow
             ? html`<${QuantityEditor} item=${item} placementId=${item.placementId} className="qty split-qty" />`

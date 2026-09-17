@@ -9,13 +9,13 @@ import { CategoriesTab } from './app-categories-tab.js';
 import { OverviewTab } from './app-overview-tab.js';
 import { StockAlertsTab } from './app-stock-alerts-tab.js';
 import { StoreLogTab, buildStoreLogMarkdown } from './app-storelog-tab.js';
-import { ItemPropertiesModal, CategoryModal, ExportModal } from './app-item-modals.js';
+import { ItemPropertiesModal, CategoryModal, BulkCategoryModal, ExportModal } from './app-item-modals.js';
 import { ItemDetailView } from './app-item-detail-view.js';
 import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
 import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
-import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds } from './helpers.js';
+import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 import { parseLocationParam, parseItemParam } from './qr-label.js';
 import { hashForState, parseHash } from './hash-router.js';
@@ -62,6 +62,10 @@ function App() {
   var editMode = editModeState[0], setEditMode = editModeState[1];
   var expandedChipKeyState = useState(null);
   var expandedChipKey = expandedChipKeyState[0], setExpandedChipKey = expandedChipKeyState[1];
+  var selectedChipKeysState = useState(function () { return new Set(); });
+  var selectedChipKeys = selectedChipKeysState[0], setSelectedChipKeys = selectedChipKeysState[1];
+  var bulkCategoryModalOpenState = useState(false);
+  var bulkActionPendingState = useState(false);
   var collapsedLocationIdsState = useState(function () { return new Set(); });
   var collapsedLocationIds = collapsedLocationIdsState[0], setCollapsedLocationIds = collapsedLocationIdsState[1];
   var floorplanModeState = useState('display');
@@ -255,6 +259,38 @@ function App() {
       .catch(function (err) { showToast(err.message); throw err; });
   }
 
+  // ---- bulk action helpers: selected chip keys are 'itemId' or 'itemId:placementId' ----
+  function keysToPairs(keys) {
+    return Array.from(keys).map(function (key) {
+      var idx = key.indexOf(':');
+      return idx === -1 ? { itemId: key, placementId: null } : { itemId: key.slice(0, idx), placementId: key.slice(idx + 1) };
+    });
+  }
+  function keysToItemIds(keys) {
+    var seen = {};
+    var ids = [];
+    keysToPairs(keys).forEach(function (p) {
+      if (seen[p.itemId]) return;
+      seen[p.itemId] = true;
+      ids.push(p.itemId);
+    });
+    return ids;
+  }
+  // Runs after a Promise.allSettled bulk action: refreshes once, clears the
+  // selection, and reports partial failures instead of silently dropping
+  // them (a bulk op over N items can plausibly have a few fail, e.g. an
+  // item deleted by someone else mid-batch).
+  function finishBulkAction(results, pastTense, verb) {
+    bulkActionPendingState[1](false);
+    var failed = results.filter(function (r) { return r.status === 'rejected'; }).length;
+    var succeeded = results.length - failed;
+    return refreshData().then(function () {
+      setSelectedChipKeys(new Set());
+      if (failed) showToast(pastTense + ' ' + succeeded + '/' + results.length + ' (' + failed + ' failed to ' + verb + ').');
+      else showToast(pastTense + ' ' + succeeded + '.');
+    });
+  }
+
   var ctx = {
     data: data,
     loaded: loaded,
@@ -269,9 +305,49 @@ function App() {
     dragEntityType: dragEntityType,
     setDragEntityType: setDragEntityType,
     editMode: editMode,
-    toggleEditMode: function () { setEditMode(!editMode); setExpandedChipKey(null); },
+    toggleEditMode: function () { setEditMode(!editMode); setExpandedChipKey(null); setSelectedChipKeys(new Set()); },
     expandedChipKey: expandedChipKey,
     toggleExpandedChip: function (key) { setExpandedChipKey(expandedChipKey === key ? null : key); },
+
+    // ---- bulk selection (Inventory tab, item chips only, edit mode only) ----
+    selectedChipKeys: selectedChipKeys,
+    toggleChipSelection: function (key) {
+      setSelectedChipKeys(function (prev) {
+        var next = new Set(prev);
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+      });
+    },
+    clearSelection: function () { setSelectedChipKeys(new Set()); },
+    bulkActionPending: bulkActionPendingState[0],
+    bulkCategoryModalOpen: bulkCategoryModalOpenState[0],
+    openBulkCategoryModal: function () { bulkCategoryModalOpenState[1](true); },
+    closeBulkCategoryModal: function () { bulkCategoryModalOpenState[1](false); },
+    bulkMoveSelectionTo: function (locationId) {
+      var pairs = keysToPairs(selectedChipKeys);
+      bulkActionPendingState[1](true);
+      return Promise.allSettled(pairs.map(function (p) {
+        return p.placementId ? api.movePlacement(p.itemId, p.placementId, locationId) : api.moveItem(p.itemId, locationId);
+      })).then(function (results) { return finishBulkAction(results, 'Moved', 'move'); });
+    },
+    bulkDeleteSelection: function () {
+      var itemIds = keysToItemIds(selectedChipKeys);
+      var anySplit = itemIds.some(function (id) {
+        var item = data.items.find(function (i) { return i.id === id; });
+        return item && isSplit(item);
+      });
+      var warning = anySplit ? ' Some of these items are split across multiple locations — deleting them removes all placements.' : '';
+      if (!confirm('Really delete ' + itemIds.length + ' item' + (itemIds.length === 1 ? '' : 's') + '?' + warning)) return Promise.resolve();
+      bulkActionPendingState[1](true);
+      return Promise.allSettled(itemIds.map(function (id) { return api.deleteItem(id); }))
+        .then(function (results) { return finishBulkAction(results, 'Deleted', 'delete'); });
+    },
+    bulkAddCategoryToSelection: function (categoryId) {
+      var itemIds = keysToItemIds(selectedChipKeys);
+      bulkActionPendingState[1](true);
+      return Promise.allSettled(itemIds.map(function (id) { return api.addItemCategory(id, categoryId); }))
+        .then(function (results) { return finishBulkAction(results, 'Categorized', 'categorize'); });
+    },
     collapsedLocationIds: collapsedLocationIds,
     toggleLocationCollapse: function (id) {
       setCollapsedLocationIds(function (prev) {
@@ -552,6 +628,7 @@ function App() {
       <${ItemPropertiesModal} />
       <${PhotoModal} />
       <${CategoryModal} />
+      <${BulkCategoryModal} />
       <${LocationAssignModal} />
       <${MoveModal} />
       <${SplitModal} />

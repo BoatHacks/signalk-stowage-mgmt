@@ -58,6 +58,26 @@ export function InventoryTab() {
           ${app.allCollapsed() ? 'Expand All' : 'Collapse All'}
         </button>
       </div>
+      ${app.editMode && app.selectedChipKeys.size ? html`
+        <div class="bulk-toolbar">
+          <span class="bulk-toolbar-count">${app.selectedChipKeys.size} selected</span>
+          <button type="button" disabled=${app.bulkActionPending}
+                  onClick=${function () { app.openMoveModal('bulk-items', { id: 'bulk-move', name: app.selectedChipKeys.size + ' items' }); }}>
+            Move
+          </button>
+          <button type="button" disabled=${app.bulkActionPending} onClick=${app.openBulkCategoryModal}>
+            Add category
+          </button>
+          <button type="button" class="danger" disabled=${app.bulkActionPending}
+                  title="Delete selected items"
+                  onClick=${function () { app.bulkDeleteSelection().catch(function () {}); }}>
+            Delete
+          </button>
+          <button type="button" disabled=${app.bulkActionPending} onClick=${app.clearSelection}>
+            Clear selection
+          </button>
+        </div>
+      ` : null}
       <div class="tree">
         ${!topLevel.length ? html`<p class="hint">No storage spaces created yet.</p>` : null}
         ${filter.locationIds && !filter.locationIds.size ? html`<p class="hint">No matches for "${app.searchQuery}".</p>` : null}

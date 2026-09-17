@@ -213,6 +213,23 @@ header h1 { margin: 0; font-size: 18px; font-weight: 600; }
 }
 .toolbar button.active:hover { background: var(--accent-hover); }
 
+.bulk-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-strong);
+  flex-wrap: wrap;
+}
+.bulk-toolbar-count { font-size: 13px; font-weight: 600; color: var(--text-muted-strong); }
+.bulk-toolbar button.danger { color: var(--danger); border-color: var(--danger-border); }
+.bulk-toolbar button.danger:hover { background: var(--danger-bg); }
+
+.item-select-checkbox { margin-right: 8px; cursor: pointer; }
+
 .floorplan-name-label {
   font-size: 13px;
   font-weight: 600;

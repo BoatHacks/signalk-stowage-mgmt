@@ -280,6 +280,57 @@ export function CategoryModal() {
   `;
 }
 
+// ---------- bulk category assignment modal (Inventory tab bulk actions) ----------
+
+// Unlike CategoryModal, this only adds a category to every selected item —
+// no toggle/remove, since the selected items can already have differing
+// category sets and there's no single "assigned" state to show per chip.
+export function BulkCategoryModal() {
+  var app = useApp();
+  var newNameState = useState('');
+  var newName = newNameState[0], setNewName = newNameState[1];
+
+  if (!app.bulkCategoryModalOpen) return null;
+  var count = app.selectedChipKeys.size;
+
+  function createCategory() {
+    var name = newName.trim();
+    if (!name) return;
+    app.createCategory(name).then(function () { setNewName(''); }).catch(function () {});
+  }
+
+  function pick(categoryId) {
+    app.bulkAddCategoryToSelection(categoryId).then(function () { app.closeBulkCategoryModal(); }).catch(function () {});
+  }
+
+  return html`
+    <div class="modal-overlay" onClick=${function (e) { if (e.target === e.currentTarget) app.closeBulkCategoryModal(); }}>
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Add category to ${count} item${count === 1 ? '' : 's'}</h2>
+          <button class="modal-close" aria-label="Close" onClick=${app.closeBulkCategoryModal}>×</button>
+        </div>
+        <p class="hint">Click a category to add it to every selected item.</p>
+        <div class="category-chip-list">
+          ${!app.data.categories.length ? html`<span class="category-chip-empty">No categories exist yet. Create one below.</span>` : null}
+          ${app.data.categories.map(function (cat) {
+            return html`
+              <button type="button" key=${cat.id} class="category-chip" disabled=${app.bulkActionPending}
+                      onClick=${function () { pick(cat.id); }}><span class="type-icon"><${Icon} name="tag" title="Category" /></span>${cat.name}</button>
+            `;
+          })}
+        </div>
+        <div class="modal-footer">
+          <input type="text" placeholder="New category name" value=${newName}
+                 onInput=${function (e) { setNewName(e.target.value); }}
+                 onKeyDown=${function (e) { if (e.key === 'Enter') createCategory(); }} />
+          <${IconBtn} icon="add-tag" title="Create new category" onClick=${createCategory} />
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // ---------- export as markdown modal ----------
 
 export function ExportModal() {

@@ -203,6 +203,10 @@ export function MoveModal() {
   }
 
   function performMove(targetId, targetName) {
+    if (move.type === 'bulk-items') {
+      app.bulkMoveSelectionTo(targetId).then(function () { app.closeMoveModal(); }).catch(function () {});
+      return;
+    }
     var action;
     if (move.type === 'item') action = app.moveItemTo(move.entity.id, targetId);
     else if (move.type === 'placement') action = app.movePlacementTo(move.entity.id, move.entity.placementId, targetId);
@@ -240,21 +244,23 @@ export function MoveModal() {
     <div class="modal-overlay" onClick=${function (e) { if (e.target === e.currentTarget) app.closeMoveModal(); }}>
       <div class="modal modal-wide">
         <div class="modal-header">
-          <h2>Move "${move.entity.name}"</h2>
+          <h2>Move ${move.type === 'bulk-items' ? move.entity.name : '"' + move.entity.name + '"'}</h2>
           <button class="modal-close" aria-label="Close" onClick=${app.closeMoveModal}>×</button>
         </div>
-        <p class="hint">Drag the chip onto a storage space below, or click a storage space (hover first to see its containers).</p>
+        <p class="hint">${move.type === 'bulk-items' ? 'Click a storage space below (hover first to see its containers).' : 'Drag the chip onto a storage space below, or click a storage space (hover first to see its containers).'}</p>
 
-        <div class="move-modal-chip-row">
-          <span class="move-drag-chip" draggable="true"
-                onDragStart=${function (e) {
-                  e.dataTransfer.effectAllowed = 'move';
-                  e.dataTransfer.setData('text/plain', move.entity.id);
-                  e.dataTransfer.setData('application/x-drag-type', move.type);
-                }}>
-            <span>${move.entity.name}</span>
-          </span>
-        </div>
+        ${move.type !== 'bulk-items' ? html`
+          <div class="move-modal-chip-row">
+            <span class="move-drag-chip" draggable="true"
+                  onDragStart=${function (e) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', move.entity.id);
+                    e.dataTransfer.setData('application/x-drag-type', move.type);
+                  }}>
+              <span>${move.entity.name}</span>
+            </span>
+          </div>
+        ` : null}
 
         ${floorplan ? html`
           <${FloorplanSvg} svgContent=${floorplan.svg_content} className="floorplan-container move-modal-floorplan"
