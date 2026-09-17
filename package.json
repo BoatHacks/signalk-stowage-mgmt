@@ -12,7 +12,8 @@
     "displayName": "Stowage Management",
     "appIcon": "./assets/icons/icon-512.png",
     "recommends": [
-      "signalk-maintenance-tracker"
+      "signalk-maintenance-tracker",
+      "@meri-imperiumi/signalk-status-tiles"
     ],
     "screenshots": [
       "./docs/screenshots/inventory.png",
