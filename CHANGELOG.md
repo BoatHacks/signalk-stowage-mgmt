@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [Unreleased]
+
+### Fixed
+
+- Bulk move (#74): `performMove` in the move modal returns early while
+  `app.bulkActionPending` is set, and the "Other targets" buttons are
+  disabled during that time. Before, a second click on a floorplan area or
+  fallback button while the first batch was running started a duplicate
+  batch over the same selection.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added
