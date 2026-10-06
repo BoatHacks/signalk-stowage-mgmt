@@ -15,7 +15,7 @@ import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
 import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
-import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit } from './helpers.js';
+import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit, settleAll } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 import { parseLocationParam, parseItemParam } from './qr-label.js';
 import { hashForState, parseHash } from './hash-router.js';
@@ -276,8 +276,8 @@ function App() {
     });
     return ids;
   }
-  // Runs after a Promise.allSettled bulk action: refreshes once, clears the
-  // selection, and reports partial failures instead of silently dropping
+  // Runs after a settleAll bulk action (helpers.js; Promise.allSettled needs
+  // Chrome 76): refreshes once, clears the selection, and reports partial failures instead of silently dropping
   // them (a bulk op over N items can plausibly have a few fail, e.g. an
   // item deleted by someone else mid-batch).
   function finishBulkAction(results, pastTense, verb) {
@@ -326,7 +326,7 @@ function App() {
     bulkMoveSelectionTo: function (locationId) {
       var pairs = keysToPairs(selectedChipKeys);
       bulkActionPendingState[1](true);
-      return Promise.allSettled(pairs.map(function (p) {
+      return settleAll(pairs.map(function (p) {
         return p.placementId ? api.movePlacement(p.itemId, p.placementId, locationId) : api.moveItem(p.itemId, locationId);
       })).then(function (results) { return finishBulkAction(results, 'Moved', 'move'); });
     },
@@ -339,13 +339,13 @@ function App() {
       var warning = anySplit ? ' Some of these items are split across multiple locations — deleting them removes all placements.' : '';
       if (!confirm('Really delete ' + itemIds.length + ' item' + (itemIds.length === 1 ? '' : 's') + '?' + warning)) return Promise.resolve();
       bulkActionPendingState[1](true);
-      return Promise.allSettled(itemIds.map(function (id) { return api.deleteItem(id); }))
+      return settleAll(itemIds.map(function (id) { return api.deleteItem(id); }))
         .then(function (results) { return finishBulkAction(results, 'Deleted', 'delete'); });
     },
     bulkAddCategoryToSelection: function (categoryId) {
       var itemIds = keysToItemIds(selectedChipKeys);
       bulkActionPendingState[1](true);
-      return Promise.allSettled(itemIds.map(function (id) { return api.addItemCategory(id, categoryId); }))
+      return settleAll(itemIds.map(function (id) { return api.addItemCategory(id, categoryId); }))
         .then(function (results) { return finishBulkAction(results, 'Categorized', 'categorize'); });
     },
     collapsedLocationIds: collapsedLocationIds,

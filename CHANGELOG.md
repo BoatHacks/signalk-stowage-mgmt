@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [Unreleased]
+
+### Fixed
+
+- Bulk move, delete, and add-category (#73) called `Promise.allSettled`,
+  which needs Chrome 76. On Chromium 69 the call threw after
+  `bulkActionPending` was set, leaving the toolbar disabled. They now use
+  `settleAll` in `public/js/helpers.js`.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added

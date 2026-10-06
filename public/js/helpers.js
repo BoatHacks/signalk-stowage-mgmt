@@ -443,3 +443,13 @@ export function buildShoppingListMarkdown(data) {
 
   return lines.join('\n').trim() + '\n';
 }
+
+// Promise.allSettled needs Chrome 76; the MFD target is Chromium 69.
+export function settleAll (promises) {
+  return Promise.all(promises.map(function (p) {
+    return Promise.resolve(p).then(
+      function (value) { return { status: 'fulfilled', value: value } },
+      function (reason) { return { status: 'rejected', reason: reason } }
+    )
+  }))
+}

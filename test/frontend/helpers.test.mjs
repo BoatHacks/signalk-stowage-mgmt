@@ -6,7 +6,7 @@ import {
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
   isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor,
   locationHasFloorplanMapping, itemHasFloorplanMapping, itemFloorplanTargets, itemMatchesQuery, filterQuery,
-  resolveDetailPageSections, DETAIL_PAGE_SECTIONS, anyItemHasPhoto
+  resolveDetailPageSections, DETAIL_PAGE_SECTIONS, anyItemHasPhoto, settleAll
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -497,4 +497,14 @@ test('resolveDetailPageSections: filters to known sections, falls back to the de
   assert.deepEqual(resolveDetailPageSections([]), [])
   assert.deepEqual(resolveDetailPageSections(undefined), DETAIL_PAGE_SECTIONS)
   assert.deepEqual(resolveDetailPageSections(null), DETAIL_PAGE_SECTIONS)
+})
+
+test('settleAll reports fulfilled and rejected results in input order', async () => {
+  const err = new Error('boom')
+  const results = await settleAll([Promise.resolve(1), Promise.reject(err), 3])
+  assert.deepEqual(results, [
+    { status: 'fulfilled', value: 1 },
+    { status: 'rejected', reason: err },
+    { status: 'fulfilled', value: 3 }
+  ])
 })
