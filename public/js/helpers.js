@@ -453,3 +453,51 @@ export function settleAll (promises) {
     )
   }))
 }
+
+// Chip keys ('itemId:placementId', placementId empty for unsplit items) of
+// every item chip the Inventory tab currently renders: items under a
+// collapsed location are skipped, a search filter (filterQuery result)
+// prunes locations and items as LocationNode does, and the Not Stored
+// panel (unfiltered) contributes its containers and unassigned items.
+export function visibleChipKeys (data, collapsedIds, filter) {
+  var keys = new Set()
+  function chipKey (item) { return item.id + ':' + (item.placementId || '') }
+  function walk (loc, f) {
+    var filtering = !!(f && f.locationIds)
+    if (filtering && !f.locationIds.has(loc.id)) return
+    if (!filtering && collapsedIds.has(loc.id)) return
+    childLocations(data, loc.id).forEach(function (child) { walk(child, f) })
+    resolvedItemsIn(data, loc.id).forEach(function (item) {
+      if (f && f.itemIds && !f.itemIds.has(item.id)) return
+      keys.add(chipKey(item))
+    })
+  }
+  childLocations(data, null).forEach(function (loc) {
+    if (loc.type === 'storage_space') walk(loc, filter)
+    else if (loc.type === 'container') walk(loc, null)
+  })
+  resolvedItemsIn(data, null).forEach(function (item) { keys.add(chipKey(item)) })
+  return keys
+}
+
+// Keys to leave selected after a bulk batch: those whose request rejected.
+// targets[i] pairs with results[i]; a target is either {itemId, placementId}
+// (move: matches that exact key) or a plain item id string (delete /
+// categorize: matches every selected key of that item).
+export function retainFailedKeys (selectedKeys, targets, results) {
+  var failedKeys = new Set()
+  var failedItemIds = new Set()
+  results.forEach(function (r, i) {
+    if (r.status !== 'rejected') return
+    var t = targets[i]
+    if (typeof t === 'string') failedItemIds.add(t)
+    else failedKeys.add(t.itemId + ':' + (t.placementId || ''))
+  })
+  var retained = new Set()
+  Array.from(selectedKeys).forEach(function (key) {
+    var idx = key.indexOf(':')
+    var itemId = idx === -1 ? key : key.slice(0, idx)
+    if (failedKeys.has(key) || failedItemIds.has(itemId)) retained.add(key)
+  })
+  return retained
+}

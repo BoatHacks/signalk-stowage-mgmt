@@ -22,6 +22,19 @@ was renamed to `signalk-stowage-mgmt`.
   disabled during that time. Before, a second click on a floorplan area or
   fallback button while the first batch was running started a duplicate
   batch over the same selection.
+- Bulk actions (#76): items whose request failed stay selected after the
+  batch instead of the whole selection being cleared.
+- Bulk actions (#77): selected chips hidden by the search filter, a
+  collapsed ancestor, or another tab are dropped from the selection (an
+  effect in `public/js/app.js` using `visibleChipKeys`), so Delete and Move
+  only touch visible items.
+- Bulk actions (#78): `bulkActionPending` is cleared after the post-action
+  refresh finishes, and that refresh waits for an in-flight poll and then
+  fetches again instead of being skipped.
+- Bulk move (#79): `bulkMoveSelectionTo` resolves with the success count, and
+  the Move modal closes only if at least one item moved.
+- Bulk add-category (#81): `BulkCategoryModal.pick` returns early while
+  `app.bulkActionPending` is set.
 
 ## [1.3.0] - 2026-09-17
 

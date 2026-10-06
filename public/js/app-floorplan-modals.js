@@ -205,7 +205,7 @@ export function MoveModal() {
   function performMove(targetId, targetName) {
     if (move.type === 'bulk-items') {
       if (app.bulkActionPending) return;
-      app.bulkMoveSelectionTo(targetId).then(function () { app.closeMoveModal(); }).catch(function () {});
+      app.bulkMoveSelectionTo(targetId).then(function (moved) { if (moved > 0) app.closeMoveModal(); }).catch(function () {});
       return;
     }
     var action;
