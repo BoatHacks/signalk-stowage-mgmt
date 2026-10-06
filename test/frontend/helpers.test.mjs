@@ -6,7 +6,7 @@ import {
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
   isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor,
   locationHasFloorplanMapping, itemHasFloorplanMapping, itemFloorplanTargets, itemMatchesQuery, filterQuery,
-  resolveDetailPageSections, DETAIL_PAGE_SECTIONS, anyItemHasPhoto, settleAll
+  resolveDetailPageSections, DETAIL_PAGE_SECTIONS, anyItemHasPhoto, settleAll, settleLimited
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -507,4 +507,47 @@ test('settleAll reports fulfilled and rejected results in input order', async ()
     { status: 'rejected', reason: err },
     { status: 'fulfilled', value: 3 }
   ])
+})
+
+test('settleLimited keeps result shape and input order', async () => {
+  const err = new Error('boom')
+  const results = await settleLimited([1, 2, 3], (n) => n, (n) => {
+    if (n === 2) return Promise.reject(err)
+    if (n === 3) throw err
+    return Promise.resolve(n * 10)
+  }, 4)
+  assert.deepEqual(results, [
+    { status: 'fulfilled', value: 10 },
+    { status: 'rejected', reason: err },
+    { status: 'rejected', reason: err }
+  ])
+})
+
+test('settleLimited never exceeds the concurrency limit', async () => {
+  let inFlight = 0
+  let peak = 0
+  const items = Array.from({ length: 12 }, (_, i) => i)
+  const results = await settleLimited(items, (n) => n, (n) => {
+    inFlight++
+    peak = Math.max(peak, inFlight)
+    return new Promise((resolve) => setTimeout(() => { inFlight--; resolve(n) }, 5))
+  }, 4)
+  assert.equal(peak, 4)
+  assert.deepEqual(results.map((r) => r.value), items)
+})
+
+test('settleLimited runs same-key items sequentially, other keys in parallel', async () => {
+  const log = []
+  const items = [{ k: 'a', n: 1 }, { k: 'a', n: 2 }, { k: 'b', n: 3 }]
+  const results = await settleLimited(items, (x) => x.k, (x) => {
+    log.push('start' + x.n)
+    return new Promise((resolve) => setTimeout(() => { log.push('end' + x.n); resolve(x.n) }, x.n === 1 ? 20 : 1))
+  }, 4)
+  assert.ok(log.indexOf('end1') < log.indexOf('start2'))
+  assert.ok(log.indexOf('start3') < log.indexOf('end1'))
+  assert.deepEqual(results.map((r) => r.value), [1, 2, 3])
+})
+
+test('settleLimited resolves to [] for no items', async () => {
+  assert.deepEqual(await settleLimited([], (x) => x, (x) => x, 4), [])
 })

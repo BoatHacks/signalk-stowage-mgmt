@@ -15,10 +15,13 @@ import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
 import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
-import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit, settleAll } from './helpers.js';
+import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit, settleLimited } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 import { parseLocationParam, parseItemParam } from './qr-label.js';
 import { hashForState, parseHash } from './hash-router.js';
+
+// Max in-flight per-item requests for bulk move/delete/categorize (#80).
+var BULK_CONCURRENCY = 4;
 
 var TABS = [
   { id: 'inventory', label: 'Inventory' },
@@ -276,7 +279,7 @@ function App() {
     });
     return ids;
   }
-  // Runs after a settleAll bulk action (helpers.js; Promise.allSettled needs
+  // Runs after a settleLimited bulk action (helpers.js; Promise.allSettled needs
   // Chrome 76): refreshes once, clears the selection, and reports partial failures instead of silently dropping
   // them (a bulk op over N items can plausibly have a few fail, e.g. an
   // item deleted by someone else mid-batch).
@@ -326,9 +329,9 @@ function App() {
     bulkMoveSelectionTo: function (locationId) {
       var pairs = keysToPairs(selectedChipKeys);
       bulkActionPendingState[1](true);
-      return settleAll(pairs.map(function (p) {
+      return settleLimited(pairs, function (p) { return p.itemId; }, function (p) {
         return p.placementId ? api.movePlacement(p.itemId, p.placementId, locationId) : api.moveItem(p.itemId, locationId);
-      })).then(function (results) { return finishBulkAction(results, 'Moved', 'move'); });
+      }, BULK_CONCURRENCY).then(function (results) { return finishBulkAction(results, 'Moved', 'move'); });
     },
     bulkDeleteSelection: function () {
       var itemIds = keysToItemIds(selectedChipKeys);
@@ -339,13 +342,13 @@ function App() {
       var warning = anySplit ? ' Some of these items are split across multiple locations — deleting them removes all placements.' : '';
       if (!confirm('Really delete ' + itemIds.length + ' item' + (itemIds.length === 1 ? '' : 's') + '?' + warning)) return Promise.resolve();
       bulkActionPendingState[1](true);
-      return settleAll(itemIds.map(function (id) { return api.deleteItem(id); }))
+      return settleLimited(itemIds, function (id) { return id; }, function (id) { return api.deleteItem(id); }, BULK_CONCURRENCY)
         .then(function (results) { return finishBulkAction(results, 'Deleted', 'delete'); });
     },
     bulkAddCategoryToSelection: function (categoryId) {
       var itemIds = keysToItemIds(selectedChipKeys);
       bulkActionPendingState[1](true);
-      return settleAll(itemIds.map(function (id) { return api.addItemCategory(id, categoryId); }))
+      return settleLimited(itemIds, function (id) { return id; }, function (id) { return api.addItemCategory(id, categoryId); }, BULK_CONCURRENCY)
         .then(function (results) { return finishBulkAction(results, 'Categorized', 'categorize'); });
     },
     collapsedLocationIds: collapsedLocationIds,

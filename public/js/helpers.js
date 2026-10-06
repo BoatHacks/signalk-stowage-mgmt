@@ -453,3 +453,41 @@ export function settleAll (promises) {
     )
   }))
 }
+
+// Runs taskFn(item) for every item and resolves to {status,value|reason}
+// results in input order. Items sharing a keyFn(item) run one after another;
+// different keys run in parallel, at most `limit` keys in flight at once.
+export function settleLimited (items, keyFn, taskFn, limit) {
+  var results = new Array(items.length)
+  var groups = []
+  var byKey = {}
+  items.forEach(function (item, index) {
+    var key = String(keyFn(item, index))
+    if (!Object.prototype.hasOwnProperty.call(byKey, key)) {
+      byKey[key] = []
+      groups.push(byKey[key])
+    }
+    byKey[key].push(index)
+  })
+  function runGroup (indexes) {
+    return indexes.reduce(function (chain, index) {
+      return chain.then(function () {
+        var p
+        try { p = Promise.resolve(taskFn(items[index], index)) } catch (e) { p = Promise.reject(e) }
+        return p.then(
+          function (value) { results[index] = { status: 'fulfilled', value: value } },
+          function (reason) { results[index] = { status: 'rejected', reason: reason } }
+        )
+      })
+    }, Promise.resolve())
+  }
+  var next = 0
+  function worker () {
+    if (next >= groups.length) return Promise.resolve()
+    return runGroup(groups[next++]).then(worker)
+  }
+  var workers = []
+  var count = Math.min(Math.max(1, limit || 1), groups.length)
+  for (var i = 0; i < count; i++) workers.push(worker())
+  return Promise.all(workers).then(function () { return results })
+}

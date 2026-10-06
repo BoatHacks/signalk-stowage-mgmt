@@ -23,6 +23,16 @@ was renamed to `signalk-stowage-mgmt`.
   fallback button while the first batch was running started a duplicate
   batch over the same selection.
 
+- Bulk move (#75): placements of the same item are moved one after another
+  instead of in parallel. Moving two placements of one split item into the
+  same location no longer reports "1 failed to move" when the merge
+  deletes the other placement first.
+
+- Bulk move, delete, and add-category (#80): at most 4 per-item requests
+  are in flight at once (`settleLimited` in `public/js/helpers.js`). Before,
+  one request per selected item was sent at the same time. No batch
+  endpoint was added, so a failure part-way still leaves a partial result.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added
