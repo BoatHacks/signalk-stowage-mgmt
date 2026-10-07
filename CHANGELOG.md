@@ -10,6 +10,8 @@ was renamed to `signalk-stowage-mgmt`.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-07
+
 ### Fixed
 
 - Bulk move, delete, and add-category (#73) called `Promise.allSettled`,
