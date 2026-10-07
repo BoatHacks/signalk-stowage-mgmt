@@ -8,6 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [Unreleased]
+
+### Fixed
+
+- Bulk move, delete, and add-category (#73) called `Promise.allSettled`,
+  which needs Chrome 76. On Chromium 69 the call threw after
+  `bulkActionPending` was set, leaving the toolbar disabled. They now use
+  `settleAll` in `public/js/helpers.js`.
+
+- Bulk move (#74): `performMove` in the move modal returns early while
+  `app.bulkActionPending` is set, and the "Other targets" buttons are
+  disabled during that time. Before, a second click on a floorplan area or
+  fallback button while the first batch was running started a duplicate
+  batch over the same selection.
+
+- Bulk move (#75): placements of the same item are moved one after another
+  instead of in parallel. Moving two placements of one split item into the
+  same location no longer reports "1 failed to move" when the merge
+  deletes the other placement first.
+
+- Bulk move, delete, and add-category (#80): at most 4 per-item requests
+  are in flight at once (`settleLimited` in `public/js/helpers.js`). Before,
+  one request per selected item was sent at the same time. No batch
+  endpoint was added, so a failure part-way still leaves a partial result.
+
+- Bulk actions (#76): items whose request failed stay selected after the
+  batch instead of the whole selection being cleared.
+- Bulk actions (#77): selected chips hidden by the search filter, a
+  collapsed ancestor, or another tab are dropped from the selection (an
+  effect in `public/js/app.js` using `visibleChipKeys`), so Delete and Move
+  only touch visible items.
+- Bulk actions (#78): `bulkActionPending` is cleared after the post-action
+  refresh finishes, and that refresh waits for an in-flight poll and then
+  fetches again instead of being skipped.
+- Bulk move (#79): `bulkMoveSelectionTo` resolves with the success count, and
+  the Move modal closes only if at least one item moved.
+- Bulk add-category (#81): `BulkCategoryModal.pick` returns early while
+  `app.bulkActionPending` is set.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added

@@ -443,3 +443,99 @@ export function buildShoppingListMarkdown(data) {
 
   return lines.join('\n').trim() + '\n';
 }
+
+// Promise.allSettled needs Chrome 76; the MFD target is Chromium 69.
+export function settleAll (promises) {
+  return Promise.all(promises.map(function (p) {
+    return Promise.resolve(p).then(
+      function (value) { return { status: 'fulfilled', value: value } },
+      function (reason) { return { status: 'rejected', reason: reason } }
+    )
+  }))
+}
+
+// Runs taskFn(item) for every item and resolves to {status,value|reason}
+// results in input order. Items sharing a keyFn(item) run one after another;
+// different keys run in parallel, at most `limit` keys in flight at once.
+export function settleLimited (items, keyFn, taskFn, limit) {
+  var results = new Array(items.length)
+  var groups = []
+  var byKey = {}
+  items.forEach(function (item, index) {
+    var key = String(keyFn(item, index))
+    if (!Object.prototype.hasOwnProperty.call(byKey, key)) {
+      byKey[key] = []
+      groups.push(byKey[key])
+    }
+    byKey[key].push(index)
+  })
+  function runGroup (indexes) {
+    return indexes.reduce(function (chain, index) {
+      return chain.then(function () {
+        var p
+        try { p = Promise.resolve(taskFn(items[index], index)) } catch (e) { p = Promise.reject(e) }
+        return p.then(
+          function (value) { results[index] = { status: 'fulfilled', value: value } },
+          function (reason) { results[index] = { status: 'rejected', reason: reason } }
+        )
+      })
+    }, Promise.resolve())
+  }
+  var next = 0
+  function worker () {
+    if (next >= groups.length) return Promise.resolve()
+    return runGroup(groups[next++]).then(worker)
+  }
+  var workers = []
+  var count = Math.min(Math.max(1, limit || 1), groups.length)
+  for (var i = 0; i < count; i++) workers.push(worker())
+  return Promise.all(workers).then(function () { return results })
+}
+
+// Chip keys ('itemId:placementId', placementId empty for unsplit items) of
+// every item chip the Inventory tab currently renders: items under a
+// collapsed location are skipped, a search filter (filterQuery result)
+// prunes locations and items as LocationNode does, and the Not Stored
+// panel (unfiltered) contributes its containers and unassigned items.
+export function visibleChipKeys (data, collapsedIds, filter) {
+  var keys = new Set()
+  function chipKey (item) { return item.id + ':' + (item.placementId || '') }
+  function walk (loc, f) {
+    var filtering = !!(f && f.locationIds)
+    if (filtering && !f.locationIds.has(loc.id)) return
+    if (!filtering && collapsedIds.has(loc.id)) return
+    childLocations(data, loc.id).forEach(function (child) { walk(child, f) })
+    resolvedItemsIn(data, loc.id).forEach(function (item) {
+      if (f && f.itemIds && !f.itemIds.has(item.id)) return
+      keys.add(chipKey(item))
+    })
+  }
+  childLocations(data, null).forEach(function (loc) {
+    if (loc.type === 'storage_space') walk(loc, filter)
+    else if (loc.type === 'container') walk(loc, null)
+  })
+  resolvedItemsIn(data, null).forEach(function (item) { keys.add(chipKey(item)) })
+  return keys
+}
+
+// Keys to leave selected after a bulk batch: those whose request rejected.
+// targets[i] pairs with results[i]; a target is either {itemId, placementId}
+// (move: matches that exact key) or a plain item id string (delete /
+// categorize: matches every selected key of that item).
+export function retainFailedKeys (selectedKeys, targets, results) {
+  var failedKeys = new Set()
+  var failedItemIds = new Set()
+  results.forEach(function (r, i) {
+    if (r.status !== 'rejected') return
+    var t = targets[i]
+    if (typeof t === 'string') failedItemIds.add(t)
+    else failedKeys.add(t.itemId + ':' + (t.placementId || ''))
+  })
+  var retained = new Set()
+  Array.from(selectedKeys).forEach(function (key) {
+    var idx = key.indexOf(':')
+    var itemId = idx === -1 ? key : key.slice(0, idx)
+    if (failedKeys.has(key) || failedItemIds.has(itemId)) retained.add(key)
+  })
+  return retained
+}

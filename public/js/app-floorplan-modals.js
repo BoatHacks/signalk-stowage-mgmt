@@ -204,7 +204,8 @@ export function MoveModal() {
 
   function performMove(targetId, targetName) {
     if (move.type === 'bulk-items') {
-      app.bulkMoveSelectionTo(targetId).then(function () { app.closeMoveModal(); }).catch(function () {});
+      if (app.bulkActionPending) return;
+      app.bulkMoveSelectionTo(targetId).then(function (moved) { if (moved > 0) app.closeMoveModal(); }).catch(function () {});
       return;
     }
     var action;
@@ -270,12 +271,14 @@ export function MoveModal() {
         ${fallbackTargets.length ? html`
           <div class="orphaned-panel-title">Other targets</div>
           <div class="category-chip-list">
-            <button type="button" class="category-chip" onClick=${function () { performMove(null, move.type !== 'container' ? 'No Location' : 'Top Level'); }}>
+            <button type="button" class="category-chip" disabled=${app.bulkActionPending && move.type === 'bulk-items'}
+                    onClick=${function () { performMove(null, move.type !== 'container' ? 'No Location' : 'Top Level'); }}>
               ${move.type !== 'container' ? 'No Location' : 'Top Level'}
             </button>
             ${fallbackTargets.map(function (loc) {
               return html`
                 <button type="button" key=${loc.id} class="category-chip"
+                        disabled=${app.bulkActionPending && move.type === 'bulk-items'}
                         onClick=${function () { performMove(loc.id, loc.name); }}>
                   ${pathToRoot(app.data, loc.id)} [${loc.type === 'storage_space' ? 'Storage Space' : 'Container'}]
                 </button>
