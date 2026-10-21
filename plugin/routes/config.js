@@ -60,6 +60,7 @@ module.exports = function registerConfigRoutes (router, app, getOptions) {
       autoTheme: !!options.autoTheme,
       themeRecommendation: computeThemeRecommendation(),
       dynamicQuantityScale: !!options.dynamicQuantityScale,
+      multipleSites: !!options.multipleSites,
       qrLabelBaseUrl: options.qrLabelBaseUrl || '',
       // An explicit empty array (user removed every section) is respected
       // as-is - only a genuinely unset field falls back to the default,

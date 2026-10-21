@@ -63,7 +63,7 @@ function App() {
   var themeState = useState(getPreferredTheme());
   var theme = themeState[0], setThemeState = themeState[1];
   var configState = useState({
-    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
+    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, multipleSites: false, qrLabelBaseUrl: '',
     detailPageSections: ['placements', 'floorplan', 'history', 'properties', 'attachments']
   });
   var config = configState[0], setConfig = configState[1];
@@ -131,7 +131,7 @@ function App() {
       api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(), api.listSites(),
       api.getConfig().catch(function () {
         return {
-          autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
+          autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, multipleSites: false, qrLabelBaseUrl: '',
           detailPageSections: ['placements', 'floorplan', 'history', 'properties', 'attachments']
         };
       })
@@ -311,7 +311,10 @@ function App() {
   }
 
   // ---- sites (#83) ----
-  var activeSite = data.sites.find(function (s) { return s.id === activeSiteIdState[0]; }) || null;
+  var multiSite = !!config.multipleSites;
+  var activeSite = multiSite
+    ? (data.sites.find(function (s) { return s.id === activeSiteIdState[0]; }) || null)
+    : null;
   var viewData = filterDataBySite(data, activeSite ? activeSite.id : null);
 
   function setActiveSiteId(id) {
@@ -324,6 +327,7 @@ function App() {
     data: viewData,
     allData: data,
     sites: data.sites,
+    multiSite: multiSite,
     activeSite: activeSite,
     setActiveSiteId: setActiveSiteId,
     sitesModalOpen: sitesModalOpenState[0],
@@ -342,7 +346,7 @@ function App() {
     },
     // " (Shed)" for a location outside the vessel site's, empty when there is only one site.
     siteSuffix: function (loc) {
-      if (data.sites.length < 2) return '';
+      if (!multiSite || data.sites.length < 2) return '';
       var site = data.sites.find(function (s) { return s.id === loc.site_id; });
       return site ? ' (' + site.name + ')' : '';
     },

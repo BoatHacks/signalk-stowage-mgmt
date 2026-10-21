@@ -58,6 +58,13 @@ Set in the plugin's config page in the SignalK Admin UI
   "Header controls" below) while it's on; if neither path has a
   recognized value yet, the manual/OS-preference theme is left alone.
 
+- **Enable multiple sites** (off by default). Turns on the site switcher,
+  Sites manager and per-site stock targets described under "Sites" below.
+  While off, `POST /sites` returns 403, the webapp shows everything as one
+  inventory, and stock notifications cover the whole inventory on item
+  totals and item targets, exactly as before sites existed. Sites created
+  earlier are kept and take effect again when the option is switched back on.
+
 - **Dynamic +/- scale for touch interface** (off by default). When on,
   the Overview tab's Touch view shows up to four quick-adjust buttons per
   chip instead of two: a coarse step and a fine step on each side (e.g.
@@ -413,7 +420,8 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
 ## Sites
 
 A site is a place that holds inventory: the boat, a shed for tools and
-sails. Every top-level location belongs to one site and its sub-locations
+sails. Requires **Enable multiple sites** in the plugin config (see
+Configuration). Every top-level location belongs to one site and its sub-locations
 inherit it. The first start after upgrading creates a site named "Boat"
 (the vessel site) and assigns all existing locations to it.
 
@@ -586,7 +594,11 @@ Sites: `GET/POST /sites`, `GET/PATCH/DELETE /sites/:id`,
 `PUT/DELETE /items/:id/site-targets/:siteId`. `GET /locations`, `GET /items`
 and `GET /item-log` accept `?site=<id>`; locations carry `site_id`, items
 carry `site_quantities` and `site_targets`. A top-level `POST /locations`
-without `site_id` goes to the vessel site.
+without `site_id` goes to the vessel site. JSON exports from versions
+before sites existed (no `sites`, no `site_id`, no `site_targets`) import
+unchanged, in replace and merge mode: their top-level locations land in the
+vessel site, and exports made now still contain every field those versions
+wrote. `POST /sites` is refused with 403 unless multiple sites is enabled.
 
 Also published as an OpenAPI 3.0 spec (`openApi.json`), which renders in
 the Signal K Admin UI under **Documentation → OpenAPI** once the plugin is

@@ -189,6 +189,11 @@ No new backend component; purely a rendering-layer addition on top of
 - **Routes**: new `plugin/routes/sites.js`; `locations.js` accepts
   `site_id` on root creation; list endpoints for locations, items and the
   log take an optional `?site=<id>`.
+- **Option gate**: `multipleSites` (plugin schema, default false) is checked
+  by `POST /sites` (403 when off), `computeStockAlertsState` (off: whole
+  inventory on item totals, as before sites) and the webapp via
+  `GET /webapp-config`, which hides the switcher, Sites manager and per-site
+  target fields.
 - **Alerts**: `plugin/stockAlerts.js` groups placements by site and
   evaluates targets per site; `publishStockAlerts` publishes only the
   vessel site's result under the existing `notifications.stowage.*`

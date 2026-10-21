@@ -223,11 +223,15 @@ function itemsForSite (db, siteId) {
 }
 
 // now (optional): epoch ms, for deterministic tests. Defaults to Date.now().
-// Evaluates the vessel site only; other sites don't publish notifications.
+// With multipleSites on, evaluates the vessel site only; other sites don't publish notifications.
 function computeStockAlertsState (db, options, now) {
   const opts = Object.assign({}, DEFAULTS, options)
+  // With multiple sites off the whole inventory is one pool, judged on item
+  // totals and item-level targets, exactly as before sites existed.
   const vesselId = getVesselSiteId(db)
-  const items = vesselId ? itemsForSite(db, vesselId) : []
+  const items = opts.multipleSites
+    ? (vesselId ? itemsForSite(db, vesselId) : [])
+    : db.prepare('SELECT id, name, actual_quantity, target_quantity, expires_at FROM items').all()
 
   const stock = computeStockState(db, items, opts, now)
   const expiring = computeExpiringState(items, opts, now)

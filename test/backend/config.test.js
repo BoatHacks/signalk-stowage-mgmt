@@ -8,7 +8,7 @@ test('config: autoTheme and dynamicQuantityScale off by default, no recommendati
 
   const body = await (await server.get('/webapp-config')).json()
   assert.deepEqual(body, {
-    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
+    autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, multipleSites: false, qrLabelBaseUrl: '',
     detailPageSections: ['placements', 'floorplan', 'history', 'properties', 'attachments']
   })
 })

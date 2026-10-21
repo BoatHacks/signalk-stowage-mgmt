@@ -9,7 +9,7 @@ const { initDb } = require('../../plugin/db')
 async function json (res) { return res.json() }
 
 test('fresh database has one vessel site named Boat', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const sites = await json(await server.get('/sites'))
   assert.equal(sites.length, 1)
@@ -48,7 +48,7 @@ test('migration: pre-site root locations are assigned to the new vessel site, mo
 })
 
 test('sites CRUD: vessel flag moves, vessel and non-empty sites cannot be deleted', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const boat = (await json(await server.get('/sites')))[0]
 
@@ -70,7 +70,7 @@ test('sites CRUD: vessel flag moves, vessel and non-empty sites cannot be delete
 })
 
 test('locations: root defaults to vessel site, children inherit, site_id on a child is rejected', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const boat = (await json(await server.get('/sites')))[0]
   const shed = await json(await server.post('/sites', { name: 'Shed' }))
@@ -90,7 +90,7 @@ test('locations: root defaults to vessel site, children inherit, site_id on a ch
 })
 
 test('moving a location under a parent in another site moves its subtree', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const boat = (await json(await server.get('/sites')))[0]
   const shed = await json(await server.post('/sites', { name: 'Shed' }))
@@ -110,7 +110,7 @@ test('moving a location under a parent in another site moves its subtree', async
 })
 
 test('items: site_quantities, ?site= filter, and cross-site split logged with both locations', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const boat = (await json(await server.get('/sites')))[0]
   const shed = await json(await server.post('/sites', { name: 'Shed' }))
@@ -135,7 +135,7 @@ test('items: site_quantities, ?site= filter, and cross-site split logged with bo
 })
 
 test('per-site targets: PUT/DELETE, validation, and cascade on site-less items', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const shed = await json(await server.post('/sites', { name: 'Shed' }))
   const item = await json(await server.post('/items', { name: 'Hammer', actual_quantity: 1 }))
@@ -155,7 +155,7 @@ test('per-site targets: PUT/DELETE, validation, and cascade on site-less items',
 
 test('stock alerts evaluate the vessel site only, using site quantity and the per-site target rule', async (t) => {
   const messages = []
-  const server = await startTestServer({ handleMessage: (_id, delta) => messages.push(delta) })
+  const server = await startTestServer({ options: { multipleSites: true }, handleMessage: (_id, delta) => messages.push(delta) })
   t.after(() => server.close())
   const boat = (await json(await server.get('/sites')))[0]
   const shed = await json(await server.post('/sites', { name: 'Shed' }))
@@ -189,7 +189,7 @@ test('stock alerts evaluate the vessel site only, using site quantity and the pe
 })
 
 test('backup round-trip keeps sites, location sites and per-site targets; pre-site snapshots land in the vessel site', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const shed = await json(await server.post('/sites', { name: 'Shed' }))
   const rack = await json(await server.post('/locations', { name: 'Rack', type: 'storage_space', site_id: shed.id }))
@@ -222,7 +222,7 @@ test('backup round-trip keeps sites, location sites and per-site targets; pre-si
 })
 
 test('merge import: sites matched by name, unmatched ones added, never a second vessel', async (t) => {
-  const server = await startTestServer()
+  const server = await startTestServer({ options: { multipleSites: true } })
   t.after(() => server.close())
   const boat = (await json(await server.get('/sites')))[0]
   const res = await json(await server.post('/import', {
@@ -243,4 +243,145 @@ test('merge import: sites matched by name, unmatched ones added, never a second 
   const locs = Object.fromEntries((await json(await server.get('/locations'))).map(l => [l.name, l.site_id]))
   assert.equal(locs.Bunk, boat.id)
   assert.equal(locs.Shelf, sites[1].id)
+})
+
+test('multipleSites off (default): POST /sites is refused, webapp-config says so, existing site untouched', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const res = await server.post('/sites', { name: 'Shed' })
+  assert.equal(res.status, 403)
+  assert.match((await json(res)).error, /multiple sites is disabled/)
+  assert.equal((await json(await server.get('/webapp-config'))).multipleSites, false)
+  assert.equal((await json(await server.get('/sites'))).length, 1)
+
+  const on = await startTestServer({ options: { multipleSites: true } })
+  t.after(() => on.close())
+  assert.equal((await json(await on.get('/webapp-config'))).multipleSites, true)
+})
+
+test('multipleSites off: stock alerts judge the whole inventory on item totals and item targets, ignoring sites', async (t) => {
+  const messages = []
+  const server = await startTestServer({ handleMessage: (_id, delta) => messages.push(delta) })
+  t.after(() => server.close())
+  const boat = (await json(await server.get('/sites')))[0]
+  // A second site left over from an earlier run with the option on.
+  const { DatabaseSync } = require('node:sqlite')
+  const db = new DatabaseSync(path.join(server.dataDir, 'inventory.db'))
+  db.prepare("INSERT INTO sites (id, name, is_vessel) VALUES ('shed', 'Shed', 0)").run()
+  db.prepare("INSERT INTO locations (id, name, type, site_id) VALUES ('rack', 'Rack', 'storage_space', 'shed')").run()
+  db.close()
+
+  // 1 on the boat + 3 in the shed = 4 in total, item target 4: not understocked overall.
+  const bunk = await json(await server.post('/locations', { name: 'Bunk', type: 'storage_space', site_id: boat.id }))
+  const hammer = await json(await server.post('/items', { name: 'Hammer', actual_quantity: 4, target_quantity: 4, location_id: bunk.id }))
+  await server.post(`/items/${hammer.id}/split`, { from_location_id: bunk.id, to_location_id: 'rack', quantity: 3 })
+  // Lives only in the shed: still counted, and out of stock.
+  const saw = await json(await server.post('/items', { name: 'Saw', location_id: 'rack' }))
+  await server.patch(`/items/${saw.id}`, { actual_quantity: 0 })
+
+  const stock = () => messages[messages.length - 1].updates[0].values.find(v => v.path === 'notifications.stowage.stock').value
+  assert.equal(stock().state, 'alarm')
+  assert.match(stock().message, /1 item out of stock \(Saw\)/)
+  assert.doesNotMatch(stock().message, /understocked/)
+})
+
+// A snapshot exactly as a pre-multisite plugin version exported it: no
+// `sites`, no `site_id` on locations, no `site_targets` on items.
+function preMultisiteSnapshot () {
+  return {
+    schema_version: 1,
+    exported_at: '2026-09-01T10:00:00.000Z',
+    categories: [{ id: 'cat1', name: 'Electrical', created_at: '2026-08-01 10:00:00' }],
+    floorplans: [{ id: 'fp1', name: 'Deck', svg_content: '<svg><path id="p1"/></svg>' }],
+    locations: [
+      { id: 'aft', name: 'Aft Cabin', type: 'storage_space', parent_id: null, floorplan_id: 'fp1', svg_element_id: 'p1', created_at: '2026-08-01 10:00:00' },
+      { id: 'locker', name: 'Locker', type: 'container', parent_id: 'aft', floorplan_id: null, svg_element_id: null, created_at: '2026-08-01 10:00:00' }
+    ],
+    items: [
+      {
+        id: 'fuse', name: 'Fuse', actual_quantity: 3, target_quantity: 5, notes: 'spares', location_id: 'locker',
+        thumbnail: null, expires_at: null, acquired_date: null, price_paid: null, unit: null, created_at: '2026-08-01 10:00:00',
+        category_ids: ['cat1'], placements: [], attachments: []
+      },
+      {
+        id: 'rope', name: 'Rope', actual_quantity: 10, target_quantity: null, notes: null, location_id: null,
+        thumbnail: null, expires_at: null, acquired_date: null, price_paid: null, unit: 'm', created_at: '2026-08-01 10:00:00',
+        category_ids: [],
+        placements: [{ id: 'pl1', location_id: 'aft', quantity: 6 }, { id: 'pl2', location_id: 'locker', quantity: 4 }],
+        attachments: []
+      }
+    ]
+  }
+}
+
+test('backward compat: a pre-multisite snapshot restores via replace into the vessel site, nothing lost', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  // Floorplans are never created by import; the mapping finds the one with identical content.
+  await server.post('/floorplans', { name: 'Deck', svg_content: '<svg><path id="p1"/></svg>' })
+  const res = await server.post('/import', preMultisiteSnapshot())
+  assert.equal(res.status, 200)
+  const body = await json(res)
+  assert.deepEqual(body.restored, { categories: 1, sites: 1, locations: 2, items: 2 })
+
+  const boat = (await json(await server.get('/sites')))[0]
+  const locs = await json(await server.get('/locations'))
+  assert.deepEqual(locs.map(l => [l.id, l.site_id]).sort(), [['aft', boat.id], ['locker', boat.id]])
+  assert.equal(locs.find(l => l.id === 'aft').svg_element_id, 'p1')
+
+  const items = Object.fromEntries((await json(await server.get('/items'))).map(i => [i.id, i]))
+  assert.equal(items.fuse.location_id, 'locker')
+  assert.deepEqual(items.fuse.categories.map(c => c.id), ['cat1'])
+  assert.deepEqual(items.fuse.site_targets, [])
+  assert.deepEqual(items.rope.placements.map(p => [p.id, p.quantity]).sort(), [['pl1', 6], ['pl2', 4]])
+  assert.deepEqual(items.rope.site_quantities, [{ site_id: boat.id, quantity: 10 }])
+})
+
+test('backward compat: a pre-multisite snapshot merges into an existing multi-site database via the vessel site', async (t) => {
+  const server = await startTestServer({ options: { multipleSites: true } })
+  t.after(() => server.close())
+  const boat = (await json(await server.get('/sites')))[0]
+  const shed = await json(await server.post('/sites', { name: 'Shed' }))
+  await server.post('/locations', { name: 'Rack', type: 'storage_space', site_id: shed.id })
+
+  const res = await json(await server.post('/import', Object.assign(preMultisiteSnapshot(), { mode: 'merge' })))
+  assert.equal(res.mode, 'merge')
+  assert.equal(res.added.sites, 0)
+  const locs = Object.fromEntries((await json(await server.get('/locations'))).map(l => [l.name, l.site_id]))
+  assert.equal(locs['Aft Cabin'], boat.id)
+  assert.equal(locs.Locker, boat.id)
+  assert.equal(locs.Rack, shed.id)
+  assert.equal((await json(await server.get('/sites'))).length, 2)
+})
+
+test('backward compat: an export still contains every pre-multisite field, only adding sites/site_id/site_targets', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  await server.post('/import', preMultisiteSnapshot())
+  const exported = await json(await server.get('/export'))
+  const legacy = preMultisiteSnapshot()
+
+  assert.equal(exported.schema_version, legacy.schema_version)
+  for (const key of Object.keys(legacy)) assert.ok(key in exported, `top-level ${key}`)
+  for (const loc of legacy.locations) {
+    const got = exported.locations.find(l => l.id === loc.id)
+    for (const key of Object.keys(loc)) assert.ok(key in got, `location.${key}`)
+  }
+  for (const item of legacy.items) {
+    const got = exported.items.find(i => i.id === item.id)
+    for (const key of Object.keys(item)) assert.ok(key in got, `item.${key}`)
+  }
+  // And what a pre-multisite plugin would read from it still validates there:
+  // the same required arrays are present.
+  assert.ok(Array.isArray(exported.categories) && Array.isArray(exported.locations) && Array.isArray(exported.items))
+})
+
+test('backward compat: re-importing a snapshot with sites that carries a dangling site_id puts the location in the vessel site', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const snap = preMultisiteSnapshot()
+  snap.locations[0].site_id = 'no-such-site'
+  await server.post('/import', snap)
+  const boat = (await json(await server.get('/sites')))[0]
+  assert.equal((await json(await server.get('/locations'))).find(l => l.id === 'aft').site_id, boat.id)
 })

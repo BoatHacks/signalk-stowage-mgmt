@@ -282,6 +282,11 @@ Existing plugin options (Signal K Admin UI → Plugin Config):
 - **Automatically switch light/dark theme based on sun position** (off by
   default).
 - **Dynamic +/- scale for touch interface** (off by default).
+- **Enable multiple sites** (off by default, §9.5). While off, `POST /sites`
+  returns 403, the webapp shows no site controls and no site filter, and
+  stock notifications evaluate the whole inventory on item totals and
+  item-level targets. Existing sites and per-site targets stay in the
+  database, ignored, and apply again when the option is turned back on.
 
 New, for QR labels:
 
@@ -381,6 +386,8 @@ and several backend hardening fixes.
 Goal: track inventory for more than one place (the boat, a shed holding
 tools and sails) in one plugin instance.
 
+Gated by the "Enable multiple sites" option (§8), off by default.
+
 In scope:
 
 - `sites` table and `site_id` on root locations; the one-time migration
@@ -396,8 +403,9 @@ In scope:
   Signal K notifications under `notifications.stowage.*` are published for
   the vessel site only.
 - Categories stay global.
-- JSON export/import carries sites; importing a pre-site export assigns
-  its root locations to the vessel site.
+- JSON export/import carries sites; importing a pre-site export (in
+  replace or merge mode) assigns its root locations to the vessel site, and
+  an export keeps every field a pre-site version wrote.
 
 Out of scope for this round: per-site permissions, sharing a site with
 another user, and publishing notifications for non-vessel sites.

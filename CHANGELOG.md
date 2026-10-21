@@ -19,6 +19,12 @@ was renamed to `signalk-stowage-mgmt`.
   `GET /locations`, `/items` and `/item-log`, and sites in JSON
   export/import. Existing data moves to a default "Boat" vessel site on
   upgrade. Only the vessel site publishes `notifications.stowage.*`.
+- New plugin option "Enable multiple sites", off by default. While off,
+  `POST /sites` returns 403, the webapp hides all site controls, and stock
+  notifications cover the whole inventory as before. `GET /webapp-config`
+  reports `multipleSites`.
+- Pre-multisite JSON exports import unchanged in replace and merge mode
+  (covered by tests against a literal pre-multisite snapshot).
 
 ## [1.3.0] - 2026-09-17
 

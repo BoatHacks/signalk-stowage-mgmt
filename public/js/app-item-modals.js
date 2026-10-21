@@ -134,7 +134,7 @@ export function ItemPropertiesModal() {
     };
     if (!isSplit(item)) body.actual_quantity = Math.max(0, parseInt(actualQty, 10) || 0);
     else body.default_location_id = defaultLocationId || null;
-    var targetChanges = app.sites.filter(function (s) {
+    var targetChanges = !app.multiSite ? [] : app.sites.filter(function (s) {
       var current = (item.site_targets || []).find(function (t) { return t.site_id === s.id; });
       var wanted = (siteTargets[s.id] || '').trim();
       return wanted !== (current ? String(current.target_quantity) : '');
@@ -192,7 +192,7 @@ export function ItemPropertiesModal() {
           </div>
         </div>
 
-        ${app.sites.length > 1 ? html`
+        ${app.multiSite && app.sites.length > 1 ? html`
           <div class="form-field">
             <label>Target per site <span class="hint">(optional)</span></label>
             ${app.sites.map(function (s) {

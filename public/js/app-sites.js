@@ -3,10 +3,12 @@ import { useApp } from './app-core.js';
 
 // Header control: which site the Inventory, Floorplan, Overview, Stock
 // Alerts and Store Log tabs show ("All sites" removes the filter), plus a
-// button for the site manager. The select is hidden while only one site
-// exists, so single-site installs see no new UI beyond the small button.
+// button for the site manager. Rendered only when "Enable multiple sites"
+// is on in the plugin config; the select also stays hidden until a second
+// site exists.
 export function SiteSwitcher() {
   var app = useApp();
+  if (!app.multiSite) return null;
   return html`
     <div class="site-switcher">
       ${app.sites.length > 1 ? html`
@@ -66,7 +68,7 @@ export function SitesModal() {
   var app = useApp();
   var newNameState = useState('');
   var newName = newNameState[0], setNewName = newNameState[1];
-  if (!app.sitesModalOpen) return null;
+  if (!app.multiSite || !app.sitesModalOpen) return null;
 
   function add() {
     var trimmed = newName.trim();

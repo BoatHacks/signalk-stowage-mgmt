@@ -137,6 +137,13 @@ module.exports = function (app) {
         },
         default: ['placements', 'floorplan', 'history', 'properties', 'attachments']
       },
+      multipleSites: {
+        type: 'boolean',
+        title: 'Enable multiple sites',
+        description:
+          'Track inventory in more than one place (e.g. the boat and a shed): adds a site switcher and Sites manager to the webapp, per-site stock targets, and limits Signal K stock notifications to the vessel site. Off by default; while off, everything behaves as a single inventory and existing sites are kept but ignored.',
+        default: false
+      },
       publishStockAlertsNotification: {
         type: 'boolean',
         title: 'Publish stock alert status to Signal K',
@@ -186,7 +193,7 @@ module.exports = function (app) {
   plugin.registerWithRouter = function (router) {
     router.use(jsonBodyParser({ limit: 15 * 1024 * 1024 })) // floorplan SVGs can be a few MB
 
-    registerSiteRoutes(router, () => db, recomputeStockAlerts)
+    registerSiteRoutes(router, () => db, recomputeStockAlerts, () => pluginOptions)
     registerLocationRoutes(router, () => db, recomputeStockAlerts)
     registerItemRoutes(router, () => db, () => dataDir, recomputeStockAlerts)
     registerFloorplanRoutes(router, () => db)

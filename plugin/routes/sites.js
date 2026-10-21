@@ -1,7 +1,7 @@
 const { randomUUID } = require('crypto')
 const { runInTransaction } = require('../tx')
 
-module.exports = function registerSiteRoutes (router, getDb, recomputeStockAlerts) {
+module.exports = function registerSiteRoutes (router, getDb, recomputeStockAlerts, getOptions) {
   function db () {
     const instance = getDb()
     if (!instance) throw Object.assign(new Error('database not ready'), { statusCode: 503 })
@@ -25,6 +25,9 @@ module.exports = function registerSiteRoutes (router, getDb, recomputeStockAlert
   // Body: { name, floorplan_id?, is_vessel? }. Setting is_vessel: true
   // moves the flag off the current vessel site.
   router.post('/sites', (req, res) => {
+    if (!(getOptions() || {}).multipleSites) {
+      return res.status(403).json({ error: 'multiple sites is disabled; enable "Enable multiple sites" in the plugin configuration' })
+    }
     const { name, floorplan_id: floorplanId, is_vessel: isVessel } = req.body || {}
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'name required' })
