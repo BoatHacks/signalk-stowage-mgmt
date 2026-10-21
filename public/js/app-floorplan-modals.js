@@ -235,7 +235,9 @@ export function MoveModal() {
     if (space) performMove(space.id, space.name);
   }
 
-  var fallbackTargets = app.data.locations.filter(function (l) {
+  // Every site's locations, so a move can cross sites; the site name is
+  // appended whenever there is more than one site.
+  var fallbackTargets = app.allData.locations.filter(function (l) {
     if (forbidden.indexOf(l.id) !== -1) return false;
     return !(l.type === 'storage_space' && floorplan && l.floorplan_id === floorplan.id);
   });
@@ -277,7 +279,7 @@ export function MoveModal() {
               return html`
                 <button type="button" key=${loc.id} class="category-chip"
                         onClick=${function () { performMove(loc.id, loc.name); }}>
-                  ${pathToRoot(app.data, loc.id)} [${loc.type === 'storage_space' ? 'Storage Space' : 'Container'}]
+                  ${pathToRoot(app.allData, loc.id)}${app.siteSuffix(loc)} [${loc.type === 'storage_space' ? 'Storage Space' : 'Container'}]
                 </button>
               `;
             })}

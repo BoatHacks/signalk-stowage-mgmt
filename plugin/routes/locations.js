@@ -1,18 +1,34 @@
 const { randomUUID } = require('crypto')
+const { buildLocationSiteMap, getLocationSiteId, getVesselSiteId } = require('../sites')
 
-module.exports = function registerLocationRoutes (router, getDb) {
+module.exports = function registerLocationRoutes (router, getDb, recomputeStockAlerts) {
   function db () {
     const instance = getDb()
     if (!instance) throw Object.assign(new Error('database not ready'), { statusCode: 503 })
     return instance
   }
 
+  // Every location is returned with its effective site_id (its root's),
+  // not just the roots' stored one, so clients can filter without walking
+  // the tree. ?site=<id> restricts the list to that site.
+  function withSite (rows) {
+    const siteOf = buildLocationSiteMap(db())
+    return rows.map(row => Object.assign({}, row, { site_id: siteOf.get(row.id) || null }))
+  }
+
+  function getLocation (id) {
+    return withSite([db().prepare('SELECT * FROM locations WHERE id = ?').get(id)])[0]
+  }
+
   router.get('/locations', (req, res) => {
-    res.json(db().prepare('SELECT * FROM locations ORDER BY name').all())
+    const { site } = req.query || {}
+    let rows = withSite(db().prepare('SELECT * FROM locations ORDER BY name').all())
+    if (site) rows = rows.filter(row => row.site_id === site)
+    res.json(rows)
   })
 
   router.post('/locations', (req, res) => {
-    const { name, type, parent_id: parentId } = req.body || {}
+    const { name, type, parent_id: parentId, site_id: siteId } = req.body || {}
     if (!name || !['storage_space', 'container'].includes(type)) {
       return res.status(400).json({ error: 'name and a valid type (storage_space|container) are required' })
     }
@@ -20,10 +36,19 @@ module.exports = function registerLocationRoutes (router, getDb) {
       const parent = db().prepare('SELECT id FROM locations WHERE id = ?').get(parentId)
       if (!parent) return res.status(400).json({ error: 'parent_id does not exist' })
     }
+    if (parentId && siteId) {
+      return res.status(400).json({ error: 'site_id is only accepted for top-level locations; a child location belongs to its parent\'s site' })
+    }
+    if (siteId && !db().prepare('SELECT id FROM sites WHERE id = ?').get(siteId)) {
+      return res.status(400).json({ error: 'site_id does not exist' })
+    }
     const id = randomUUID()
-    db().prepare('INSERT INTO locations (id, name, type, parent_id) VALUES (?, ?, ?, ?)')
-      .run(id, name, type, parentId || null)
-    res.status(201).json(db().prepare('SELECT * FROM locations WHERE id = ?').get(id))
+    // A top-level location without an explicit site goes to the vessel
+    // site, so API clients written before sites existed keep working.
+    const rootSiteId = parentId ? null : (siteId || getVesselSiteId(db()))
+    db().prepare('INSERT INTO locations (id, name, type, parent_id, site_id) VALUES (?, ?, ?, ?, ?)')
+      .run(id, name, type, parentId || null, rootSiteId)
+    res.status(201).json(getLocation(id))
   })
 
   router.patch('/locations/:id', (req, res) => {
@@ -31,13 +56,15 @@ module.exports = function registerLocationRoutes (router, getDb) {
     if (!loc) return res.status(404).json({ error: 'not found' })
     const { name } = req.body || {}
     if (name) db().prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, loc.id)
-    res.json(db().prepare('SELECT * FROM locations WHERE id = ?').get(loc.id))
+    res.json(getLocation(loc.id))
   })
 
   // Re-parent a container under another container or storage space,
-  // or re-home a storage space (parent_id may be null to make it top-level).
+  // or re-home a storage space (parent_id may be null to make it top-level,
+  // in which case site_id picks its site and defaults to the one it was in).
+  // Moving under a parent in another site moves the whole subtree there.
   router.patch('/locations/:id/move', (req, res) => {
-    const { parent_id: parentId } = req.body || {}
+    const { parent_id: parentId, site_id: siteId } = req.body || {}
     const loc = db().prepare('SELECT * FROM locations WHERE id = ?').get(req.params.id)
     if (!loc) return res.status(404).json({ error: 'not found' })
 
@@ -53,8 +80,16 @@ module.exports = function registerLocationRoutes (router, getDb) {
         cursor = cursor.parent_id ? db().prepare('SELECT * FROM locations WHERE id = ?').get(cursor.parent_id) : null
       }
     }
-    db().prepare('UPDATE locations SET parent_id = ? WHERE id = ?').run(parentId || null, loc.id)
-    res.json(db().prepare('SELECT * FROM locations WHERE id = ?').get(loc.id))
+    if (parentId && siteId) {
+      return res.status(400).json({ error: 'site_id is only accepted when parent_id is null' })
+    }
+    if (siteId && !db().prepare('SELECT id FROM sites WHERE id = ?').get(siteId)) {
+      return res.status(400).json({ error: 'site_id does not exist' })
+    }
+    const newSiteId = parentId ? null : (siteId || getLocationSiteId(db(), loc.id) || getVesselSiteId(db()))
+    db().prepare('UPDATE locations SET parent_id = ?, site_id = ? WHERE id = ?').run(parentId || null, newSiteId, loc.id)
+    recomputeStockAlerts()
+    res.json(getLocation(loc.id))
   })
 
   // Assign or clear which SVG element (on which floorplan) represents this storage space.
@@ -71,7 +106,7 @@ module.exports = function registerLocationRoutes (router, getDb) {
     }
     db().prepare('UPDATE locations SET floorplan_id = ?, svg_element_id = ? WHERE id = ?')
       .run(floorplanId || null, svgElementId || null, loc.id)
-    res.json(db().prepare('SELECT * FROM locations WHERE id = ?').get(loc.id))
+    res.json(getLocation(loc.id))
   })
 
   router.delete('/locations/:id', (req, res) => {

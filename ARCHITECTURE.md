@@ -174,10 +174,39 @@ No new backend component; purely a rendering-layer addition on top of
 - Overview's own local search input is removed; its rows respond to the
   global query directly.
 
+### 2.6 Multiple sites (planned)
+
+- **Schema** (`plugin/db.js`): new `sites` and `item_site_targets` tables (`id`, `name`,
+  `is_vessel`, `floorplan_id`, `created_at`) and `locations.site_id`,
+  added with the same `PRAGMA table_info` guard the `items` columns use.
+  The migration inserts the "Boat" site and sets `site_id` on every
+  location whose `parent_id` is null. A unique partial index on
+  `sites(is_vessel) WHERE is_vessel = 1` enforces one vessel site.
+- **Resolving a location's site**: a recursive CTE walking `parent_id` to
+  the root, reused by items (via placements), alerts and the log filter,
+  so the site is never stored on non-root rows and can't drift on
+  re-parenting.
+- **Routes**: new `plugin/routes/sites.js`; `locations.js` accepts
+  `site_id` on root creation; list endpoints for locations, items and the
+  log take an optional `?site=<id>`.
+- **Alerts**: `plugin/stockAlerts.js` groups placements by site and
+  evaluates targets per site; `publishStockAlerts` publishes only the
+  vessel site's result under the existing `notifications.stowage.*`
+  paths, so signalk-status-tiles consumers see no path change.
+- **Backup**: `plugin/routes/backup.js` adds `sites` to the snapshot.
+  Import of a snapshot without `sites` assigns root locations to the
+  vessel site.
+- **Frontend**: the active site id is a per-browser choice kept in
+  `localStorage` (`stowage.activeSite`); `app.js` passes the tabs
+  `filterDataBySite(data, siteId)` (`helpers.js`) as `app.data` and the
+  unfiltered data as `app.allData`, which the Move and Split dialogs and the
+  item detail page use so they can cross sites. A `?location=` deep link to a
+  location in another site switches the active site first.
+
 ## 3. Data Models
 
 See SPEC.md §3 for the conceptual model. Actual SQLite schema
-(`plugin/db.js`): `floorplans`, `locations`, `items`, `categories`,
+(`plugin/db.js`): `floorplans`, `sites`, `locations`, `items`, `categories`,
 `item_categories` (join table), `item_placements`, `item_attachments`,
 `item_log`, with indexes on every foreign key used in a hot lookup path
 (`parent_id`, `location_id`, `item_id`, etc.). `item_log` is intentionally

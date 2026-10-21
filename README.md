@@ -410,6 +410,25 @@ all. This is unrelated to the Floorplan tab's own "Edit"/"Save" toggle
   the server root) — not `/plugins/signalk-stowage-mgmt/`, which is the
   separate JSON API mount and has no page to serve at `/`.
 
+## Sites
+
+A site is a place that holds inventory: the boat, a shed for tools and
+sails. Every top-level location belongs to one site and its sub-locations
+inherit it. The first start after upgrading creates a site named "Boat"
+(the vessel site) and assigns all existing locations to it.
+
+- The header's site switcher limits Inventory, Floorplan, Overview, Stock
+  Alerts and Store Log to one site, or shows all of them. It appears once a
+  second site exists; the **Sites** button manages sites (rename, add,
+  delete, choose the vessel, set a default floorplan per site).
+- Move or split an item to a location in another site with the usual Move
+  and Split dialogs.
+- Stock Alerts judge each site on the quantity held there. An item's target
+  can be set per site in its properties; without a site target, the item
+  target applies to the vessel site only.
+- Only the vessel site publishes `notifications.stowage.*`.
+- Categories are shared across sites.
+
 ## Data model
 
 SQLite database stored under the Signal K data directory (`inventory.db`).
@@ -562,6 +581,12 @@ users: the plugin ships ready-made tiles for all three paths via a
 button to add them.
 
 ## API (under `/plugins/signalk-stowage-mgmt`)
+
+Sites: `GET/POST /sites`, `GET/PATCH/DELETE /sites/:id`,
+`PUT/DELETE /items/:id/site-targets/:siteId`. `GET /locations`, `GET /items`
+and `GET /item-log` accept `?site=<id>`; locations carry `site_id`, items
+carry `site_quantities` and `site_targets`. A top-level `POST /locations`
+without `site_id` goes to the vessel site.
 
 Also published as an OpenAPI 3.0 spec (`openApi.json`), which renders in
 the Signal K Admin UI under **Documentation → OpenAPI** once the plugin is

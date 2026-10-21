@@ -1699,3 +1699,20 @@ select {
     padding: 0 !important;
   }
 }
+
+/* ---------- sites (#83) ---------- */
+.site-switcher { display: flex; align-items: center; gap: 8px; }
+.site-select, .site-manage-btn {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+}
+.site-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.site-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.site-name-input { flex: 1 1 140px; min-width: 120px; }
+.site-vessel { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.site-add-row { display: flex; gap: 8px; }
+.site-add-row input { flex: 1; }
+.site-target-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.site-target-name { min-width: 90px; }

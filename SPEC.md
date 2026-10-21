@@ -55,6 +55,11 @@ schema, `getSelfPath`).
 - **Actual quantity** vs. **target quantity** — how much of an item there
   currently is, vs. how much there's supposed to be (used for the
   Understocked/Stock Alerts view).
+- **Site** — a top-level place that holds inventory, e.g. the boat or a
+  shed. Every root location (one with no `parent_id`) belongs to exactly
+  one site; descendants belong to the same site as their root.
+- **Vessel site** — the single site flagged `is_vessel`. Only the vessel
+  site publishes Signal K notifications.
 - **Floorplan mapping** — the association between a storage space and one
   clickable SVG element (`svg_element_id`) on an uploaded floorplan.
 
@@ -74,10 +79,22 @@ schema, `getSelfPath`).
   exists is rejected (409).
 - `actual_quantity` must be a non-negative integer everywhere it's
   accepted.
+- A location's site is its root ancestor's site. Only root locations carry
+  a `site_id`; a root location created without one goes to the vessel site,
+  and `site_id` on a child location is rejected (400). Re-parenting a location under a parent in another site moves its whole
+  subtree to that site.
+- A site cannot be deleted while it still has locations. Exactly one site
+  has `is_vessel = 1`; deleting it, or clearing the flag without setting
+  another, is rejected (409).
+- A site's `floorplan_id` is optional and only picks the floorplan the
+  Floorplan tab opens first for that site; storage spaces can still be
+  mapped to any floorplan.
 
 ## 3. Data Model
 
-- **Location** — `id`, `name`, `type` (`storage_space` | `container`),
+- **Site** — `id`, `name`, `is_vessel`, `floorplan_id` (nullable),
+  `created_at`.
+- **Location** — `id`, `name`, `site_id` (root locations only), `type` (`storage_space` | `container`),
   `parent_id`, `floorplan_id` + `svg_element_id` (storage spaces only),
   `created_at`.
 - **Item** — `id`, `name`, `actual_quantity`, `target_quantity`, `notes`,
@@ -121,12 +138,13 @@ resource, not a duplicate of it.
 
 | Resource | Endpoints |
 |---|---|
+| Sites | CRUD, set vessel flag |
 | Locations | CRUD, move (re-parent, cycle-checked), SVG-mapping assign/clear |
 | Items | CRUD, thumbnail, move, split/placements, categories, attachments, locate |
 | Item Log | list with optional date range |
 | Categories | CRUD (name-unique) |
 | Floorplans | CRUD (SVG content) |
-| Backup | `GET /export` (full snapshot), `POST /import` (full replace) |
+| Backup | `GET /export` (full snapshot incl. sites), `POST /import` (full replace or merge) |
 | Config | `GET /webapp-config` (theme recommendation, feature flags) |
 
 All responses are JSON; errors are the flat shape `{ "error": "..." }`,
@@ -358,6 +376,32 @@ and several backend hardening fixes.
   implementation, deferred for the same reason split-items work was scoped
   carefully.
 
+### 9.5 Multiple Sites (planned)
+
+Goal: track inventory for more than one place (the boat, a shed holding
+tools and sails) in one plugin instance.
+
+In scope:
+
+- `sites` table and `site_id` on root locations; the one-time migration
+  creates a site named "Boat" with `is_vessel = 1` and assigns every
+  existing root location to it.
+- Each site has its own optional floorplan (`sites.floorplan_id`).
+- Site switcher in the webapp header: one site, or "All sites". It filters
+  the Inventory, Floorplan, Overview, Stock Alerts and Store Log tabs.
+- Moving or splitting an item's placements across sites, using the
+  existing Move and Split dialogs; the item log already records
+  from/to location, so a cross-site move needs no new event type.
+- Stock alerts computed per site (see §11, "Per-site stock targets").
+  Signal K notifications under `notifications.stowage.*` are published for
+  the vessel site only.
+- Categories stay global.
+- JSON export/import carries sites; importing a pre-site export assigns
+  its root locations to the vessel site.
+
+Out of scope for this round: per-site permissions, sharing a site with
+another user, and publishing notifications for non-vessel sites.
+
 ## 10. References
 
 - README.md — full API reference, Usage section (screenshots), Known
@@ -443,7 +487,20 @@ and several backend hardening fixes.
   Placements only shows when this section is hidden, to avoid two
   redundant ways to do the same thing when both are visible at once.
 
+### Per-site stock targets (proposed, multi-site)
+
+`target_quantity` lives on the item, so "2 hammers in the shed, 0 on the
+boat" has no per-site target to compare against. Proposal: add a nullable
+`item_site_targets(item_id, site_id, target_quantity)` table. A site's
+Understocked check uses its row if present; the item-level
+`target_quantity` applies to the vessel site only when no row exists, and
+other sites with no row are never flagged. Expiration alerts need no
+change: they follow the placement's site.
+
 ## 12. Open Questions
+
+- Multi-site (§9.5): confirm the per-site target proposal in §11 and the
+  vessel-only notification rule before implementation.
 
 None outstanding for QR labels or the item detail page — all open
 questions from both brainstorms were resolved (see §11 for the

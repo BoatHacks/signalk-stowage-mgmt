@@ -6,7 +6,10 @@ import { sanitizeSvg } from './svg-sanitizer.js';
 
 export function FloorplanTab() {
   var app = useApp();
-  var summary = app.data.floorplans.length ? app.data.floorplans[0] : null;
+  var siteFloorplan = app.activeSite && app.activeSite.floorplan_id
+    ? app.data.floorplans.find(function (fp) { return fp.id === app.activeSite.floorplan_id; })
+    : null;
+  var summary = siteFloorplan || (app.data.floorplans.length ? app.data.floorplans[0] : null);
 
   var contentState = useState(null); // full floorplan { id, name, svg_content } or null
   var content = contentState[0], setContent = contentState[1];

@@ -61,6 +61,13 @@ export function AttachmentsSection(props) {
 
 // ---------- item properties modal ----------
 
+// Per-site target inputs as strings keyed by site id, from the item's stored targets.
+function siteTargetInputs(item) {
+  var inputs = {};
+  (item.site_targets || []).forEach(function (t) { inputs[t.site_id] = String(t.target_quantity); });
+  return inputs;
+}
+
 export function ItemPropertiesModal() {
   var app = useApp();
   var item = app.propertiesModalItem;
@@ -76,6 +83,7 @@ export function ItemPropertiesModal() {
   var changeNoteState = useState('');
   var noteViewState = useState('show'); // 'show' | 'edit'
   var defaultLocationState = useState('');
+  var siteTargetsState = useState({});
 
   useEffect(function () {
     if (!item) return;
@@ -90,6 +98,7 @@ export function ItemPropertiesModal() {
     changeNoteState[1]('');
     noteViewState[1]('show');
     defaultLocationState[1](item.default_location_id || '');
+    siteTargetsState[1](siteTargetInputs(item));
   }, [item && item.id]);
 
   if (!item) return null;
@@ -105,6 +114,7 @@ export function ItemPropertiesModal() {
   var changeNote = changeNoteState[0], setChangeNote = changeNoteState[1];
   var noteView = noteViewState[0], setNoteView = noteViewState[1];
   var defaultLocationId = defaultLocationState[0], setDefaultLocationId = defaultLocationState[1];
+  var siteTargets = siteTargetsState[0], setSiteTargets = siteTargetsState[1];
 
   function save() {
     var trimmedName = (name || '').trim();
@@ -124,7 +134,19 @@ export function ItemPropertiesModal() {
     };
     if (!isSplit(item)) body.actual_quantity = Math.max(0, parseInt(actualQty, 10) || 0);
     else body.default_location_id = defaultLocationId || null;
-    app.updateItem(item.id, body).then(app.closePropertiesModal).catch(function () {});
+    var targetChanges = app.sites.filter(function (s) {
+      var current = (item.site_targets || []).find(function (t) { return t.site_id === s.id; });
+      var wanted = (siteTargets[s.id] || '').trim();
+      return wanted !== (current ? String(current.target_quantity) : '');
+    });
+    app.updateItem(item.id, body).then(function () {
+      return targetChanges.reduce(function (chain, s) {
+        var wanted = (siteTargets[s.id] || '').trim();
+        return chain.then(function () {
+          return app.setSiteTarget(item.id, s.id, wanted === '' ? null : Math.max(0, parseInt(wanted, 10) || 0));
+        });
+      }, Promise.resolve());
+    }).then(app.closePropertiesModal).catch(function () {});
   }
 
   return html`
@@ -170,13 +192,34 @@ export function ItemPropertiesModal() {
           </div>
         </div>
 
+        ${app.sites.length > 1 ? html`
+          <div class="form-field">
+            <label>Target per site <span class="hint">(optional)</span></label>
+            ${app.sites.map(function (s) {
+              return html`
+                <div class="site-target-row" key=${s.id}>
+                  <span class="site-target-name">${s.name}</span>
+                  <input type="number" min="0" step="1" aria-label=${'Target at ' + s.name}
+                         placeholder=${s.is_vessel ? (targetQty === '' ? 'none' : 'item target') : 'none'}
+                         value=${siteTargets[s.id] || ''}
+                         onInput=${function (e) {
+                           var value = e.target.value;
+                           setSiteTargets(function (prev) { var next = Object.assign({}, prev); next[s.id] = value; return next; });
+                         }} />
+                </div>
+              `;
+            })}
+            <span class="hint">A site's own target replaces the item target for that site. Without one, the item target applies to the vessel site only.</span>
+          </div>
+        ` : null}
+
         ${isSplit(item) ? html`
           <div class="form-field">
             <label>Default Storage Location <span class="hint">(optional)</span></label>
             <select value=${defaultLocationId} onChange=${function (e) { setDefaultLocationId(e.target.value); }}>
               <option value="">None — quick +/− edits stay disabled elsewhere</option>
               ${item.placements.filter(function (p) { return p.location_id; }).map(function (p) {
-                return html`<option key=${p.location_id} value=${p.location_id}>${pathToRoot(app.data, p.location_id) || p.location_name || 'unnamed'}</option>`;
+                return html`<option key=${p.location_id} value=${p.location_id}>${pathToRoot(app.allData, p.location_id) || p.location_name || 'unnamed'}</option>`;
               })}
             </select>
             <span class="hint">The quick +/− quantity editors on Overview, Categories, etc. act on the stock at

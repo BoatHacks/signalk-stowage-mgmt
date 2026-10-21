@@ -6,7 +6,8 @@ import {
   buildInventoryMarkdown, extractSourceFromNotes, buildShoppingListMarkdown,
   isExpiringSoon, daysUntil, expiringStatusText, subtreeSummary, defaultPlacementFor, quantityStepsFor,
   locationHasFloorplanMapping, itemHasFloorplanMapping, itemFloorplanTargets, itemMatchesQuery, filterQuery,
-  resolveDetailPageSections, DETAIL_PAGE_SECTIONS, anyItemHasPhoto
+  resolveDetailPageSections, DETAIL_PAGE_SECTIONS, anyItemHasPhoto,
+  filterDataBySite, siteQuantity, siteTarget, isUnderstockedAt
 } from '../../public/js/helpers.js'
 
 function makeData (overrides) {
@@ -497,4 +498,50 @@ test('resolveDetailPageSections: filters to known sections, falls back to the de
   assert.deepEqual(resolveDetailPageSections([]), [])
   assert.deepEqual(resolveDetailPageSections(undefined), DETAIL_PAGE_SECTIONS)
   assert.deepEqual(resolveDetailPageSections(null), DETAIL_PAGE_SECTIONS)
+})
+
+// ---------- sites (#83) ----------
+
+const siteData = {
+  locations: [
+    { id: 'l-boat', site_id: 's-boat' },
+    { id: 'l-rack', site_id: 's-shed' },
+    { id: 'l-shelf', site_id: 's-shed' }
+  ],
+  items: [
+    { id: 'jib', actual_quantity: 3, target_quantity: 4, site_quantities: [{ site_id: 's-boat', quantity: 1 }, { site_id: 's-shed', quantity: 2 }], site_targets: [] },
+    { id: 'hammer', actual_quantity: 1, target_quantity: null, site_quantities: [{ site_id: 's-shed', quantity: 1 }], site_targets: [{ site_id: 's-shed', target_quantity: 2 }] }
+  ],
+  categories: [{ id: 'c' }]
+}
+const boatSite = { id: 's-boat', is_vessel: 1 }
+const shedSite = { id: 's-shed', is_vessel: 0 }
+
+test('filterDataBySite: no site returns the data unchanged', () => {
+  assert.equal(filterDataBySite(siteData, null), siteData)
+})
+
+test('filterDataBySite: keeps only that site\'s locations and items with stock there, other keys pass through', () => {
+  const view = filterDataBySite(siteData, 's-shed')
+  assert.deepEqual(view.locations.map((l) => l.id), ['l-rack', 'l-shelf'])
+  assert.deepEqual(view.items.map((i) => i.id), ['jib', 'hammer'])
+  assert.equal(view.categories, siteData.categories)
+  assert.deepEqual(filterDataBySite(siteData, 's-boat').items.map((i) => i.id), ['jib'])
+})
+
+test('siteQuantity / siteTarget: site quantity, own target wins, item target applies to the vessel site only', () => {
+  const [jib, hammer] = siteData.items
+  assert.equal(siteQuantity(jib, 's-shed'), 2)
+  assert.equal(siteQuantity(hammer, 's-boat'), 0)
+  assert.equal(siteTarget(jib, boatSite), 4)
+  assert.equal(siteTarget(jib, shedSite), null)
+  assert.equal(siteTarget(hammer, shedSite), 2)
+})
+
+test('isUnderstockedAt: judged on the site\'s own quantity and target; no site falls back to the whole item', () => {
+  const [jib, hammer] = siteData.items
+  assert.equal(isUnderstockedAt(jib, boatSite), true) // 1 on the boat < 4
+  assert.equal(isUnderstockedAt(jib, shedSite), false) // no shed target
+  assert.equal(isUnderstockedAt(jib, null), true) // 3 total < 4
+  assert.equal(isUnderstockedAt(hammer, shedSite), true) // 1 < 2
 })

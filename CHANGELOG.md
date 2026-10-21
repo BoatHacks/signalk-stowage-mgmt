@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This log begins at v0.2.3, when the project (originally `signalk-quartermaster`)
 was renamed to `signalk-stowage-mgmt`.
 
+## [Unreleased]
+
+### Added
+
+- Multiple sites (#83): inventory can be split between places such as the
+  boat and a shed. New `sites` table and `/sites` routes, a site switcher
+  and Sites manager in the webapp, per-site default floorplan, per-site
+  restock targets (`PUT /items/:id/site-targets/:siteId`), `?site=` filter on
+  `GET /locations`, `/items` and `/item-log`, and sites in JSON
+  export/import. Existing data moves to a default "Boat" vessel site on
+  upgrade. Only the vessel site publishes `notifications.stowage.*`.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added

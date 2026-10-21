@@ -35,6 +35,9 @@ const { runInTransaction } = require('../tx')
 //   import — e.g. from an external floorplan-SVG generator — can use ids
 //   that intentionally match svg_element_id mappings or a previous export,
 //   per issue #26's discussion.
+// - Sites are matched to an existing site by exact name and merged into it;
+//   an unmatched one is added (never as the vessel site). A top-level
+//   imported location keeps its mapped site, else goes to the vessel site.
 // - Categories are matched to an existing category by exact name (they're
 //   globally unique by name — see `POST /categories`'s 409) and merged into
 //   it rather than creating a duplicate.
@@ -128,7 +131,8 @@ module.exports = function registerBackupRoutes (router, getDb) {
     // travel with the export — id/name/svg_content, just enough for import
     // on a different instance to find (or fail to find) a content match.
     const referencedFloorplanIds = db().prepare(
-      'SELECT DISTINCT floorplan_id FROM locations WHERE floorplan_id IS NOT NULL'
+      `SELECT floorplan_id FROM locations WHERE floorplan_id IS NOT NULL
+       UNION SELECT floorplan_id FROM sites WHERE floorplan_id IS NOT NULL`
     ).all().map((r) => r.floorplan_id)
     const floorplans = referencedFloorplanIds.length
       ? db().prepare(
@@ -138,9 +142,17 @@ module.exports = function registerBackupRoutes (router, getDb) {
 
     const categories = db().prepare('SELECT id, name, created_at FROM categories ORDER BY name').all()
 
+    const sites = db().prepare('SELECT id, name, is_vessel, floorplan_id, created_at FROM sites ORDER BY name').all()
+
     const locations = db().prepare(
-      'SELECT id, name, type, parent_id, floorplan_id, svg_element_id, created_at FROM locations'
+      'SELECT id, name, type, parent_id, site_id, floorplan_id, svg_element_id, created_at FROM locations'
     ).all()
+
+    const siteTargetsByItem = db().prepare('SELECT item_id, site_id, target_quantity FROM item_site_targets').all()
+      .reduce((acc, row) => {
+        (acc[row.item_id] = acc[row.item_id] || []).push({ site_id: row.site_id, target_quantity: row.target_quantity })
+        return acc
+      }, {})
 
     const items = db().prepare(
       'SELECT id, name, actual_quantity, target_quantity, notes, location_id, thumbnail, expires_at, acquired_date, price_paid, unit, created_at FROM items'
@@ -173,10 +185,12 @@ module.exports = function registerBackupRoutes (router, getDb) {
       exported_at: new Date().toISOString(),
       categories,
       floorplans,
+      sites,
       locations,
       items: items.map((item) => ({
         ...item,
         category_ids: categoryIdsByItem[item.id] || [],
+        site_targets: siteTargetsByItem[item.id] || [],
         placements: placementsByItem[item.id] || [],
         attachments: attachmentsByItem[item.id] || [] // metadata only — not restored on import
       }))
@@ -250,6 +264,10 @@ module.exports = function registerBackupRoutes (router, getDb) {
       return { floorplanId, svgElementId }
     }
 
+    if (payload.sites !== undefined && !Array.isArray(payload.sites)) {
+      return res.status(400).json({ error: 'sites must be an array when present' })
+    }
+
     let result
     try {
       result = runInTransaction(db(), () => {
@@ -274,7 +292,29 @@ module.exports = function registerBackupRoutes (router, getDb) {
 function runReplaceImport (db, payload, resolveFloorplanMapping) {
   db.prepare('DELETE FROM items').run()
   db.prepare('DELETE FROM locations').run()
+  db.prepare('DELETE FROM sites').run()
   db.prepare('DELETE FROM categories').run()
+
+  // Sites: a snapshot without any (made before multi-site support) leaves
+  // the database with a single vessel site, and so does one without a vessel.
+  const importedSites = Array.isArray(payload.sites) ? payload.sites : []
+  const insertSite = db.prepare('INSERT INTO sites (id, name, is_vessel, floorplan_id, created_at) VALUES (?, ?, ?, ?, ?)')
+  let vesselAssigned = false
+  importedSites.forEach((site) => {
+    const isVessel = !!site.is_vessel && !vesselAssigned
+    if (isVessel) vesselAssigned = true
+    insertSite.run(
+      site.id || randomUUID(), site.name, isVessel ? 1 : 0,
+      resolveFloorplanMapping({ floorplan_id: site.floorplan_id }).floorplanId, site.created_at || new Date().toISOString()
+    )
+  })
+  if (!vesselAssigned) {
+    const first = importedSites.length ? db.prepare('SELECT id FROM sites ORDER BY created_at LIMIT 1').get() : null
+    if (first) db.prepare('UPDATE sites SET is_vessel = 1 WHERE id = ?').run(first.id)
+    else db.prepare('INSERT INTO sites (id, name, is_vessel) VALUES (?, ?, 1)').run(randomUUID(), 'Boat')
+  }
+  const vesselSiteId = db.prepare('SELECT id FROM sites WHERE is_vessel = 1').get().id
+  const restoredSiteIds = new Set(db.prepare('SELECT id FROM sites').all().map((r) => r.id))
 
   const insertCategory = db.prepare('INSERT INTO categories (id, name, created_at) VALUES (?, ?, ?)')
   payload.categories.forEach((c) => {
@@ -294,9 +334,15 @@ function runReplaceImport (db, payload, resolveFloorplanMapping) {
     insertLocation.run(loc.id, loc.name, loc.type, floorplanId, svgElementId, loc.created_at || new Date().toISOString())
   })
   const updateParent = db.prepare('UPDATE locations SET parent_id = ? WHERE id = ?')
+  const updateSite = db.prepare('UPDATE locations SET site_id = ? WHERE id = ?')
   const locationIds = new Set(payload.locations.map((l) => l.id))
   payload.locations.forEach((loc) => {
-    if (loc.parent_id && locationIds.has(loc.parent_id)) updateParent.run(loc.parent_id, loc.id)
+    if (loc.parent_id && locationIds.has(loc.parent_id)) {
+      updateParent.run(loc.parent_id, loc.id)
+    } else {
+      // Top-level: keep its site if the snapshot has it, else the vessel site.
+      updateSite.run(restoredSiteIds.has(loc.site_id) ? loc.site_id : vesselSiteId, loc.id)
+    }
   })
 
   const insertItem = db.prepare(
@@ -304,6 +350,7 @@ function runReplaceImport (db, payload, resolveFloorplanMapping) {
   )
   const insertItemCategory = db.prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
   const insertPlacement = db.prepare('INSERT INTO item_placements (id, item_id, location_id, quantity) VALUES (?, ?, ?, ?)')
+  const insertSiteTarget = db.prepare('INSERT OR REPLACE INTO item_site_targets (item_id, site_id, target_quantity) VALUES (?, ?, ?)')
 
   payload.items.forEach((item) => {
     const locationId = item.location_id && locationIds.has(item.location_id) ? item.location_id : null
@@ -316,6 +363,11 @@ function runReplaceImport (db, payload, resolveFloorplanMapping) {
     );
     (item.category_ids || []).forEach((categoryId) => {
       if (restoredCategoryIds.has(categoryId)) insertItemCategory.run(item.id, categoryId)
+    });
+    (item.site_targets || []).forEach((t) => {
+      if (restoredSiteIds.has(t.site_id) && Number.isInteger(t.target_quantity)) {
+        insertSiteTarget.run(item.id, t.site_id, t.target_quantity)
+      }
     });
     (item.placements || []).forEach((p) => {
       // location_id is nullable — a placement can legitimately be
@@ -332,6 +384,7 @@ function runReplaceImport (db, payload, resolveFloorplanMapping) {
     mode: 'replace',
     restored: {
       categories: payload.categories.length,
+      sites: db.prepare('SELECT COUNT(*) c FROM sites').get().c,
       locations: payload.locations.length,
       items: payload.items.length
     }
@@ -368,6 +421,33 @@ function runMergeImport (db, payload, resolveFloorplanMapping) {
     categoryIdByName.set(name, finalId) // so duplicate names within the same payload also merge
     categoriesAdded++
   })
+
+  // --- Sites: matched to an existing site by exact name (merged into it);
+  // otherwise inserted, keeping the payload's id unless it collides. An
+  // imported site never becomes the vessel site, so the existing one stays.
+  const existingSites = db.prepare('SELECT id, name FROM sites').all()
+  const siteIdByName = new Map(existingSites.map((x) => [x.name, x.id]))
+  const takenSiteIds = new Set(existingSites.map((x) => x.id))
+  const siteIdMap = new Map() // payload site id -> final id in this database
+  const insertSite = db.prepare('INSERT INTO sites (id, name, is_vessel, floorplan_id, created_at) VALUES (?, ?, 0, ?, ?)')
+  let sitesAdded = 0
+  ;(Array.isArray(payload.sites) ? payload.sites : []).forEach((site) => {
+    const name = (site.name || '').trim()
+    const existingId = siteIdByName.get(name)
+    if (existingId) {
+      siteIdMap.set(site.id, existingId)
+      return
+    }
+    const finalId = resolveMergeId(site.id, takenSiteIds)
+    insertSite.run(
+      finalId, name, resolveFloorplanMapping({ floorplan_id: site.floorplan_id }).floorplanId,
+      site.created_at || new Date().toISOString()
+    )
+    siteIdMap.set(site.id, finalId)
+    siteIdByName.set(name, finalId)
+    sitesAdded++
+  })
+  const vesselSiteId = db.prepare('SELECT id FROM sites WHERE is_vessel = 1').get().id
 
   // --- Locations: keep the payload's id unless it collides; a parent_id
   // pointing at another row in this same payload is remapped to that row's
@@ -413,8 +493,10 @@ function runMergeImport (db, payload, resolveFloorplanMapping) {
     insertLocation.run(r.finalId, r.finalName, r.loc.type, r.floorplanId, r.svgElementId, r.loc.created_at || new Date().toISOString())
   })
   const updateParent = db.prepare('UPDATE locations SET parent_id = ? WHERE id = ?')
+  const updateSite = db.prepare('UPDATE locations SET site_id = ? WHERE id = ?')
   resolvedLocations.forEach((r) => {
     if (r.finalParentId) updateParent.run(r.finalParentId, r.finalId)
+    else updateSite.run(siteIdMap.get(r.loc.site_id) || vesselSiteId, r.finalId)
   })
 
   // --- Items: no uniqueness policy to apply (item names were never unique,
@@ -438,6 +520,7 @@ function runMergeImport (db, payload, resolveFloorplanMapping) {
   )
   const insertItemCategory = db.prepare('INSERT INTO item_categories (item_id, category_id) VALUES (?, ?)')
   const insertPlacement = db.prepare('INSERT INTO item_placements (id, item_id, location_id, quantity) VALUES (?, ?, ?, ?)')
+  const insertSiteTarget = db.prepare('INSERT OR REPLACE INTO item_site_targets (item_id, site_id, target_quantity) VALUES (?, ?, ?)')
 
   payload.items.forEach((item) => {
     const finalItemId = resolveMergeId(item.id, takenItemIds)
@@ -452,6 +535,10 @@ function runMergeImport (db, payload, resolveFloorplanMapping) {
     (item.category_ids || []).forEach((categoryId) => {
       const finalCategoryId = categoryIdMap.get(categoryId)
       if (finalCategoryId) insertItemCategory.run(finalItemId, finalCategoryId)
+    });
+    (item.site_targets || []).forEach((t) => {
+      const finalSiteId = siteIdMap.get(t.site_id)
+      if (finalSiteId && Number.isInteger(t.target_quantity)) insertSiteTarget.run(finalItemId, finalSiteId, t.target_quantity)
     });
     (item.placements || []).forEach((p) => {
       // Unlike replace mode (which drops a placement outright when its
@@ -471,6 +558,7 @@ function runMergeImport (db, payload, resolveFloorplanMapping) {
     mode: 'merge',
     added: {
       categories: categoriesAdded,
+      sites: sitesAdded,
       locations: payload.locations.length,
       items: payload.items.length
     },

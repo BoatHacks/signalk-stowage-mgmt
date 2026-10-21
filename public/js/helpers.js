@@ -295,6 +295,43 @@ export function isUnderstocked(item) {
     item.actual_quantity < item.target_quantity;
 }
 
+// ---------- sites (#83) ----------
+
+// Restricts locations and items to one site; null/undefined means all
+// sites and returns `data` unchanged. An item is in a site when the server
+// reports stock there (item.site_quantities), a location when its
+// effective site_id matches. Everything else on `data` passes through.
+export function filterDataBySite(data, siteId) {
+  if (!siteId) return data;
+  return Object.assign({}, data, {
+    locations: data.locations.filter(function (l) { return l.site_id === siteId; }),
+    items: data.items.filter(function (item) {
+      return (item.site_quantities || []).some(function (q) { return q.site_id === siteId; });
+    })
+  });
+}
+
+export function siteQuantity(item, siteId) {
+  var entry = (item.site_quantities || []).find(function (q) { return q.site_id === siteId; });
+  return entry ? entry.quantity : 0;
+}
+
+// The restock target that applies at a site: its own item_site_targets row
+// if there is one, else the item-level target on the vessel site only.
+export function siteTarget(item, site) {
+  var own = (item.site_targets || []).find(function (t) { return t.site_id === site.id; });
+  if (own) return own.target_quantity;
+  return site.is_vessel ? item.target_quantity : null;
+}
+
+// Understocked within a single site, or (no site) across the whole item,
+// matching how the server evaluates the vessel site for notifications.
+export function isUnderstockedAt(item, site) {
+  if (!site) return isUnderstocked(item);
+  var target = siteTarget(item, site);
+  return target !== null && target !== undefined && siteQuantity(item, site.id) < target;
+}
+
 export var EXPIRING_WINDOW_DAYS = 14;
 
 // Whole-days difference between today (local midnight) and a "YYYY-MM-DD"

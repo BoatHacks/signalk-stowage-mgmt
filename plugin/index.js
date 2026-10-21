@@ -3,6 +3,7 @@ const path = require('path')
 const { initDb } = require('./db')
 const { jsonBodyParser } = require('./jsonBody')
 const { publishStockAlerts } = require('./stockAlerts')
+const registerSiteRoutes = require('./routes/sites')
 const registerLocationRoutes = require('./routes/locations')
 const registerItemRoutes = require('./routes/items')
 const registerFloorplanRoutes = require('./routes/floorplans')
@@ -185,7 +186,8 @@ module.exports = function (app) {
   plugin.registerWithRouter = function (router) {
     router.use(jsonBodyParser({ limit: 15 * 1024 * 1024 })) // floorplan SVGs can be a few MB
 
-    registerLocationRoutes(router, () => db)
+    registerSiteRoutes(router, () => db, recomputeStockAlerts)
+    registerLocationRoutes(router, () => db, recomputeStockAlerts)
     registerItemRoutes(router, () => db, () => dataDir, recomputeStockAlerts)
     registerFloorplanRoutes(router, () => db)
     registerCategoryRoutes(router, () => db)

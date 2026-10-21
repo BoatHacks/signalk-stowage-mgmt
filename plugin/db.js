@@ -14,6 +14,7 @@ const { randomUUID } = require('crypto')
 const { runInTransaction } = require('./tx')
 
 const DEFAULT_CATEGORIES = ['food', 'spare part', 'equipment', 'tools']
+const DEFAULT_SITE_NAME = 'Boat'
 
 function initDb (dataDir) {
   fs.mkdirSync(dataDir, { recursive: true })
@@ -34,6 +35,16 @@ function initDb (dataDir) {
       svg_content TEXT NOT NULL,
       uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS sites (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      is_vessel INTEGER NOT NULL DEFAULT 0 CHECK (is_vessel IN (0, 1)),
+      floorplan_id TEXT REFERENCES floorplans(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_sites_vessel ON sites(is_vessel) WHERE is_vessel = 1;
 
     CREATE TABLE IF NOT EXISTS locations (
       id TEXT PRIMARY KEY,
@@ -78,6 +89,13 @@ function initDb (dataDir) {
       item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
       location_id TEXT REFERENCES locations(id) ON DELETE SET NULL,
       quantity INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS item_site_targets (
+      item_id TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+      site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+      target_quantity INTEGER NOT NULL,
+      PRIMARY KEY (item_id, site_id)
     );
 
     CREATE TABLE IF NOT EXISTS item_attachments (
@@ -229,6 +247,30 @@ function initDb (dataDir) {
   if (!itemLogColumnsAfter.includes('user_name')) {
     db.exec('ALTER TABLE item_log ADD COLUMN user_name TEXT')
   }
+
+  // Multi-site (#83): only root locations carry a site_id, descendants
+  // inherit it from their root. The first start after upgrading creates a
+  // vessel site named "Boat" and assigns every existing root location to it,
+  // defaulting its floorplan to the one most of those locations are mapped to.
+  const locationColumns = db.prepare('PRAGMA table_info(locations)').all().map(c => c.name)
+  if (!locationColumns.includes('site_id')) {
+    db.exec('ALTER TABLE locations ADD COLUMN site_id TEXT REFERENCES sites(id) ON DELETE SET NULL')
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS idx_locations_site ON locations(site_id)')
+  runInTransaction(db, () => {
+    let vessel = db.prepare('SELECT id FROM sites WHERE is_vessel = 1').get()
+    if (!vessel) {
+      const mostUsed = db.prepare(`
+        SELECT floorplan_id FROM locations WHERE floorplan_id IS NOT NULL
+        GROUP BY floorplan_id ORDER BY COUNT(*) DESC LIMIT 1
+      `).get()
+      const id = randomUUID()
+      db.prepare('INSERT INTO sites (id, name, is_vessel, floorplan_id) VALUES (?, ?, 1, ?)')
+        .run(id, DEFAULT_SITE_NAME, mostUsed ? mostUsed.floorplan_id : null)
+      vessel = { id }
+    }
+    db.prepare('UPDATE locations SET site_id = ? WHERE parent_id IS NULL AND site_id IS NULL').run(vessel.id)
+  })
 
   const categoryCount = db.prepare('SELECT COUNT(*) c FROM categories').get().c
   if (categoryCount === 0) {

@@ -8,6 +8,8 @@
 // publish step (publishStockAlerts) so the state logic is testable without
 // a fake `app`.
 
+const { getVesselSiteId, buildItemSiteQuantities } = require('./sites')
+
 const DEFAULTS = {
   publishStockAlertsNotification: true,
   stockAlertsForecastWindowDays: 30,
@@ -188,10 +190,44 @@ function computeOverallState (stock, expiring) {
   return { state, message: messages.join(' ') }
 }
 
+// Items to evaluate for one site, each with actual_quantity replaced by
+// the quantity held in that site and target_quantity by the site's own
+// target (item_site_targets) if it has one. An item without a site target
+// uses its item-level target on the vessel site only (#83); on other sites
+// it has no target and is never flagged understocked. Items with no stock
+// in the site are skipped unless they have a site target, in which case
+// they count with quantity 0.
+function itemsForSite (db, siteId) {
+  const quantities = buildItemSiteQuantities(db)
+  const siteTargets = new Map(
+    db.prepare('SELECT item_id, target_quantity FROM item_site_targets WHERE site_id = ?')
+      .all(siteId).map(r => [r.item_id, r.target_quantity])
+  )
+  const isVessel = getVesselSiteId(db) === siteId
+  const items = []
+  for (const item of db.prepare('SELECT id, name, actual_quantity, target_quantity, expires_at FROM items').all()) {
+    const held = quantities.get(item.id)
+    const hasStockHere = held && held.has(siteId)
+    if (!hasStockHere && !siteTargets.has(item.id)) continue
+    items.push({
+      id: item.id,
+      name: item.name,
+      expires_at: item.expires_at,
+      actual_quantity: hasStockHere ? held.get(siteId) : 0,
+      target_quantity: siteTargets.has(item.id)
+        ? siteTargets.get(item.id)
+        : (isVessel ? item.target_quantity : null)
+    })
+  }
+  return items
+}
+
 // now (optional): epoch ms, for deterministic tests. Defaults to Date.now().
+// Evaluates the vessel site only; other sites don't publish notifications.
 function computeStockAlertsState (db, options, now) {
   const opts = Object.assign({}, DEFAULTS, options)
-  const items = db.prepare('SELECT id, name, actual_quantity, target_quantity, expires_at FROM items').all()
+  const vesselId = getVesselSiteId(db)
+  const items = vesselId ? itemsForSite(db, vesselId) : []
 
   const stock = computeStockState(db, items, opts, now)
   const expiring = computeExpiringState(items, opts, now)

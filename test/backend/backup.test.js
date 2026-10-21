@@ -59,7 +59,7 @@ test('import: round-trips onto the same instance, preserving ids and the floorpl
   const res = await server.post('/import', snapshot)
   assert.equal(res.status, 200)
   const body = await res.json()
-  assert.deepEqual(body.restored, { categories: 5, locations: 3, items: 2 })
+  assert.deepEqual(body.restored, { categories: 5, sites: 1, locations: 3, items: 2 })
   assert.equal(body.dropped_floorplan_mappings, 0)
   assert.equal(body.remapped_floorplan_mappings, 0)
 
@@ -239,7 +239,7 @@ test('import: mode "merge" adds imported rows alongside existing data instead of
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.mode, 'merge')
-  assert.deepEqual(body.added, { categories: 0, locations: 0, items: 1 })
+  assert.deepEqual(body.added, { categories: 0, sites: 0, locations: 0, items: 1 })
 
   const items = await (await server.get('/items')).json()
   assert.equal(items.length, 2)

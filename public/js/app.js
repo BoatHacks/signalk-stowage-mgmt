@@ -15,7 +15,8 @@ import { PhotoModal } from './app-photo-modal.js';
 import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
 import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
-import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit } from './helpers.js';
+import { SiteSwitcher, SitesModal } from './app-sites.js';
+import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit, filterDataBySite } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 import { parseLocationParam, parseItemParam } from './qr-label.js';
 import { hashForState, parseHash } from './hash-router.js';
@@ -31,7 +32,19 @@ var TABS = [
 var TAB_IDS = TABS.map(function (t) { return t.id; });
 var DEFAULT_TAB = 'inventory';
 
-var EMPTY_DATA = { locations: [], items: [], categories: [], floorplans: [] };
+var EMPTY_DATA = { locations: [], items: [], categories: [], floorplans: [], sites: [] };
+var ACTIVE_SITE_KEY = 'stowage.activeSite';
+
+// Per-viewer convenience only: the server holds no notion of a selected site.
+function readStoredSiteId() {
+  try { return window.localStorage.getItem(ACTIVE_SITE_KEY) || null; } catch (err) { return null; }
+}
+function storeSiteId(id) {
+  try {
+    if (id) window.localStorage.setItem(ACTIVE_SITE_KEY, id);
+    else window.localStorage.removeItem(ACTIVE_SITE_KEY);
+  } catch (err) { /* storage unavailable (private window); the choice just won't persist */ }
+}
 
 function App() {
   // Read once per mount: the initial tab/item come from whatever's in the
@@ -41,6 +54,8 @@ function App() {
 
   var dataState = useState(EMPTY_DATA);
   var data = dataState[0], setData = dataState[1];
+  var activeSiteIdState = useState(readStoredSiteId);
+  var sitesModalOpenState = useState(false);
   var loadedState = useState(false);
   var loaded = loadedState[0], setLoaded = loadedState[1];
   var tabState = useState(initialHash.tab || DEFAULT_TAB);
@@ -113,7 +128,7 @@ function App() {
     if (fetchInFlightRef.current) return Promise.resolve();
     fetchInFlightRef.current = true;
     return Promise.all([
-      api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(),
+      api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(), api.listSites(),
       api.getConfig().catch(function () {
         return {
           autoTheme: false, themeRecommendation: null, dynamicQuantityScale: false, qrLabelBaseUrl: '',
@@ -122,8 +137,8 @@ function App() {
       })
     ])
       .then(function (results) {
-        setData({ locations: results[0], items: results[1], categories: results[2], floorplans: results[3] });
-        setConfig(results[4]);
+        setData({ locations: results[0], items: results[1], categories: results[2], floorplans: results[3], sites: results[4] });
+        setConfig(results[5]);
         setLoaded(true);
       })
       .catch(function (err) { showToast(err.message); })
@@ -151,6 +166,10 @@ function App() {
     if (!locationId) return;
     var ids = ancestorIds(data, locationId);
     if (ids.length) {
+      // A label from another site has to switch the site view first, or its
+      // node would be filtered out of the tree.
+      var linked = data.locations.find(function (l) { return l.id === locationId; });
+      if (linked && activeSiteIdState[0] && linked.site_id !== activeSiteIdState[0]) setActiveSiteId(linked.site_id);
       setCollapsedLocationIds(function (prev) {
         var next = new Set(prev);
         ids.forEach(function (id) { next.delete(id); });
@@ -184,7 +203,7 @@ function App() {
       // Some embedded/older browsers lack the options-object form of
       // scrollIntoView() — the popup itself must not depend on this working.
     }
-  }, [activeTab, collapsedLocationIds, data]);
+  }, [activeTab, collapsedLocationIds, data, activeSiteIdState[0]]);
 
   // A scanned/linked item deep link (?item=<id>) opens the item detail
   // page directly — the second-external-consumer-facing deep link
@@ -291,8 +310,42 @@ function App() {
     });
   }
 
+  // ---- sites (#83) ----
+  var activeSite = data.sites.find(function (s) { return s.id === activeSiteIdState[0]; }) || null;
+  var viewData = filterDataBySite(data, activeSite ? activeSite.id : null);
+
+  function setActiveSiteId(id) {
+    activeSiteIdState[1](id || null);
+    storeSiteId(id);
+    setSelectedChipKeys(new Set());
+  }
+
   var ctx = {
-    data: data,
+    data: viewData,
+    allData: data,
+    sites: data.sites,
+    activeSite: activeSite,
+    setActiveSiteId: setActiveSiteId,
+    sitesModalOpen: sitesModalOpenState[0],
+    openSitesModal: function () { sitesModalOpenState[1](true); },
+    closeSitesModal: function () { sitesModalOpenState[1](false); },
+    createSite: function (body) { return act(function () { return api.createSite(body); }); },
+    updateSite: function (id, body) { return act(function () { return api.updateSite(id, body); }); },
+    deleteSite: function (id) {
+      if (activeSiteIdState[0] === id) setActiveSiteId(null);
+      return act(function () { return api.deleteSite(id); });
+    },
+    setSiteTarget: function (itemId, siteId, target) {
+      return act(function () {
+        return target === null ? api.clearSiteTarget(itemId, siteId) : api.setSiteTarget(itemId, siteId, target);
+      });
+    },
+    // " (Shed)" for a location outside the vessel site's, empty when there is only one site.
+    siteSuffix: function (loc) {
+      if (data.sites.length < 2) return '';
+      var site = data.sites.find(function (s) { return s.id === loc.site_id; });
+      return site ? ' (' + site.name + ')' : '';
+    },
     loaded: loaded,
     activeTab: activeTab,
     theme: theme,
@@ -375,7 +428,9 @@ function App() {
     addStorageSpace: function (parentId) {
       var name = prompt('Name of the new storage space (e.g. "Lazarette"):');
       if (!name) return;
-      act(function () { return api.createLocation({ name: name, type: 'storage_space', parent_id: parentId || null }); }).catch(function () {});
+      var body = { name: name, type: 'storage_space', parent_id: parentId || null };
+      if (!parentId && activeSite) body.site_id = activeSite.id;
+      act(function () { return api.createLocation(body); }).catch(function () {});
     },
     addContainer: function (parentId) {
       var name = prompt('Name of the new container (e.g. "First Aid Box"):');
@@ -503,7 +558,9 @@ function App() {
     },
     closeExportModal: function () { exportModalContentState[1](null); },
 
-    getItemLog: function (start, end, itemId) { return api.getItemLog(start, end, itemId); },
+    getItemLog: function (start, end, itemId) {
+      return api.getItemLog(start, end, itemId, itemId || !activeSite ? null : activeSite.id);
+    },
 
     // backup / restore
     exportSnapshot: function () {
@@ -601,6 +658,7 @@ function App() {
     <${AppCtx.Provider} value=${ctx}>
       <header>
         <h1><img class="header-icon" src="assets/icons/icon-512.png" alt="Stowage Management" /><span class="header-title-text">Stowage Management</span></h1>
+        <${SiteSwitcher} />
         <${SearchBox} />
         <${EditModeToggle} />
         <${ThemeToggle} />
@@ -635,6 +693,7 @@ function App() {
       <${ExportModal} />
       <${LabelModal} />
       <${PrintLabelsModal} />
+      <${SitesModal} />
     </${AppCtx.Provider}>
   `;
 }

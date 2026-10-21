@@ -65,11 +65,27 @@ export const api = {
   listLocations: function () { return get('/locations'); },
   createLocation: function (body) { return post('/locations', body); },
   renameLocation: function (id, name) { return patch('/locations/' + id, { name: name }); },
-  moveLocation: function (id, parentId) { return patch('/locations/' + id + '/move', { parent_id: parentId }); },
+  moveLocation: function (id, parentId, siteId) {
+    var body = { parent_id: parentId };
+    if (siteId) body.site_id = siteId;
+    return patch('/locations/' + id + '/move', body);
+  },
   setSvgMapping: function (id, floorplanId, svgElementId) {
     return patch('/locations/' + id + '/svg-mapping', { floorplan_id: floorplanId, svg_element_id: svgElementId });
   },
   deleteLocation: function (id) { return del('/locations/' + id); },
+
+  // Sites
+  listSites: function () { return get('/sites'); },
+  createSite: function (body) { return post('/sites', body); },
+  updateSite: function (id, body) { return patch('/sites/' + id, body); },
+  deleteSite: function (id) { return del('/sites/' + id); },
+  setSiteTarget: function (itemId, siteId, targetQuantity) {
+    return request('/items/' + itemId + '/site-targets/' + siteId, {
+      method: 'PUT', body: JSON.stringify({ target_quantity: targetQuantity })
+    });
+  },
+  clearSiteTarget: function (itemId, siteId) { return del('/items/' + itemId + '/site-targets/' + siteId); },
 
   // Items
   listItems: function () { return get('/items'); },
@@ -105,8 +121,9 @@ export const api = {
 
   // Floorplans
   listFloorplans: function () { return get('/floorplans'); },
-  getItemLog: function (start, end, itemId) {
+  getItemLog: function (start, end, itemId, siteId) {
     var params = [];
+    if (siteId) params.push('site=' + encodeURIComponent(siteId));
     if (start) params.push('start=' + encodeURIComponent(start));
     if (end) params.push('end=' + encodeURIComponent(end));
     if (itemId) params.push('item_id=' + encodeURIComponent(itemId));

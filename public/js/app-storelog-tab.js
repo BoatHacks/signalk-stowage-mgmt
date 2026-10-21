@@ -71,7 +71,7 @@ export function StoreLogTab () {
       app.showToast(err.message);
       setLoading(false);
     });
-  }, [start, end]);
+  }, [start, end, app.activeSite ? app.activeSite.id : null]);
 
   function applyPreset (days) {
     setStart(isoDate(daysAgo(days)));

@@ -11,7 +11,7 @@ import { isSplit, pathToRoot, itemHasFloorplanMapping, itemFloorplanTargets, res
 function PlacementsSection(props) {
   var app = useApp();
   var item = props.item;
-  var hasMapping = itemHasFloorplanMapping(app.data, item);
+  var hasMapping = itemHasFloorplanMapping(app.allData, item);
   // "Locate on floorplan" only makes sense as a jump-to-Floorplan-tab
   // button when the floorplan isn't already shown inline on this page —
   // if the Floorplan section (below) is visible, it already shows the
@@ -47,7 +47,7 @@ function PlacementsSection(props) {
           return html`
             <li key=${r.placementId || 'single'} class="placement-row">
               <span class="placement-location">
-                ${r.locationId ? pathToRoot(app.data, r.locationId) : 'Not stored anywhere'}
+                ${r.locationId ? pathToRoot(app.allData, r.locationId) : 'Not stored anywhere'}
                 ${r.isDefault ? html`<span class="hint"> (default)</span>` : null}
               </span>
               <${QuantityEditor} item=${r.itemView} placementId=${r.placementId} className="qty" />
@@ -67,7 +67,7 @@ function FloorplanSection(props) {
   var containerRef = useRef(null);
   var contentState = useState(null); // full floorplan { id, name, svg_content } or null
 
-  var targets = itemFloorplanTargets(app.data, item);
+  var targets = itemFloorplanTargets(app.allData, item);
   // Only one floorplan is ever active app-wide (README.md's Data Model
   // section — older ones are deleted on upload of a new one), so every
   // target necessarily shares the same floorplanId.
@@ -228,7 +228,7 @@ var SECTION_COMPONENTS = {
 
 export function ItemDetailView() {
   var app = useApp();
-  var item = app.data.items.find(function (i) { return i.id === app.selectedItemId; });
+  var item = app.allData.items.find(function (i) { return i.id === app.selectedItemId; });
 
   if (!item) {
     return html`

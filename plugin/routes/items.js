@@ -2,6 +2,7 @@ const { randomUUID } = require('crypto')
 const { runInTransaction } = require('../tx')
 const { logItemEvent, logSplitEvent } = require('../itemLog')
 const { deleteItemAttachments } = require('../attachmentsStore')
+const { buildItemSiteQuantities } = require('../sites')
 
 module.exports = function registerItemRoutes (router, getDb, getDataDir, recomputeStockAlerts) {
   function db () {
@@ -57,8 +58,28 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir, recompu
     return itemOrItems
   }
 
+  // Attaches `site_quantities` ([{ site_id, quantity }], how much of the
+  // item sits in each site) and `site_targets` ([{ site_id, target_quantity }],
+  // the optional per-site restock targets) to one or more item rows.
+  function withSites (itemOrItems) {
+    const items = Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems]
+    if (items.length === 0) return itemOrItems
+    const quantities = buildItemSiteQuantities(db())
+    const targetsByItem = new Map()
+    for (const row of db().prepare('SELECT item_id, site_id, target_quantity FROM item_site_targets').all()) {
+      if (!targetsByItem.has(row.item_id)) targetsByItem.set(row.item_id, [])
+      targetsByItem.get(row.item_id).push({ site_id: row.site_id, target_quantity: row.target_quantity })
+    }
+    for (const item of items) {
+      item.site_quantities = Array.from((quantities.get(item.id) || new Map()).entries())
+        .map(([siteId, quantity]) => ({ site_id: siteId, quantity }))
+      item.site_targets = targetsByItem.get(item.id) || []
+    }
+    return itemOrItems
+  }
+
   function withDetails (itemOrItems) {
-    return withPlacements(withCategories(itemOrItems))
+    return withSites(withPlacements(withCategories(itemOrItems)))
   }
 
   function getItemOr404 (id, res) {
@@ -90,13 +111,17 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir, recompu
   }
 
   router.get('/items', (req, res) => {
-    const { q } = req.query || {}
+    const { q, site } = req.query || {}
     let items
     if (q) {
       items = db().prepare('SELECT * FROM items WHERE name LIKE ? ESCAPE \'\\\' ORDER BY name')
         .all('%' + String(q).replace(/[\\%_]/g, '\\$&') + '%')
     } else {
       items = db().prepare('SELECT * FROM items ORDER BY name').all()
+    }
+    if (site) {
+      const quantities = buildItemSiteQuantities(db())
+      items = items.filter(item => quantities.has(item.id) && quantities.get(item.id).has(site))
     }
     res.json(withDetails(items))
   })
@@ -259,6 +284,34 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir, recompu
 
   // Sets or clears an item's thumbnail. Body: { thumbnail } — a data URI
   // string, or null/omitted to remove the thumbnail entirely.
+  // Sets an item's restock target for one site, overriding the item-level
+  // target_quantity for that site's stock alerts. Body: { target_quantity }.
+  router.put('/items/:id/site-targets/:siteId', (req, res) => {
+    const item = getItemOr404(req.params.id, res)
+    if (!item) return
+    if (!db().prepare('SELECT id FROM sites WHERE id = ?').get(req.params.siteId)) {
+      return res.status(404).json({ error: 'site not found' })
+    }
+    const target = parseInt((req.body || {}).target_quantity, 10)
+    if (!Number.isInteger(target) || target < 0) {
+      return res.status(400).json({ error: 'target_quantity must be a non-negative integer' })
+    }
+    db().prepare(
+      `INSERT INTO item_site_targets (item_id, site_id, target_quantity) VALUES (?, ?, ?)
+       ON CONFLICT (item_id, site_id) DO UPDATE SET target_quantity = excluded.target_quantity`
+    ).run(item.id, req.params.siteId, target)
+    recomputeStockAlerts()
+    res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
+  })
+
+  router.delete('/items/:id/site-targets/:siteId', (req, res) => {
+    const item = getItemOr404(req.params.id, res)
+    if (!item) return
+    db().prepare('DELETE FROM item_site_targets WHERE item_id = ? AND site_id = ?').run(item.id, req.params.siteId)
+    recomputeStockAlerts()
+    res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
+  })
+
   router.patch('/items/:id/thumbnail', (req, res) => {
     const item = getItemOr404(req.params.id, res)
     if (!item) return
@@ -303,6 +356,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir, recompu
       if (!loc) return res.status(400).json({ error: 'location_id does not exist' })
     }
     db().prepare('UPDATE items SET location_id = ? WHERE id = ?').run(locationId || null, item.id)
+    recomputeStockAlerts()
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 
@@ -336,6 +390,7 @@ module.exports = function registerItemRoutes (router, getDb, getDataDir, recompu
       collapseIfSingleLocation(item.id)
       reconcileDefaultLocation(item.id)
     })
+    recomputeStockAlerts()
     res.json(withDetails(db().prepare('SELECT * FROM items WHERE id = ?').get(item.id)))
   })
 

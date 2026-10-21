@@ -1,13 +1,13 @@
 import { html } from '../vendor/preact-htm-standalone.js';
 import { useApp, IconBtn, QuantityEditor } from './app-core.js';
-import { isUnderstocked, isExpiringSoon, daysUntil, expiringStatusText, EXPIRING_WINDOW_DAYS, anyItemHasPhoto } from './helpers.js';
+import { isUnderstockedAt, isExpiringSoon, daysUntil, expiringStatusText, EXPIRING_WINDOW_DAYS, anyItemHasPhoto, siteTarget, siteQuantity } from './helpers.js';
 
 // Union of understocked and expiring-soon items, most urgent first: items
 // with an expiration date sort by days-until-expiry (soonest/most-expired
 // first), and understocked-only items (no expiration date) follow, sorted
 // by name for a stable order.
-function alertItems (data) {
-  var items = data.items.filter(function (item) { return isUnderstocked(item) || isExpiringSoon(item); });
+function alertItems (data, site) {
+  var items = data.items.filter(function (item) { return isUnderstockedAt(item, site) || isExpiringSoon(item); });
   return items.slice().sort(function (a, b) {
     var aExp = isExpiringSoon(a), bExp = isExpiringSoon(b);
     if (aExp && bExp) return daysUntil(a.expires_at) - daysUntil(b.expires_at);
@@ -18,7 +18,8 @@ function alertItems (data) {
 
 export function StockAlertsTab () {
   var app = useApp();
-  var items = alertItems(app.data);
+  var site = app.activeSite;
+  var items = alertItems(app.data, site);
   var showPlaceholders = anyItemHasPhoto(app.data.items);
 
   return html`
@@ -31,7 +32,9 @@ export function StockAlertsTab () {
         ${!items.length ? html`<p class="hint">Nothing needs attention right now.</p>` : null}
         ${items.map(function (item) {
           var thumb = item.thumbnail ? html`<img src=${item.thumbnail} alt="" />` : null;
-          var understocked = isUnderstocked(item);
+          var understocked = isUnderstockedAt(item, site);
+          var shownTarget = site ? siteTarget(item, site) : item.target_quantity;
+          var siteQty = site ? siteQuantity(item, site.id) : item.actual_quantity;
           var expiring = isExpiringSoon(item);
           var days = expiring ? daysUntil(item.expires_at) : null;
           var statusClass = expiring && days < 0 ? 'expiring-status-expired' : 'expiring-status-soon';
@@ -48,8 +51,10 @@ export function StockAlertsTab () {
                 </div>
                 ${understocked ? html`
                   <div class="understocked-chip-qty">
-                    <${QuantityEditor} item=${item} prefix="Actual: " className="qty-actual" />
-                    <span class="qty-target"> / Target: ${item.target_quantity}${item.unit ? ' ' + item.unit : ''}</span>
+                    ${!site || siteQty === item.actual_quantity
+                      ? html`<${QuantityEditor} item=${item} prefix="Actual: " className="qty-actual" />`
+                      : html`<span class="qty-actual">Actual here: ${siteQty} (${item.actual_quantity} in total)</span>`}
+                    <span class="qty-target"> / Target: ${shownTarget}${item.unit ? ' ' + item.unit : ''}</span>
                   </div>
                 ` : null}
                 ${expiring ? html`

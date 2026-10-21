@@ -33,12 +33,12 @@ export function SplitModal () {
   }, [state && state.item.id, state && state.fromLocationId]);
 
   if (!state) return null;
-  var item = app.data.items.find(function (i) { return i.id === state.item.id; }) || state.item;
-  var allocations = currentAllocations(item, app.data);
+  var item = app.allData.items.find(function (i) { return i.id === state.item.id; }) || state.item;
+  var allocations = currentAllocations(item, app.allData);
   var fromAllocation = allocations.find(function (a) { return (a.location_id || null) === (from || null); });
   var available = fromAllocation ? fromAllocation.quantity : 0;
 
-  var otherLocations = app.data.locations.filter(function (l) { return (l.id || null) !== (from || null); });
+  var otherLocations = app.allData.locations.filter(function (l) { return (l.id || null) !== (from || null); });
 
   function submit () {
     var n = parseInt(qty, 10);
@@ -85,7 +85,7 @@ export function SplitModal () {
             <option value="__unset__" disabled>Choose a destination\u2026</option>
             ${(from !== null) ? html`<option value="__none__">No Location</option>` : null}
             ${otherLocations.map(function (l) {
-              return html`<option key=${l.id} value=${l.id}>${pathToRoot(app.data, l.id)} [${l.type === 'storage_space' ? 'Storage Space' : 'Container'}]</option>`;
+              return html`<option key=${l.id} value=${l.id}>${pathToRoot(app.allData, l.id)}${app.siteSuffix(l)} [${l.type === 'storage_space' ? 'Storage Space' : 'Container'}]</option>`;
             })}
           </select>
         </div>
