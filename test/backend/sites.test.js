@@ -19,7 +19,6 @@ test('fresh database has one vessel site named Boat', async (t) => {
 
 test('migration: pre-site root locations are assigned to the new vessel site, most-used floorplan becomes its default', (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stowage-migrate-test-'))
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
   const { DatabaseSync } = require('node:sqlite')
   const old = new DatabaseSync(path.join(dir, 'inventory.db'))
   old.exec(`
@@ -37,7 +36,10 @@ test('migration: pre-site root locations are assigned to the new vessel site, mo
   old.close()
 
   const db = initDb(dir)
-  t.after(() => db.close())
+  t.after(() => {
+    db.close()
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
   const sites = db.prepare('SELECT * FROM sites').all()
   assert.equal(sites.length, 1)
   assert.equal(sites[0].is_vessel, 1)
