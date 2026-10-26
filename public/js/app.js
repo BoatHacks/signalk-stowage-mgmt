@@ -16,10 +16,13 @@ import { LocationAssignModal, MoveModal } from './app-floorplan-modals.js';
 import { SplitModal } from './app-split-modal.js';
 import { LabelModal, PrintLabelsModal } from './app-label-modals.js';
 import { SiteSwitcher, SitesModal } from './app-sites.js';
-import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit, filterDataBySite } from './helpers.js';
+import { buildInventoryMarkdown, buildShoppingListMarkdown, ancestorIds, isSplit, settleLimited, visibleChipKeys, filterQuery, retainFailedKeys, filterDataBySite } from './helpers.js';
 import { getPreferredTheme, applyTheme } from './theme.js';
 import { parseLocationParam, parseItemParam } from './qr-label.js';
 import { hashForState, parseHash } from './hash-router.js';
+
+// Max in-flight per-item requests for bulk move/delete/categorize (#80).
+var BULK_CONCURRENCY = 4;
 
 var TABS = [
   { id: 'inventory', label: 'Inventory' },
@@ -105,6 +108,7 @@ function App() {
 
   var toastTimerRef = useRef(null);
   var fetchInFlightRef = useRef(false);
+  var fetchPromiseRef = useRef(null);
   var pendingLocateLocationIdRef = useRef(null);
 
   useEffect(function () { applyTheme(theme); }, [theme]);
@@ -124,10 +128,15 @@ function App() {
     }
   }, [config.autoTheme, config.themeRecommendation]);
 
-  var refreshData = useCallback(function () {
-    if (fetchInFlightRef.current) return Promise.resolve();
+  // refreshData(true) does not skip when a poll is in flight: it waits for
+  // that fetch, then fetches again (post-action refresh, #78). Only a strict
+  // `true` forces, so setInterval's arguments never do.
+  var refreshData = useCallback(function (force) {
+    if (fetchInFlightRef.current) {
+      return force === true ? fetchPromiseRef.current.then(function () { return refreshData(true); }) : Promise.resolve();
+    }
     fetchInFlightRef.current = true;
-    return Promise.all([
+    fetchPromiseRef.current = Promise.all([
       api.listLocations(), api.listItems(), api.listCategories(), api.listFloorplans(), api.listSites(),
       api.getConfig().catch(function () {
         return {
@@ -143,6 +152,7 @@ function App() {
       })
       .catch(function (err) { showToast(err.message); })
       .then(function () { fetchInFlightRef.current = false; });
+    return fetchPromiseRef.current;
   }, []);
 
   useEffect(function () {
@@ -295,18 +305,21 @@ function App() {
     });
     return ids;
   }
-  // Runs after a Promise.allSettled bulk action: refreshes once, clears the
-  // selection, and reports partial failures instead of silently dropping
+  // Runs after a settleLimited bulk action (helpers.js; Promise.allSettled needs
+  // Chrome 76): refreshes once, clears the selection, and reports partial failures instead of silently dropping
   // them (a bulk op over N items can plausibly have a few fail, e.g. an
   // item deleted by someone else mid-batch).
-  function finishBulkAction(results, pastTense, verb) {
-    bulkActionPendingState[1](false);
+  // targets pairs with results (see retainFailedKeys); failed ones stay
+  // selected. Resolves with the success count after the refresh settles.
+  function finishBulkAction(results, pastTense, verb, targets) {
     var failed = results.filter(function (r) { return r.status === 'rejected'; }).length;
     var succeeded = results.length - failed;
-    return refreshData().then(function () {
-      setSelectedChipKeys(new Set());
+    return refreshData(true).then(function () {
+      setSelectedChipKeys(retainFailedKeys(selectedChipKeys, targets, results));
       if (failed) showToast(pastTense + ' ' + succeeded + '/' + results.length + ' (' + failed + ' failed to ' + verb + ').');
       else showToast(pastTense + ' ' + succeeded + '.');
+      bulkActionPendingState[1](false);
+      return succeeded;
     });
   }
 
@@ -322,6 +335,17 @@ function App() {
     storeSiteId(id);
     setSelectedChipKeys(new Set());
   }
+
+  // Drop selected keys whose chips are not rendered (search filter, collapsed
+  // ancestors, other tab) so bulk actions only touch what the user can see (#77).
+  useEffect(function () {
+    if (!selectedChipKeys.size) return;
+    var visible = activeTab === 'inventory'
+      ? visibleChipKeys(data, collapsedLocationIds, filterQuery(data, searchQueryState[0]))
+      : new Set();
+    var kept = Array.from(selectedChipKeys).filter(function (k) { return visible.has(k); });
+    if (kept.length !== selectedChipKeys.size) setSelectedChipKeys(new Set(kept));
+  }, [activeTab, collapsedLocationIds, data, searchQueryState[0], selectedChipKeys]);
 
   var ctx = {
     data: viewData,
@@ -383,9 +407,9 @@ function App() {
     bulkMoveSelectionTo: function (locationId) {
       var pairs = keysToPairs(selectedChipKeys);
       bulkActionPendingState[1](true);
-      return Promise.allSettled(pairs.map(function (p) {
+      return settleLimited(pairs, function (p) { return p.itemId; }, function (p) {
         return p.placementId ? api.movePlacement(p.itemId, p.placementId, locationId) : api.moveItem(p.itemId, locationId);
-      })).then(function (results) { return finishBulkAction(results, 'Moved', 'move'); });
+      }, BULK_CONCURRENCY).then(function (results) { return finishBulkAction(results, 'Moved', 'move', pairs); });
     },
     bulkDeleteSelection: function () {
       var itemIds = keysToItemIds(selectedChipKeys);
@@ -396,14 +420,14 @@ function App() {
       var warning = anySplit ? ' Some of these items are split across multiple locations — deleting them removes all placements.' : '';
       if (!confirm('Really delete ' + itemIds.length + ' item' + (itemIds.length === 1 ? '' : 's') + '?' + warning)) return Promise.resolve();
       bulkActionPendingState[1](true);
-      return Promise.allSettled(itemIds.map(function (id) { return api.deleteItem(id); }))
-        .then(function (results) { return finishBulkAction(results, 'Deleted', 'delete'); });
+      return settleLimited(itemIds, function (id) { return id; }, function (id) { return api.deleteItem(id); }, BULK_CONCURRENCY)
+        .then(function (results) { return finishBulkAction(results, 'Deleted', 'delete', itemIds); });
     },
     bulkAddCategoryToSelection: function (categoryId) {
       var itemIds = keysToItemIds(selectedChipKeys);
       bulkActionPendingState[1](true);
-      return Promise.allSettled(itemIds.map(function (id) { return api.addItemCategory(id, categoryId); }))
-        .then(function (results) { return finishBulkAction(results, 'Categorized', 'categorize'); });
+      return settleLimited(itemIds, function (id) { return id; }, function (id) { return api.addItemCategory(id, categoryId); }, BULK_CONCURRENCY)
+        .then(function (results) { return finishBulkAction(results, 'Categorized', 'categorize', itemIds); });
     },
     collapsedLocationIds: collapsedLocationIds,
     toggleLocationCollapse: function (id) {

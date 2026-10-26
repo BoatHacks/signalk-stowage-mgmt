@@ -343,6 +343,7 @@ export function BulkCategoryModal() {
   }
 
   function pick(categoryId) {
+    if (app.bulkActionPending) return;
     app.bulkAddCategoryToSelection(categoryId).then(function () { app.closeBulkCategoryModal(); }).catch(function () {});
   }
 
