@@ -381,7 +381,7 @@ and several backend hardening fixes.
   implementation, deferred for the same reason split-items work was scoped
   carefully.
 
-### 9.5 Multiple Sites (planned)
+### 9.5 Multiple Sites (shipped in v1.4.0)
 
 Goal: track inventory for more than one place (the boat, a shed holding
 tools and sails) in one plugin instance.
@@ -495,11 +495,11 @@ another user, and publishing notifications for non-vessel sites.
   Placements only shows when this section is hidden, to avoid two
   redundant ways to do the same thing when both are visible at once.
 
-### Per-site stock targets (proposed, multi-site)
+### Per-site stock targets (multi-site)
 
 `target_quantity` lives on the item, so "2 hammers in the shed, 0 on the
-boat" has no per-site target to compare against. Proposal: add a nullable
-`item_site_targets(item_id, site_id, target_quantity)` table. A site's
+boat" has no per-site target to compare against. Resolution, shipped in
+v1.4.0: an `item_site_targets(item_id, site_id, target_quantity)` table. A site's
 Understocked check uses its row if present; the item-level
 `target_quantity` applies to the vessel site only when no row exists, and
 other sites with no row are never flagged. Expiration alerts need no
@@ -507,9 +507,6 @@ change: they follow the placement's site.
 
 ## 12. Open Questions
 
-- Multi-site (§9.5): confirm the per-site target proposal in §11 and the
-  vessel-only notification rule before implementation.
-
-None outstanding for QR labels or the item detail page — all open
-questions from both brainstorms were resolved (see §11 for the
+None outstanding for QR labels, the item detail page or multiple sites —
+all open questions from those brainstorms were resolved (see §11 for the
 resolutions and reasoning).

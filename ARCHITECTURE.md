@@ -174,7 +174,7 @@ No new backend component; purely a rendering-layer addition on top of
 - Overview's own local search input is removed; its rows respond to the
   global query directly.
 
-### 2.6 Multiple sites (planned)
+### 2.6 Multiple sites
 
 - **Schema** (`plugin/db.js`): new `sites` and `item_site_targets` tables (`id`, `name`,
   `is_vessel`, `floorplan_id`, `created_at`) and `locations.site_id`,
